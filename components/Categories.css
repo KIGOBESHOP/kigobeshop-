@@ -1,0 +1,137 @@
+.categories-section {
+  padding: 80px 6%;
+  background: #ffffff;
+}
+
+.categories-heading {
+  text-align: center;
+  margin-bottom: 38px;
+}
+
+.categories-eyebrow {
+  color: #8961b5;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 3px;
+}
+
+.categories-heading h2 {
+  color: #30213f;
+  font-size: clamp(28px, 4vw, 42px);
+  margin: 14px 0;
+  font-weight: 700;
+}
+
+.categories-heading p {
+  color: #81778a;
+  font-size: 16px;
+}
+
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.category-card {
+  position: relative;
+  display: block;
+  height: 390px;
+  overflow: hidden;
+  border-radius: 18px;
+  text-decoration: none;
+  background: #eee7f5;
+  isolation: isolate;
+}
+
+.category-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.5s ease;
+}
+
+.category-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(30, 18, 42, 0.82),
+    rgba(30, 18, 42, 0.04) 75%
+  );
+  z-index: 0;
+}
+
+.category-card:hover img {
+  transform: scale(1.06);
+}
+
+.category-overlay {
+  position: absolute;
+  left: 22px;
+  right: 18px;
+  bottom: 24px;
+  color: #ffffff;
+  z-index: 1;
+}
+
+.category-subtitle {
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+.category-overlay h3 {
+  font-size: 27px;
+  margin: 8px 0 12px;
+}
+
+.category-link {
+  display: inline-block;
+  font-size: 13px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+@media (max-width: 1000px) {
+  .categories-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .category-card {
+    height: 350px;
+  }
+}
+
+@media (max-width: 560px) {
+  .categories-section {
+    padding: 55px 5%;
+  }
+
+  .categories-grid {
+    gap: 12px;
+  }
+
+  .category-card {
+    height: 260px;
+    border-radius: 13px;
+  }
+
+  .category-overlay {
+    left: 12px;
+    right: 10px;
+    bottom: 14px;
+  }
+
+  .category-overlay h3 {
+    font-size: 20px;
+  }
+
+  .category-subtitle,
+  .category-link {
+    font-size: 11px;
+  }
+}
