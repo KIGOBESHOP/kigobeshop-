@@ -11,14 +11,8 @@ export type Product = {
   description: string;
 };
 
-  price: number;
-  oldPrice?: number;
-  image: string;
-  tag?: "NUEVO" | "OFERTA" | "TRENDING";
-  description: string;
-};
-
 export const products: Product[] = [
+ 
   {
     id: 1,
     name: "Vestido Lila Dream",
