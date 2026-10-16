@@ -130,14 +130,8 @@ const handleCheckoutSubmit = () => {
  const filteredProducts = useMemo(() => {
   let list = products.filter((p) => p.tag !== "NUEVO");
 
-  if (categoryGender === "Bolsos") {
-    list = list.filter((p) => p.category === "Bolsos");
-  } else if (
-    categoryGender === "Mujer" ||
-    categoryGender === "Hombre" ||
-    categoryGender === "Tallas grandes"
-  ) {
-    list = list.filter((p) => p.category === "Ropa");
+  if (categoryGender !== "") {
+    list = list.filter((p) => p.collection === categoryGender);
   } else if (activeFilter !== "Todos") {
     list = list.filter((p) => p.category === activeFilter);
   }
@@ -171,7 +165,7 @@ const handleCheckoutSubmit = () => {
 
   const countByCategory = (cat: string) => {
     if (cat === "Todos") return products.length;
-    return products.filter((p) => p.category === cat).length;
+    return products.filter((p) => p.category === cat).length; 
   };
 
   return (
@@ -224,7 +218,10 @@ const handleCheckoutSubmit = () => {
               <button
                 key={cat.name}
                 className={`chip ${activeFilter === cat.name ? "active" : ""}`}
-                onClick={() => setActiveFilter(cat.name)}
+                onClick={() => {
+  setCategoryGender("");
+  setActiveFilter(cat.name);
+}}
               >
                 {cat.name}
               </button>
