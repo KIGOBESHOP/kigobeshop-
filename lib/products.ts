@@ -155,5 +155,4 @@ export const categories = [
   { name: "Todos", icon: "✨" },
   { name: "Ropa", icon: "👗" },
   { name: "Bolsos", icon: "👜" },
-  { name: "Calzado", icon: "👟" },
 ];
