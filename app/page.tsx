@@ -182,7 +182,7 @@ let list = [...products];
 
       <Hero />
 
-      <Categories onCategoryClick={handleCategoryClick} />
+    <Categories />
 
 
       
