@@ -51,8 +51,7 @@ export default function Footer() {
 
         <div className="footerCol">
           <h4>Empresa</h4>
-          <a href="#">Sobre nosotros</a>
-          <a href="#">Trabaja con nosotros</a>
+         <a href="/sobre-nosotros">Sobre nosotros</a>
           <a href="/legal">Aviso legal</a>
           <a href="#">Privacidad</a>
                    <a href="#">Términos y condiciones</a>
