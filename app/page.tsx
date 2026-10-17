@@ -128,7 +128,9 @@ const handleCheckoutSubmit = () => {
   const cartCount = cart.reduce((sum, i) => sum + i.qty, 0);
 
  const filteredProducts = useMemo(() => {
-  let list = products.filter((p) => p.tag !== "NUEVO");
+
+let list = [...products];
+
 
   if (categoryGender !== "") {
     list = list.filter((p) => p.collection === categoryGender);
