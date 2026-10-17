@@ -45,7 +45,28 @@ export default function AdminPage() {
     setBusy(false);
     if (error) setMessage("No se ha podido iniciar sesión. Revisa tus datos.");
   }
+async function recoverPassword() {
+  setMessage("");
 
+  if (!email) {
+    setMessage("Escribe primero tu correo electrónico.");
+    return;
+  }
+
+  setBusy(true);
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: "https://www.kigobeshop.com/auth/callback",
+  });
+
+  setBusy(false);
+
+  if (error) {
+    setMessage("No se ha podido enviar el correo de recuperación.");
+  } else {
+    setMessage("Te hemos enviado un correo para cambiar la contraseña.");
+  }
+}
   async function saveProduct(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -155,7 +176,16 @@ export default function AdminPage() {
           />
 
           <button disabled={busy} type="submit" style={buttonStyle}>
-            {busy ? "Entrando..." : "Iniciar sesión"}
+           {busy ? "Entrando..." : "Iniciar sesión"}
+          </button>
+
+          <button
+            type="button"
+            onClick={recoverPassword}
+            disabled={busy}
+            style={{ ...buttonStyle, marginTop: 12 }}
+          >
+            Recuperar contraseña
           </button>
         </form>
 
