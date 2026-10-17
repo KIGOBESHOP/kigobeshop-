@@ -61,9 +61,10 @@ async function recoverPassword() {
 
   setBusy(false);
 
-  if (error) {
-    setMessage("No se ha podido enviar el correo de recuperación.");
-  } else {
+ if (error) {
+  console.error("Error de recuperación:", error);
+  setMessage(`Error: ${error.message}`);
+} else {
     setMessage("Te hemos enviado un correo para cambiar la contraseña.");
   }
 }
