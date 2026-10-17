@@ -1,65 +1,185 @@
 
 "use client";
 
-import { useState } from "react";
-
-type Product = {
-  name: string;
-  price: string;
-  category: string;
-  description: string;
-  image: string;
-};
+import { useEffect, useState } from "react";
+import type { User } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 
 export default function AdminPage() {
+  const [user, setUser] = useState<User | null>(null);
+  const [checking, setChecking] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("Ropa");
+  const [collection, setCollection] = useState("Mujer");
   const [description, setDescription] = useState("");
-  const [image, setImage] = useState("");
+  const [file, setFile] = useState<File | null>(null);
   const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  function handleImage(file?: File) {
-    if (!file) return;
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user ?? null);
+      setChecking(false);
+    });
 
-    const reader = new FileReader();
-    reader.onload = () => setImage(String(reader.result || ""));
-    reader.readAsDataURL(file);
-  }
-
-  function saveProduct(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    const product: Product = {
-      name,
-      price,
-      category,
-      description,
-      image,
-    };
-
-    const saved = JSON.parse(
-      localStorage.getItem("kigobeshop-products") || "[]"
-    ) as Product[];
-
-    localStorage.setItem(
-      "kigobeshop-products",
-      JSON.stringify([...saved, product])
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => setUser(session?.user ?? null)
     );
 
-    setMessage("¡Producto guardado en este navegador!");
-    setName("");
-    setPrice("");
-    setDescription("");
-    setImage("");
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  async function login(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage("");
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    setBusy(false);
+    if (error) setMessage("No se ha podido iniciar sesión. Revisa tus datos.");
+  }
+
+  async function saveProduct(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!file) {
+      setMessage("Selecciona una foto del producto.");
+      return;
+    }
+
+    setBusy(true);
+    setMessage("");
+
+    try {
+      const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${Date.now()}-${crypto.randomUUID()}.${extension}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("productos")
+        .upload(path, file, { upsert: false });
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicData } = supabase.storage
+        .from("productos")
+        .getPublicUrl(path);
+
+      const { error: insertError } = await supabase
+        .from("products")
+        .insert({
+          name: name.trim(),
+          price: Number(price),
+          category,
+          collection,
+          description: description.trim(),
+          image: publicData.publicUrl,
+        });
+
+      if (insertError) {
+        await supabase.storage.from("productos").remove([path]);
+        throw insertError;
+      }
+
+      setMessage("¡Producto guardado en Supabase!");
+      setName("");
+      setPrice("");
+      setDescription("");
+      setFile(null);
+      const form = document.getElementById("product-form") as HTMLFormElement;
+      form?.reset();
+      setCategory("Ropa");
+      setCollection("Mujer");
+    } catch (error) {
+      console.error(error);
+      setMessage(
+        "No se ha podido guardar. Comprueba los permisos y los campos de Supabase."
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const fieldStyle = {
+    display: "block",
+    width: "100%",
+    padding: 12,
+    margin: "8px 0 18px",
+    border: "1px solid #d8b4fe",
+    borderRadius: 8,
+    boxSizing: "border-box" as const,
+  };
+
+  const buttonStyle = {
+    padding: "14px 22px",
+    background: "#7e22ce",
+    color: "white",
+    border: "none",
+    borderRadius: 10,
+    cursor: "pointer",
+  };
+
+  if (checking) {
+    return <main style={{ padding: 24 }}>Comprobando sesión...</main>;
+  }
+
+  if (!user) {
+    return (
+      <main style={{ maxWidth: 450, margin: "50px auto", padding: 24 }}>
+        <h1>Panel de KIGOBESHOP 💜</h1>
+        <p>Inicia sesión para gestionar tu catálogo.</p>
+
+        <form onSubmit={login}>
+          <label>Correo electrónico</label>
+          <input
+            required
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={fieldStyle}
+          />
+
+          <label>Contraseña</label>
+          <input
+            required
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={fieldStyle}
+          />
+
+          <button disabled={busy} type="submit" style={buttonStyle}>
+            {busy ? "Entrando..." : "Iniciar sesión"}
+          </button>
+        </form>
+
+        {message && <p>{message}</p>}
+      </main>
+    );
   }
 
   return (
     <main style={{ maxWidth: 650, margin: "40px auto", padding: 24 }}>
       <h1>Panel de KIGOBESHOP 💜</h1>
-      <p>Añade productos a tu catálogo.</p>
+      <p>Sesión iniciada: {user.email}</p>
 
-      <form onSubmit={saveProduct}>
+      <button
+        type="button"
+        style={buttonStyle}
+        onClick={() => supabase.auth.signOut()}
+      >
+        Cerrar sesión
+      </button>
+
+      <h2>Añadir producto</h2>
+
+      <form id="product-form" onSubmit={saveProduct}>
         <label>Nombre del producto</label>
         <input
           required
@@ -84,11 +204,31 @@ export default function AdminPage() {
         <label>Categoría</label>
         <select
           value={category}
-          onChange={(e) => setCategory(e.target.value)}
+          onChange={(e) => {
+            setCategory(e.target.value);
+            setCollection(e.target.value === "Bolsos" ? "Bolsos" : "Mujer");
+          }}
           style={fieldStyle}
         >
-          <option>Ropa</option>
-          <option>Bolsos</option>
+          <option value="Ropa">Ropa</option>
+          <option value="Bolsos">Bolsos</option>
+        </select>
+
+        <label>Colección</label>
+        <select
+          value={collection}
+          onChange={(e) => setCollection(e.target.value)}
+          style={fieldStyle}
+        >
+          {category === "Ropa" ? (
+            <>
+              <option value="Mujer">Mujer</option>
+              <option value="Hombre">Hombre</option>
+              <option value="Tallas grandes">Tallas grandes</option>
+            </>
+          ) : (
+            <option value="Bolsos">Bolsos</option>
+          )}
         </select>
 
         <label>Descripción</label>
@@ -101,23 +241,15 @@ export default function AdminPage() {
 
         <label>Foto del producto</label>
         <input
-          type="file"
-          accept="image/*"
           required
-          onChange={(e) => handleImage(e.target.files?.[0])}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           style={fieldStyle}
         />
 
-        {image && (
-          <img
-            src={image}
-            alt="Vista previa del producto"
-            style={{ width: 180, borderRadius: 12, margin: "12px 0" }}
-          />
-        )}
-
-        <button type="submit" style={buttonStyle}>
-          Guardar producto
+        <button disabled={busy} type="submit" style={buttonStyle}>
+          {busy ? "Guardando..." : "Guardar producto"}
         </button>
 
         {message && <p>{message}</p>}
@@ -126,21 +258,4 @@ export default function AdminPage() {
   );
 }
 
-const fieldStyle = {
-  display: "block",
-  width: "100%",
-  padding: 12,
-  margin: "8px 0 18px",
-  border: "1px solid #d8b4fe",
-  borderRadius: 8,
-  boxSizing: "border-box" as const,
-};
 
-const buttonStyle = {
-  padding: "14px 22px",
-  background: "#7e22ce",
-  color: "white",
-  border: "none",
-  borderRadius: 10,
-  cursor: "pointer",
-};
