@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import Header from "@/components/Header";
 import ProductCard from "@/components/ProductCard";
@@ -33,6 +33,7 @@ const titles: Record<Product["collection"], string> = {
 export default function CollectionPage({ collection }: Props) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [favorites, setFavorites] = useState<number[]>([]);
+  const [storageLoaded, setStorageLoaded] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [favoritesOpen, setFavoritesOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -46,7 +47,25 @@ export default function CollectionPage({ collection }: Props) {
     city: "",
     postalCode: "",
   });
+  useEffect(() => {
+    try {
+      const savedCart = localStorage.getItem("kigobeshop-cart");
+      const savedFavorites = localStorage.getItem("kigobeshop-favorites");
 
+      if (savedCart) setCart(JSON.parse(savedCart));
+      if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
+    } catch (error) {
+      console.error("Error al cargar los datos guardados", error);
+    }
+    setStorageLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!storageLoaded) return;
+
+    localStorage.setItem("kigobeshop-cart", JSON.stringify(cart));
+    localStorage.setItem("kigobeshop-favorites", JSON.stringify(favorites));
+  }, [cart, favorites, storageLoaded]);
   const showToast = useCallback((message: string) => {
     setToast(message);
     setTimeout(() => setToast(""), 4000);
