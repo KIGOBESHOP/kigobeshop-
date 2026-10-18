@@ -42,10 +42,21 @@ const [favoritesOpen, setFavoritesOpen] = useState(false);
 const [, setDbProductsLoaded] = useState(false);
   const [sortBy, setSortBy] = useState("destacados");
 const [categoryGender, setCategoryGender] = useState("");
+
 const handleCategoryClick = (category: string) => {
-  setCategoryGender(category);
-  document.getElementById("productos")?.scrollIntoView({ behavior: "smooth" });
+  if (category === "Todos" || category === "Ropa" || category === "Bolsos") {
+    setActiveFilter(category);
+    setCategoryGender("");
+  } else {
+    setCategoryGender(category);
+    setActiveFilter("Todos");
+  }
+
+  document.getElementById("productos")?.scrollIntoView({
+    behavior: "smooth",
+  });
 };
+
   const [badgeKey, setBadgeKey] = useState(0);
   const [toast, setToast] = useState("");
   const [emailSubscribed, setEmailSubscribed] = useState(false);
