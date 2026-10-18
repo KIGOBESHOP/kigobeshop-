@@ -8,6 +8,7 @@ import ProductCard from "@/components/ProductCard";
 import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
 import { products, categories, type Product } from "@/lib/products";
+import { supabase } from "@/lib/supabase";
 import CheckoutForm from "@/components/CheckoutForm";
 type CartItem = {
   product: Product;
@@ -37,6 +38,8 @@ const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
 const [favoritesOpen, setFavoritesOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState("Todos");
+  const [dbProducts, setDbProducts] = useState<Product[]>([]);
+const [, setDbProductsLoaded] = useState(false);
   const [sortBy, setSortBy] = useState("destacados");
 const [categoryGender, setCategoryGender] = useState("");
 const handleCategoryClick = (category: string) => {
@@ -65,6 +68,50 @@ const handleCategoryClick = (category: string) => {
     localStorage.setItem("kigobeshop-cart", JSON.stringify(cart));
     localStorage.setItem("kigobeshop-favorites", JSON.stringify(favorites));
   }, [cart, favorites, storageLoaded]);
+  
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDbProducts() {
+      try {
+        const { data, error } = await supabase
+          .from("products")
+          .select("*");
+
+        if (error) throw error;
+
+        const loadedProducts: Product[] = (data ?? []).map((p) => ({
+          id: 1000000 + Number(p.id),
+          name: p.name,
+          category: p.category,
+          collection: p.collection,
+          price: Number(p.price),
+          ...(p.old_price != null
+            ? { oldPrice: Number(p.old_price) }
+            : {}),
+          image: p.image,
+          description: p.description ?? "",
+        }));
+
+        if (!cancelled) {
+          setDbProducts(loadedProducts);
+        }
+      } catch (error) {
+        console.error("Error al cargar productos de Supabase:", error);
+      } finally {
+        if (!cancelled) {
+          setDbProductsLoaded(true);
+        }
+      }
+    }
+
+    loadDbProducts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const showToast = useCallback((msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(""), 9000);
@@ -148,7 +195,7 @@ const handleCheckoutSubmit = () => {
 
  const filteredProducts = useMemo(() => {
 
-let list = [...products];
+let list = [...products, ...dbProducts];
 
 
   if (categoryGender !== "") {
@@ -182,7 +229,7 @@ let list = [...products];
   }
 
   return list;
-}, [activeFilter, sortBy, categoryGender]);
+}, [activeFilter, sortBy, categoryGender, dbProducts]);
 
   const countByCategory = (cat: string) => {
     if (cat === "Todos") return products.length;
