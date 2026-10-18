@@ -53,8 +53,8 @@ export default function Footer() {
           <h4>Empresa</h4>
          <a href="/sobre-nosotros">Sobre nosotros</a>
           <a href="/legal">Aviso legal</a>
-          <a href="#">Privacidad</a>
-                   <a href="#">Términos y condiciones</a>
+         <a href="/privacidad">Privacidad</a>
+<a href="/terminos">Términos y condiciones</a>
         </div>
       </div>
 
