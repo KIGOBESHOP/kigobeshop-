@@ -43,8 +43,7 @@ export default function Header({
 
       <nav className={`nav ${menuOpen ? "open" : ""}`}>
         <a href="#inicio" onClick={closeMenu}>Inicio</a>
-        <a href="#productos" onClick={closeMenu}>Tienda</a>
-        <a href="#categorias" onClick={closeMenu}>Categorías</a>
+     <a href="#categorias" onClick={closeMenu}>Categorías</a>
         <a href="#novedades" onClick={closeMenu}>Novedades</a>
         <a href="#ofertas" onClick={closeMenu}>Ofertas</a>
       </nav>
