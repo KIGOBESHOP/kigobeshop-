@@ -27,7 +27,7 @@ export default function Footer() {
           <h4>Tienda</h4>
           <a href="#productos">Ropa</a>
           <a href="#productos">Bolsos</a>
-          <a href="#productos">Calzado</a>
+          
           <a href="#ofertas">Ofertas</a>
         </div>
 
