@@ -45,7 +45,7 @@ export default function Footer() {
           </a>
           <a href="#">Envíos</a>
           <a href="#">Devoluciones</a>
-          <a href="#">Guía de tallas</a>
+        
         </div>
 
 
