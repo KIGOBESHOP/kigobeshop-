@@ -9,7 +9,7 @@ import CartDrawer from "@/components/CartDrawer";
 import CheckoutForm from "@/components/CheckoutForm";
 import Footer from "@/components/Footer";
 import { products, type Product } from "@/lib/products";
-
+import { supabase } from "@/lib/supabase";
 type CartItem = { product: Product; qty: number };
 
 type CustomerData = {
@@ -32,6 +32,8 @@ const titles: Record<Product["collection"], string> = {
 
 export default function CollectionPage({ collection }: Props) {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [dbProducts, setDbProducts] = useState<Product[]>([]);
+const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
   const [favorites, setFavorites] = useState<number[]>([]);
   const [storageLoaded, setStorageLoaded] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -47,6 +49,50 @@ export default function CollectionPage({ collection }: Props) {
     city: "",
     postalCode: "",
   });
+  
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDbProducts() {
+      try {
+        const { data, error } = await supabase
+          .from("products")
+          .select("*");
+
+        if (error) throw error;
+
+        const loadedProducts: Product[] = (data ?? []).map((p) => ({
+          id: 1000000 + Number(p.id),
+          name: p.name,
+          category: p.category,
+          collection: p.collection,
+          price: Number(p.price),
+          ...(p.old_price != null
+            ? { oldPrice: Number(p.old_price) }
+            : {}),
+          image: p.image,
+          description: p.description ?? "",
+        }));
+
+        if (!cancelled) {
+          setDbProducts(loadedProducts);
+        }
+      } catch (error) {
+        console.error("Error al cargar productos de Supabase:", error);
+      } finally {
+        if (!cancelled) {
+          setDbProductsLoaded(true);
+        }
+      }
+    }
+
+    loadDbProducts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     try {
       const savedCart = localStorage.getItem("kigobeshop-cart");
@@ -114,9 +160,9 @@ export default function CollectionPage({ collection }: Props) {
   const removeFromCart = (id: number) =>
     setCart((prev) => prev.filter((item) => item.product.id !== id));
 
-  const collectionProducts = products.filter(
-    (product) => product.collection === collection
-  );
+ const collectionProducts = [...products, ...dbProducts].filter(
+  (product) => product.collection === collection
+);
 
   const favoriteProducts = products.filter((product) =>
     favorites.includes(product.id)
