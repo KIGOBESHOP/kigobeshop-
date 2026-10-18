@@ -56,7 +56,9 @@ async function recoverPassword() {
   setBusy(true);
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: "https://www.kigobeshop.com/auth/callback",
+ 
+redirectTo: "https://www.kigobeshop.com/auth/reset-password",
+
   });
 
   setBusy(false);
