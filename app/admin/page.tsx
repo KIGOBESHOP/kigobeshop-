@@ -271,66 +271,119 @@ redirectTo: "https://www.kigobeshop.com/auth/reset-password",
     setMessage("Te hemos enviado un correo para cambiar la contraseña.");
   }
 }
-  async function saveProduct(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
 
-    if (!file) {
-      setMessage("Selecciona una foto del producto.");
-      return;
-    }
+async function saveProduct(event: React.FormEvent<HTMLFormElement>) {
+  event.preventDefault();
 
-    setBusy(true);
-    setMessage("");
+  if (!file) {
+    setMessage("Selecciona una foto principal del producto.");
+    return;
+  }
 
-    try {
-      const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  if (
+    variants.some(
+      (variant) =>
+        !variant.color.trim() || variant.files.length === 0
+    )
+  ) {
+    setMessage("Cada color debe tener un nombre y al menos una foto.");
+    return;
+  }
+
+  setBusy(true);
+  setMessage("");
+
+  const uploadedPaths: string[] = [];
+
+  try {
+    async function uploadImage(selectedFile: File): Promise<string> {
+      const extension =
+        selectedFile.name.split(".").pop()?.toLowerCase() || "jpg";
       const path = `${Date.now()}-${crypto.randomUUID()}.${extension}`;
 
-      const { error: uploadError } = await supabase.storage
+      const { error } = await supabase.storage
         .from("productos")
-        .upload(path, file, { upsert: false });
+        .upload(path, selectedFile, { upsert: false });
 
-      if (uploadError) throw uploadError;
+      if (error) throw error;
 
-      const { data: publicData } = supabase.storage
+      uploadedPaths.push(path);
+
+      const { data } = supabase.storage
         .from("productos")
         .getPublicUrl(path);
 
-      const { error: insertError } = await supabase
-        .from("products")
-        .insert({
-          name: name.trim(),
-          price: Number(price),
-          category,
-          collection,
-          description: description.trim(),
-          image: publicData.publicUrl,
-        });
+      return data.publicUrl;
+    }
 
-      if (insertError) {
-        await supabase.storage.from("productos").remove([path]);
-        throw insertError;
+    const mainImage = await uploadImage(file);
+
+    const savedVariants = [];
+
+    for (const variant of variants) {
+      const images: string[] = [];
+
+      for (const variantFile of variant.files) {
+        images.push(await uploadImage(variantFile));
       }
 
-      setMessage("¡Producto guardado en Supabase!");
-      await loadProducts();
-      setName("");
-      setPrice("");
-      setDescription("");
-      setFile(null);
-      const form = document.getElementById("product-form") as HTMLFormElement;
-      form?.reset();
-      setCategory("Ropa");
-      setCollection("Mujer");
-    } catch (error) {
-      console.error(error);
-      setMessage(
-        "No se ha podido guardar. Comprueba los permisos y los campos de Supabase."
-      );
-    } finally {
-      setBusy(false);
+      savedVariants.push({
+        color: variant.color.trim(),
+        images,
+      });
     }
+
+    const { error: insertError } = await supabase
+      .from("products")
+      .insert({
+        name: name.trim(),
+        price: Number(price),
+        category,
+        collection,
+        description: description.trim(),
+        image: mainImage,
+        variants: savedVariants,
+      });
+
+    if (insertError) throw insertError;
+
+    setMessage("¡Producto guardado con sus colores y fotos!");
+    await loadProducts();
+
+    setName("");
+    setPrice("");
+    setDescription("");
+    setFile(null);
+    setVariants([]);
+
+    const form = document.getElementById(
+      "product-form"
+    ) as HTMLFormElement;
+
+    form?.reset();
+    setCategory("Ropa");
+    setCollection("Mujer");
+  } catch (error) {
+    console.error(error);
+
+    if (uploadedPaths.length > 0) {
+      const { error: cleanupError } = await supabase.storage
+        .from("productos")
+        .remove(uploadedPaths);
+
+      if (cleanupError) {
+        console.error("No se pudieron limpiar algunas fotos:", cleanupError);
+      }
+    }
+
+    setMessage(
+      "No se ha podido guardar el producto. Revisa los campos y los permisos de Supabase."
+    );
+  } finally {
+    setBusy(false);
   }
+}
+
 
   const fieldStyle = {
     display: "block",
@@ -473,6 +526,55 @@ redirectTo: "https://www.kigobeshop.com/auth/reset-password",
           placeholder="Describe el producto..."
           style={fieldStyle}
         />
+
+<div style={{ border: "1px solid #d8b4fe", borderRadius: 10, padding: 14, marginBottom: 20 }}>
+  <h3>Colores y fotos de cada variante</h3>
+
+  {variants.map((variant, index) => (
+    <div
+      key={index}
+      style={{
+        border: "1px solid #d8b4fe",
+        borderRadius: 10,
+        padding: 12,
+        marginBottom: 14,
+      }}
+    >
+      <label>Nombre del color</label>
+      <input
+        value={variant.color}
+        onChange={(e) => updateVariantColor(index, e.target.value)}
+        placeholder="Ej. Negro, Beige, Rosa"
+        style={fieldStyle}
+      />
+
+      <label>Fotos de este color</label>
+      <input
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        multiple
+        onChange={(e) =>
+          updateVariantFiles(index, Array.from(e.target.files ?? []))
+        }
+        style={fieldStyle}
+      />
+
+      <p>{variant.files.length} foto(s) seleccionada(s)</p>
+
+      <button
+        type="button"
+        onClick={() => removeVariant(index)}
+        style={buttonStyle}
+      >
+        Eliminar este color
+      </button>
+    </div>
+  ))}
+
+  <button type="button" onClick={addVariant} style={buttonStyle}>
+    + Añadir color
+  </button>
+</div>
 
         <label>Foto del producto</label>
         <input
