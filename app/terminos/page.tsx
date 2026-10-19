@@ -23,11 +23,11 @@ export default function TerminosPage() {
       <p>
         Nombre comercial: KIGOBESHOP.
         <br />
-        Titular: [COMPLETAR].
+        Titular: INMACULADA YEPES EXPOSITO.
         <br />
-        NIF: [COMPLETAR].
+        NIF: 75268471M.
         <br />
-        Domicilio: [COMPLETAR].
+        Domicilio: CALLE GRANADA,281.
         <br />
         Correo electrónico: kigobeshop@gmail.com.
       </p>
