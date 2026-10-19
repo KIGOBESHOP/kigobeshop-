@@ -296,7 +296,7 @@ async function saveProduct(event: React.FormEvent<HTMLFormElement>) {
   const uploadedPaths: string[] = [];
 
   try {
-    async function uploadImage(selectedFile: File): Promise<string> {
+   const uploadImage = async (selectedFile: File): Promise<string> => {
       const extension =
         selectedFile.name.split(".").pop()?.toLowerCase() || "jpg";
       const path = `${Date.now()}-${crypto.randomUUID()}.${extension}`;
@@ -313,8 +313,8 @@ async function saveProduct(event: React.FormEvent<HTMLFormElement>) {
         .from("productos")
         .getPublicUrl(path);
 
-      return data.publicUrl;
-    }
+          return data.publicUrl;
+    };
 
     const mainImage = await uploadImage(file);
 
