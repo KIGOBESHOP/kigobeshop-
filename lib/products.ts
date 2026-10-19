@@ -1,4 +1,10 @@
 
+
+export type ProductVariant = {
+  color: string;
+  images: string[];
+};
+
 export type Product = {
   id: number;
   name: string;
@@ -9,6 +15,7 @@ export type Product = {
   image: string;
   tag?: "NUEVO" | "OFERTA" | "TRENDING";
   description: string;
+  variants?: ProductVariant[];
 };
 
 export const products: Product[] = [
