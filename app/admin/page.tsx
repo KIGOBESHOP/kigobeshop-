@@ -33,7 +33,9 @@ const [loadingProducts, setLoadingProducts] = useState(false);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => setUser(session?.user ?? null)
+     (_event, session) => {
+  setUser(session?.user ?? null);
+}
     );
 
     return () => listener.subscription.unsubscribe();
@@ -56,50 +58,130 @@ async function loadProducts() {
   setLoadingProducts(false);
 }
 
+
 async function editProduct(product: any) {
   const newName = window.prompt(
     "Nombre del producto:",
     product.name
   );
-
   if (newName === null || !newName.trim()) return;
 
   const newPrice = window.prompt(
     "Precio en euros:",
     String(product.price)
   );
-
   if (newPrice === null || !newPrice.trim()) return;
 
   const parsedPrice = Number(newPrice.replace(",", "."));
-
   if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
     setMessage("Introduce un precio válido.");
     return;
   }
 
+  const newDescription = window.prompt(
+    "Descripción del producto:",
+    product.description || ""
+  );
+  if (newDescription === null) return;
+
+  const newCategory = window.prompt(
+    "Categoría: escribe Ropa o Bolsos",
+    product.category || "Ropa"
+  );
+  if (newCategory === null) return;
+
+  const categoryValue = newCategory.trim();
+  if (!["Ropa", "Bolsos"].includes(categoryValue)) {
+    setMessage("La categoría debe ser Ropa o Bolsos.");
+    return;
+  }
+
+  let newCollection = "Bolsos";
+
+  if (categoryValue === "Ropa") {
+    const collectionValue = window.prompt(
+      "Colección: Mujer, Hombre o Tallas grandes",
+      product.category === "Ropa"
+        ? product.collection
+        : "Mujer"
+    );
+
+    if (collectionValue === null) return;
+
+    if (
+      !["Mujer", "Hombre", "Tallas grandes"].includes(
+        collectionValue.trim()
+      )
+    ) {
+      setMessage("La colección no es válida.");
+      return;
+    }
+
+    newCollection = collectionValue.trim();
+  }
+
   setBusy(true);
   setMessage("");
 
-  const { error } = await supabase
-    .from("products")
-    .update({
-      name: newName.trim(),
-      price: parsedPrice,
-    })
-    .eq("id", product.id);
+  try {
+    const { error } = await supabase
+      .from("products")
+      .update({
+        name: newName.trim(),
+        price: parsedPrice,
+        description: newDescription.trim(),
+        category: categoryValue,
+        collection: newCollection,
+      })
+      .eq("id", product.id);
 
-  if (error) {
-    console.error(error);
-    setMessage("No se ha podido editar el producto.");
-  } else {
+    if (error) throw error;
+
     setMessage("Producto actualizado correctamente.");
     await loadProducts();
+  } catch (error) {
+    console.error(error);
+    setMessage("No se han podido guardar los cambios.");
+  } finally {
+    setBusy(false);
   }
-
-  setBusy(false);
 }
-  
+
+async function changeProductImage(product: any, file: File) {
+  setBusy(true);
+  setMessage("");
+
+  try {
+    const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const path = `${Date.now()}-${crypto.randomUUID()}.${extension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("productos")
+      .upload(path, file, { upsert: false });
+
+    if (uploadError) throw uploadError;
+
+    const { data: publicData } = supabase.storage
+      .from("productos")
+      .getPublicUrl(path);
+
+    const { error: updateError } = await supabase
+      .from("products")
+      .update({ image: publicData.publicUrl })
+      .eq("id", product.id);
+
+    if (updateError) throw updateError;
+
+    setMessage("¡Foto actualizada correctamente!");
+    await loadProducts();
+  } catch (error) {
+    console.error(error);
+    setMessage("No se ha podido cambiar la foto.");
+  } finally {
+    setBusy(false);
+  }
+}
+
 async function deleteProduct(id: string) {
   const confirmed = window.confirm(
     "¿Seguro que quieres eliminar este producto?"
@@ -419,13 +501,37 @@ redirectTo: "https://www.kigobeshop.com/auth/reset-password",
 
           <h3>{product.name}</h3>
           
+          <label
+            style={{
+              display: "block",
+              margin: "12px 0",
+              color: "#7e22ce",
+              fontWeight: "bold",
+            }}
+          >
+            Cambiar foto del producto
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              disabled={busy}
+              style={{ display: "block", marginTop: 8 }}
+              onChange={(event) => {
+                const selectedFile = event.target.files?.[0];
+                if (selectedFile) {
+                  void changeProductImage(product, selectedFile);
+                }
+                event.target.value = "";
+              }}
+            />
+          </label>
+
           <button
             type="button"
             style={{ ...buttonStyle, marginRight: 8 }}
             disabled={busy}
             onClick={() => editProduct(product)}
           >
-            Editar nombre y precio
+          Editar producto
           </button>
 
           <p>Precio: {Number(product.price).toFixed(2)} €</p>
