@@ -19,9 +19,16 @@ export default function AdminPage() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
+
+  const [products, setProducts] = useState<any[]>([]);
+const [loadingProducts, setLoadingProducts] = useState(false);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user ?? null);
+      if (data.session?.user) {
+  loadProducts();
+}
       setChecking(false);
     });
 
@@ -31,6 +38,93 @@ export default function AdminPage() {
 
     return () => listener.subscription.unsubscribe();
   }, []);
+async function loadProducts() {
+  setLoadingProducts(true);
+
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .order("name", { ascending: true });
+
+  if (error) {
+    setMessage("No se han podido cargar los productos.");
+    console.error(error);
+  } else {
+    setProducts(data ?? []);
+  }
+
+  setLoadingProducts(false);
+}
+
+async function editProduct(product: any) {
+  const newName = window.prompt(
+    "Nombre del producto:",
+    product.name
+  );
+
+  if (newName === null || !newName.trim()) return;
+
+  const newPrice = window.prompt(
+    "Precio en euros:",
+    String(product.price)
+  );
+
+  if (newPrice === null || !newPrice.trim()) return;
+
+  const parsedPrice = Number(newPrice.replace(",", "."));
+
+  if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+    setMessage("Introduce un precio válido.");
+    return;
+  }
+
+  setBusy(true);
+  setMessage("");
+
+  const { error } = await supabase
+    .from("products")
+    .update({
+      name: newName.trim(),
+      price: parsedPrice,
+    })
+    .eq("id", product.id);
+
+  if (error) {
+    console.error(error);
+    setMessage("No se ha podido editar el producto.");
+  } else {
+    setMessage("Producto actualizado correctamente.");
+    await loadProducts();
+  }
+
+  setBusy(false);
+}
+  
+async function deleteProduct(id: string) {
+  const confirmed = window.confirm(
+    "¿Seguro que quieres eliminar este producto?"
+  );
+
+  if (!confirmed) return;
+
+  setBusy(true);
+  setMessage("");
+
+  const { error } = await supabase
+    .from("products")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error(error);
+    setMessage("No se ha podido eliminar el producto.");
+  } else {
+    setMessage("Producto eliminado correctamente.");
+    await loadProducts();
+  }
+
+  setBusy(false);
+}
 
   async function login(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -112,6 +206,7 @@ redirectTo: "https://www.kigobeshop.com/auth/reset-password",
       }
 
       setMessage("¡Producto guardado en Supabase!");
+      await loadProducts();
       setName("");
       setPrice("");
       setDescription("");
@@ -287,6 +382,68 @@ redirectTo: "https://www.kigobeshop.com/auth/reset-password",
 
         {message && <p>{message}</p>}
       </form>
+      
+      <h2>Mis productos</h2>
+
+      <button
+        type="button"
+        style={buttonStyle}
+        onClick={loadProducts}
+        disabled={loadingProducts}
+      >
+        {loadingProducts ? "Cargando..." : "Ver mis productos"}
+      </button>
+
+      {products.map((product) => (
+        <div
+          key={product.id}
+          style={{
+            border: "1px solid #d8b4fe",
+            borderRadius: 10,
+            padding: 14,
+            marginTop: 14,
+          }}
+        >
+          {product.image && (
+            <img
+              src={product.image}
+              alt={product.name}
+              style={{
+                width: 100,
+                height: 100,
+                objectFit: "cover",
+                borderRadius: 8,
+              }}
+            />
+          )}
+
+          <h3>{product.name}</h3>
+          
+          <button
+            type="button"
+            style={{ ...buttonStyle, marginRight: 8 }}
+            disabled={busy}
+            onClick={() => editProduct(product)}
+          >
+            Editar nombre y precio
+          </button>
+
+          <p>Precio: {Number(product.price).toFixed(2)} €</p>
+          <p>Categoría: {product.category}</p>
+          <p>Colección: {product.collection}</p>
+          <p>{product.description}</p>
+
+          <button
+            type="button"
+            style={{ ...buttonStyle, background: "#dc2626" }}
+            disabled={busy}
+            onClick={() => deleteProduct(product.id)}
+          >
+            Eliminar producto
+          </button>
+        </div>
+      ))}
+
     </main>
   );
 }
