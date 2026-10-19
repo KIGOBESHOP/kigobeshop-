@@ -21,11 +21,11 @@ export default function PrivacidadPage() {
 
       <h2>1. Responsable del tratamiento</h2>
       <p>
-        Nombre o razón social: [COMPLETAR].
+        Nombre o razón social: KIGOBESHOP.
         <br />
-        NIF: [COMPLETAR].
+        NIF: 75268471M.
         <br />
-        Domicilio: [COMPLETAR].
+        Domicilio: C/GRANADA, 281.
         <br />
         Correo de contacto: kigobeshop@gmail.com.
       </p>
