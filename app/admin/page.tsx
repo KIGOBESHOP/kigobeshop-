@@ -184,7 +184,29 @@ async function changeProductImage(product: any, file: File) {
     setBusy(false);
   }
 }
+function addVariant() {
+  setVariants((prev) => [...prev, { color: "", files: [] }]);
+}
 
+function updateVariantColor(index: number, color: string) {
+  setVariants((prev) =>
+    prev.map((variant, i) =>
+      i === index ? { ...variant, color } : variant
+    )
+  );
+}
+
+function updateVariantFiles(index: number, files: File[]) {
+  setVariants((prev) =>
+    prev.map((variant, i) =>
+      i === index ? { ...variant, files } : variant
+    )
+  );
+}
+
+function removeVariant(index: number) {
+  setVariants((prev) => prev.filter((_, i) => i !== index));
+}
 async function deleteProduct(id: string) {
   const confirmed = window.confirm(
     "¿Seguro que quieres eliminar este producto?"
