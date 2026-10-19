@@ -29,9 +29,11 @@ export default function ProductCard({
   const selectedVariant = variants.find(
     (variant) => variant.color === selectedColor
   );
-  const images =
+    const images =
     selectedVariant?.images.length
-      ? selectedVariant.images
+      ? [product.image, ...selectedVariant.images.filter(
+          (image) => image !== product.image
+        )]
       : [product.image];
 
   const [imageIndex, setImageIndex] = useState(0);
