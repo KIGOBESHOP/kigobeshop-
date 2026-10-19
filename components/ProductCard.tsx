@@ -2,20 +2,17 @@
 "use client";
 
 import { useState } from "react";
+import type { Product } from "@/lib/products";
+
+type SelectedVariant = {
+  color: string;
+  image: string;
+};
 
 type Props = {
-  product: {
-    id: number;
-    name: string;
-    category: string;
-    price: number;
-    oldPrice?: number;
-    image: string;
-    tag?: "NUEVO" | "OFERTA" | "TRENDING";
-    description: string;
-  };
+  product: Product;
   isFavorite: boolean;
-  onAddToCart: () => void;
+  onAddToCart: (variant?: SelectedVariant) => void;
   onToggleFavorite: () => void;
 };
 
@@ -25,7 +22,26 @@ export default function ProductCard({
   onAddToCart,
   onToggleFavorite,
 }: Props) {
+  const variants = product.variants ?? [];
+  const [selectedColor, setSelectedColor] = useState(
+    variants[0]?.color ?? ""
+  );
+  const selectedVariant = variants.find(
+    (variant) => variant.color === selectedColor
+  );
+  const images =
+    selectedVariant?.images.length
+      ? selectedVariant.images
+      : [product.image];
+
+  const [imageIndex, setImageIndex] = useState(0);
   const [imageOpen, setImageOpen] = useState(false);
+  const currentImage = images[imageIndex] ?? product.image;
+
+  function changeColor(color: string) {
+    setSelectedColor(color);
+    setImageIndex(0);
+  }
 
   return (
     <>
@@ -69,8 +85,8 @@ export default function ProductCard({
             }}
           >
             <img
-              src={product.image}
-              alt={product.name}
+              src={currentImage}
+              alt={`${product.name}${selectedColor ? ` - ${selectedColor}` : ""}`}
               loading="lazy"
               style={{
                 width: "100%",
@@ -81,10 +97,102 @@ export default function ProductCard({
           </button>
         </div>
 
+        {images.length > 1 && (
+          <div
+            style={{
+              display: "flex",
+              gap: 6,
+              justifyContent: "center",
+              flexWrap: "wrap",
+              padding: "8px 10px",
+            }}
+          >
+            {images.map((image, index) => (
+              <button
+                key={`${image}-${index}`}
+                type="button"
+                onClick={() => setImageIndex(index)}
+                aria-label={`Ver foto ${index + 1}`}
+                style={{
+                  width: 42,
+                  height: 42,
+                  padding: 2,
+                  borderRadius: 6,
+                  overflow: "hidden",
+                  border:
+                    imageIndex === index
+                      ? "2px solid #7e22ce"
+                      : "1px solid #ddd",
+                  background: "white",
+                  cursor: "pointer",
+                }}
+              >
+                <img
+                  src={image}
+                  alt=""
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="productInfo">
           <span className="productCategory">{product.category}</span>
           <h3 className="productName">{product.name}</h3>
           <p className="productDesc">{product.description}</p>
+
+          {variants.length > 0 && (
+            <div style={{ margin: "12px 0" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: 13,
+                  marginBottom: 7,
+                  fontWeight: 600,
+                }}
+              >
+                Color: {selectedColor}
+              </label>
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                }}
+              >
+                {variants.map((variant) => (
+                  <button
+                    key={variant.color}
+                    type="button"
+                    onClick={() => changeColor(variant.color)}
+                    aria-pressed={selectedColor === variant.color}
+                    style={{
+                      padding: "7px 12px",
+                      borderRadius: 20,
+                      border:
+                        selectedColor === variant.color
+                          ? "2px solid #7e22ce"
+                          : "1px solid #ddd",
+                      background:
+                        selectedColor === variant.color
+                          ? "#f3e8ff"
+                          : "white",
+                      color: "#30213c",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {variant.color}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="productFooter">
             <div className="priceWrap">
@@ -100,7 +208,16 @@ export default function ProductCard({
 
             <button
               className="cartButton"
-              onClick={onAddToCart}
+              onClick={() =>
+                onAddToCart(
+                  selectedVariant
+                    ? {
+                        color: selectedVariant.color,
+                        image: currentImage,
+                      }
+                    : undefined
+                )
+              }
               aria-label={`Añadir ${product.name} al carrito`}
             >
               <svg
@@ -162,8 +279,8 @@ export default function ProductCard({
           </button>
 
           <img
-            src={product.image}
-            alt={product.name}
+            src={currentImage}
+            alt={`${product.name}${selectedColor ? ` - ${selectedColor}` : ""}`}
             onClick={(event) => event.stopPropagation()}
             style={{
               display: "block",
