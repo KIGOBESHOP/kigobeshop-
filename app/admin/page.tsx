@@ -16,6 +16,9 @@ export default function AdminPage() {
   const [collection, setCollection] = useState("Mujer");
   const [description, setDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [variants, setVariants] = useState<
+  { color: string; files: File[] }[]
+>([]);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
