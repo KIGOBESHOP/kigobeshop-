@@ -23,7 +23,7 @@ export default function TerminosPage() {
       <p>
         Nombre comercial: KIGOBESHOP.
         <br />
-        Titular: INMACULADA YEPES EXPOSITO.
+        Titular:KIGOBESHOP.
         <br />
         NIF: 75268471M.
         <br />
