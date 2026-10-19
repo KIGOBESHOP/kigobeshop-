@@ -11,8 +11,11 @@ import { products, categories, type Product } from "@/lib/products";
 import { supabase } from "@/lib/supabase";
 import CheckoutForm from "@/components/CheckoutForm";
 type CartItem = {
+  cartKey: string;
   product: Product;
   qty: number;
+  selectedColor?: string;
+  selectedImage?: string;
 };
 type CustomerData = {
   name: string;
@@ -65,8 +68,24 @@ const handleCategoryClick = (category: string) => {
       const savedCart = localStorage.getItem("kigobeshop-cart");
       const savedFavorites = localStorage.getItem("kigobeshop-favorites");
 
-      if (savedCart) setCart(JSON.parse(savedCart));
-      if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
+     
+if (savedCart) {
+  const parsedCart = JSON.parse(savedCart);
+
+  setCart(
+    parsedCart.map((item: any) => ({
+      ...item,
+      cartKey:
+        item.cartKey ??
+        `${item.product.id}::${item.selectedColor ?? ""}`,
+    }))
+  );
+}
+
+if (savedFavorites) {
+  setFavorites(JSON.parse(savedFavorites));
+}
+
     } catch (error) {
       console.error("Error al cargar los datos guardados", error);
     }
@@ -91,18 +110,20 @@ const handleCategoryClick = (category: string) => {
 
         if (error) throw error;
 
-        const loadedProducts: Product[] = (data ?? []).map((p) => ({
-          id: 1000000 + Number(p.id),
-          name: p.name,
-          category: p.category,
-          collection: p.collection,
-          price: Number(p.price),
-          ...(p.old_price != null
-            ? { oldPrice: Number(p.old_price) }
-            : {}),
-          image: p.image,
-          description: p.description ?? "",
-        }));
+        
+const loadedProducts: Product[] = (data ?? []).map((p) => ({
+  id: 1000000 + Number(p.id),
+  name: p.name,
+  category: p.category,
+  collection: p.collection,
+  price: Number(p.price),
+  ...(p.old_price != null
+    ? { oldPrice: Number(p.old_price) }
+    : {}),
+  image: p.image,
+  description: p.description ?? "",
+  variants: Array.isArray(p.variants) ? p.variants : [],
+}));
 
         if (!cancelled) {
           setDbProducts(loadedProducts);
@@ -128,40 +149,81 @@ const handleCategoryClick = (category: string) => {
     setTimeout(() => setToast(""), 9000);
   }, []);
 
-  const addToCart = useCallback(
-    (product: Product) => {
-      setCart((prev) => {
-        const existing = prev.find((i) => i.product.id === product.id);
-        if (existing) {
-          return prev.map((i) =>
-            i.product.id === product.id ? { ...i, qty: i.qty + 1 } : i
-          );
-        }
-        return [...prev, { product, qty: 1 }];
-      });
-      setBadgeKey((k) => k + 1);
-      showToast(`${product.name} añadido al carrito`);
-    },
-    [showToast]
+
+const addToCart = useCallback(
+  (
+    product: Product,
+    variant?: { color: string; image: string }
+  ) => {
+    const cartKey = `${product.id}::${variant?.color ?? ""}`;
+
+    setCart((prev) => {
+      const existing = prev.find(
+        (item) => item.cartKey === cartKey
+      );
+
+      if (existing) {
+        return prev.map((item) =>
+          item.cartKey === cartKey
+            ? { ...item, qty: item.qty + 1 }
+            : item
+        );
+      }
+
+      return [
+        ...prev,
+        {
+          cartKey,
+          product,
+          qty: 1,
+          ...(variant
+            ? {
+                selectedColor: variant.color,
+                selectedImage: variant.image,
+              }
+            : {}),
+        },
+      ];
+    });
+
+    setBadgeKey((k) => k + 1);
+
+    showToast(
+      `${product.name}${variant ? ` (${variant.color})` : ""} añadido al carrito`
+    );
+  },
+  [showToast]
+);
+
+
+ 
+const increaseQty = (cartKey: string) => {
+  setCart((prev) =>
+    prev.map((item) =>
+      item.cartKey === cartKey
+        ? { ...item, qty: item.qty + 1 }
+        : item
+    )
   );
+};
 
-  const increaseQty = (id: number) => {
-    setCart((prev) =>
-      prev.map((i) => (i.product.id === id ? { ...i, qty: i.qty + 1 } : i))
-    );
-  };
+const decreaseQty = (cartKey: string) => {
+  setCart((prev) =>
+    prev
+      .map((item) =>
+        item.cartKey === cartKey
+          ? { ...item, qty: item.qty - 1 }
+          : item
+      )
+      .filter((item) => item.qty > 0)
+  );
+};
 
-  const decreaseQty = (id: number) => {
-    setCart((prev) =>
-      prev
-        .map((i) => (i.product.id === id ? { ...i, qty: i.qty - 1 } : i))
-        .filter((i) => i.qty > 0)
-    );
-  };
-
-  const removeFromCart = (id: number) => {
-    setCart((prev) => prev.filter((i) => i.product.id !== id));
-  };
+const removeFromCart = (cartKey: string) => {
+  setCart((prev) =>
+    prev.filter((item) => item.cartKey !== cartKey)
+  );
+};
 
   const toggleFavorite = (id: number) => {
     setFavorites((prev) =>
@@ -278,7 +340,7 @@ let list = [...products, ...dbProducts];
                 key={product.id}
                 product={product}
                 isFavorite={favorites.includes(product.id)}
-                onAddToCart={() => addToCart(product)}
+                onAddToCart={(variant) => addToCart(product, variant)}
                 onToggleFavorite={() => toggleFavorite(product.id)}
               />
             ))}
@@ -325,7 +387,7 @@ let list = [...products, ...dbProducts];
                 key={product.id}
                 product={product}
                 isFavorite={favorites.includes(product.id)}
-                onAddToCart={() => addToCart(product)}
+              onAddToCart={(variant) => addToCart(product, variant)}
                 onToggleFavorite={() => toggleFavorite(product.id)}
               />
             ))
@@ -477,7 +539,7 @@ let list = [...products, ...dbProducts];
                 key={product.id}
                 product={product}
                 isFavorite={true}
-                onAddToCart={() => addToCart(product)}
+            onAddToCart={(variant) => addToCart(product, variant)}
                 onToggleFavorite={() => toggleFavorite(product.id)}
               />
             ))}
