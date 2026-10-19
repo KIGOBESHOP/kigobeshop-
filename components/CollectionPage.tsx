@@ -10,7 +10,13 @@ import CheckoutForm from "@/components/CheckoutForm";
 import Footer from "@/components/Footer";
 import { products, type Product } from "@/lib/products";
 import { supabase } from "@/lib/supabase";
-type CartItem = { product: Product; qty: number };
+type CartItem = {
+  cartKey: string;
+  product: Product;
+  qty: number;
+  selectedColor?: string;
+  selectedImage?: string;
+};
 
 type CustomerData = {
   name: string;
@@ -70,8 +76,9 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
           ...(p.old_price != null
             ? { oldPrice: Number(p.old_price) }
             : {}),
-          image: p.image,
+                    image: p.image,
           description: p.description ?? "",
+          variants: Array.isArray(p.variants) ? p.variants : [],
         }));
 
         if (!cancelled) {
@@ -98,7 +105,18 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
       const savedCart = localStorage.getItem("kigobeshop-cart");
       const savedFavorites = localStorage.getItem("kigobeshop-favorites");
 
-      if (savedCart) setCart(JSON.parse(savedCart));
+     if (savedCart) {
+  const parsedCart = JSON.parse(savedCart);
+
+  setCart(
+    parsedCart.map((item: any) => ({
+      ...item,
+      cartKey:
+        item.cartKey ??
+        `${item.product.id}::${item.selectedColor ?? ""}`,
+    }))
+  );
+}
       if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
     } catch (error) {
       console.error("Error al cargar los datos guardados", error);
@@ -117,17 +135,33 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
     setTimeout(() => setToast(""), 4000);
   }, []);
 
-  const addToCart = (product: Product) => {
+  const addToCart = (
+    product: Product,
+    variant?: { color: string; image: string }
+  ) => {
+    const cartKey = `${product.id}::${variant?.color ?? ""}`;
+
     setCart((prev) => {
-      const existing = prev.find((item) => item.product.id === product.id);
+      const existing = prev.find((item) => item.cartKey === cartKey);
+
       return existing
         ? prev.map((item) =>
-            item.product.id === product.id
+            item.cartKey === cartKey
               ? { ...item, qty: item.qty + 1 }
               : item
           )
-        : [...prev, { product, qty: 1 }];
+        : [
+            ...prev,
+            {
+              cartKey,
+              product,
+              qty: 1,
+              selectedColor: variant?.color,
+              selectedImage: variant?.image,
+            },
+          ];
     });
+
     setBadgeKey((key) => key + 1);
     showToast(`${product.name} añadido al carrito`);
   };
@@ -141,24 +175,24 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
     setBadgeKey((key) => key + 1);
   };
 
-  const increaseQty = (id: number) =>
+  const increaseQty = (cartKey: string) =>
     setCart((prev) =>
       prev.map((item) =>
-        item.product.id === id ? { ...item, qty: item.qty + 1 } : item
+        item.cartKey === cartKey ? { ...item, qty: item.qty + 1 } : item
       )
     );
 
-  const decreaseQty = (id: number) =>
+  const decreaseQty = (cartKey: string) =>
     setCart((prev) =>
       prev
         .map((item) =>
-          item.product.id === id ? { ...item, qty: item.qty - 1 } : item
+          item.cartKey === cartKey ? { ...item, qty: item.qty - 1 } : item
         )
         .filter((item) => item.qty > 0)
     );
 
-  const removeFromCart = (id: number) =>
-    setCart((prev) => prev.filter((item) => item.product.id !== id));
+  const removeFromCart = (cartKey: string) =>
+    setCart((prev) => prev.filter((item) => item.cartKey !== cartKey));
 
  const collectionProducts = [...products, ...dbProducts].filter(
   (product) => product.collection === collection
@@ -204,7 +238,7 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
                 key={product.id}
                 product={product}
                 isFavorite={favorites.includes(product.id)}
-                onAddToCart={() => addToCart(product)}
+                onAddToCart={(variant) => addToCart(product, variant)}
                 onToggleFavorite={() => toggleFavorite(product.id)}
               />
             ))}
@@ -252,7 +286,7 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
                     key={product.id}
                     product={product}
                     isFavorite
-                    onAddToCart={() => addToCart(product)}
+                    onAddToCart={(variant) => addToCart(product, variant)}
                     onToggleFavorite={() => toggleFavorite(product.id)}
                   />
                 ))}
