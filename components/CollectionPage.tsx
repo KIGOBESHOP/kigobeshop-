@@ -216,13 +216,43 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
 
   const handleCheckoutSubmit = () => {
-    if (!Object.values(customerData).every((value) => value.trim())) {
-      showToast("Completa todos los datos para continuar.");
-      return;
-    }
-    showToast("Datos comprobados. Estamos preparando la configuración del pago.");
-  };
+  const requiredFields = [
+    customerData.gender,
+    customerData.name,
+    customerData.surname,
+    customerData.email,
+    customerData.phone,
+    customerData.birthDate,
+    customerData.address,
+    customerData.city,
+    customerData.postalCode,
+    customerData.shippingMethod,
+  ];
 
+  if (requiredFields.some((value) => !value.trim())) {
+    showToast("Completa todos los datos para continuar.");
+    return;
+  }
+
+  if (!customerData.acceptTerms) {
+    showToast("Debes aceptar las condiciones de compra.");
+    return;
+  }
+
+  if (!customerData.acknowledgePrivacy) {
+    showToast("Confirma que has leído la política de privacidad.");
+    return;
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerData.email)) {
+    showToast("Introduce un correo electrónico válido.");
+    return;
+  }
+
+  showToast(
+    "Datos comprobados. El pago de esta página de colección aún está pendiente de conectar."
+  );
+};
   return (
     <main>
       <Header
