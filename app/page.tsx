@@ -18,22 +18,34 @@ type CartItem = {
   selectedImage?: string;
 };
 type CustomerData = {
+  gender: string;
   name: string;
+  surname: string;
   email: string;
   phone: string;
+  birthDate: string;
   address: string;
   city: string;
   postalCode: string;
+  shippingMethod: string;
+  acceptTerms: boolean;
+  acknowledgePrivacy: boolean;
 };
 export default function Home() {
   const [cart, setCart] = useState<CartItem[]>([]);
 const [customerData, setCustomerData] = useState<CustomerData>({
+  gender: "",
   name: "",
+  surname: "",
   email: "",
   phone: "",
+  birthDate: "",
   address: "",
   city: "",
   postalCode: "",
+  shippingMethod: "standard",
+  acceptTerms: false,
+  acknowledgePrivacy: false,
 });
 const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [favorites, setFavorites] = useState<number[]>([]);
