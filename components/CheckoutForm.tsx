@@ -55,7 +55,8 @@ export default function CheckoutForm({
         <p>Completa tus datos para realizar tu compra en KigobeShop.</p>
 
         <div className="checkoutForm">
-          <h3>01. Datos personales</h3>
+         <div className="checkoutSection">
+  <h3>01. Datos personales</h3>
 
           <label htmlFor="checkoutGender">Sexo</label>
           <select
@@ -124,7 +125,8 @@ export default function CheckoutForm({
             required
           />
 
-          <h3>02. Dirección de envío</h3>
+         </div>
+<div className="checkoutSection">
 
           <label htmlFor="checkoutAddress">Dirección completa</label>
           <input
@@ -159,7 +161,8 @@ export default function CheckoutForm({
             required
           />
 
-          <h3>03. Método de envío</h3>
+       </div>
+<div className="checkoutSection">
 
           <label className="checkoutShippingOption">
             <input
@@ -179,7 +182,8 @@ export default function CheckoutForm({
             </span>
           </label>
 
-          <h3>04. Pago</h3>
+        </div>
+<div className="checkoutSection">
 
           <div className="checkoutPaymentInfo">
             <strong>Pago seguro con CECA</strong>
@@ -188,7 +192,8 @@ export default function CheckoutForm({
               los datos de tu tarjeta.
             </p>
           </div>
-
+</div>
+<div className="checkoutSection">
           <h3>05. Condiciones legales</h3>
 
           <label className="checkoutLegalOption">
@@ -228,6 +233,7 @@ export default function CheckoutForm({
             className="checkoutContinue"
             onClick={onSubmit}
           >
+            </div>
             Continuar al pago seguro
           </button>
         </div>
