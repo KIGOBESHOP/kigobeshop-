@@ -240,7 +240,8 @@ const handleCustomerChange = (data: CustomerData) => {
   setCustomerData(data);
 };
 
-const handleCheckoutSubmit = () => {
+
+const handleCheckoutSubmit = async () => {
   if (
     !customerData.name.trim() ||
     !customerData.email.trim() ||
@@ -253,10 +254,57 @@ const handleCheckoutSubmit = () => {
     return;
   }
 
-  showToast(
-    "Datos comprobados. Estamos preparando la configuración del pago."
-  );
+  if (cart.length === 0) {
+    showToast("Tu carrito está vacío.");
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/pago", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        items: cart.map((item) => ({
+          productId: item.product.id,
+          qty: item.qty,
+        })),
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      showToast(
+        result.error ?? "No se ha podido preparar el pago."
+      );
+      return;
+    }
+
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = result.action;
+
+    Object.entries(
+      result.fields as Record<string, string>
+    ).forEach(([name, value]) => {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = name;
+      input.value = value;
+      form.appendChild(input);
+    });
+
+    document.body.appendChild(form);
+    form.submit();
+  } catch {
+    showToast(
+      "No se ha podido conectar con el TPV de pruebas."
+    );
+  }
 };
+
   const handleSubscribe = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setEmailSubscribed(true);
