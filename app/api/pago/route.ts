@@ -203,7 +203,9 @@ const supabase = createClient(validSupabaseUrl, validSupabaseKey);
       amount,
       urlOk,
       urlNok,
-      encryptionKey
+           urlOk,
+      urlNok,
+      encryptionKey!
     );
 
     return NextResponse.json({
