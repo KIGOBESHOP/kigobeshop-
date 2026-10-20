@@ -138,7 +138,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
+   const validSupabaseUrl = supabaseUrl!;
+const validSupabaseKey = supabaseKey!;
+const supabase = createClient(validSupabaseUrl, validSupabaseKey);
 
     const { data: products, error } = await supabase
       .from("products")
