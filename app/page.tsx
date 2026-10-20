@@ -323,30 +323,6 @@ let list = [...dbProducts];
 
     <Categories />
 
-
-      
-       
-      <section className="section" id="novedades" style={{ paddingTop: 0 }}>
-        <div className="sectionHeader">
-          <h2>New Arrivals</h2>
-          <p>The latest styles, just for you.</p>
-        </div>
-
-        <div className="productGrid">
-          {products
-            .filter((product) => product.tag === "NUEVO")
-            .map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                isFavorite={favorites.includes(product.id)}
-                onAddToCart={(variant) => addToCart(product, variant)}
-                onToggleFavorite={() => toggleFavorite(product.id)}
-              />
-            ))}
-        </div>
-      </section>
-
         <section className="section" id="productos" style={{ paddingTop: 0 }}>
 <div className="sectionHeader">
           <h2>Productos destacados</h2>
