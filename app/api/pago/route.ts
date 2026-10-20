@@ -199,15 +199,12 @@ const supabase = createClient(validSupabaseUrl, validSupabaseKey);
   merchantId!,
   acquirerBin!,
   terminalId!,
-      operation,
-      amount,
-      urlOk,
-      urlNok,
-           urlOk,
-      urlNok,
-      encryptionKey!
-    );
-
+  operation,
+  amount,
+  urlOk,
+  urlNok,
+  encryptionKey!
+);
     return NextResponse.json({
       action: CECA_TEST_URL,
       fields: {
