@@ -52,14 +52,20 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [badgeKey, setBadgeKey] = useState(0);
   const [toast, setToast] = useState("");
-  const [customerData, setCustomerData] = useState<CustomerData>({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    city: "",
-    postalCode: "",
-  });
+ const [customerData, setCustomerData] = useState<CustomerData>({
+  gender: "",
+  name: "",
+  surname: "",
+  email: "",
+  phone: "",
+  birthDate: "",
+  address: "",
+  city: "",
+  postalCode: "",
+  shippingMethod: "standard",
+  acceptTerms: false,
+  acknowledgePrivacy: false,
+});
   
   useEffect(() => {
     let cancelled = false;
