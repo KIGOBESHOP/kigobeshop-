@@ -199,58 +199,53 @@ export default function CheckoutForm({
           </div>
 
           <div className="checkoutSection">
-            <h3>05. Condiciones legales</h3>
+            
+<div className="checkoutSection">
+  <h3>05. Condiciones legales</h3>
 
-            <label className="checkoutLegalOption">
-              <input
-                type="checkbox"
-                checked={data.acceptTerms}
-                onChange={(e) => update("acceptTerms", e.target.checked)}
-                required
-              />
-              <span>
-                He leído y acepto las{" "}
-                <a
-                  href="/condiciones-de-compra"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  condiciones de compra
-                </a>.
-              </span>
-            </label>
+  <label className="checkoutLegalOption">
+    <input
+      type="checkbox"
+      checked={data.acceptTerms}
+      onChange={(e) => update("acceptTerms", e.target.checked)}
+      required
+    />
+    <span>
+      Acepto las{" "}
+      <a
+        href="/condiciones-de-compra"
+        target="_blank"
+        rel="noreferrer"
+      >
+        condiciones generales
+      </a>{" "}
+      y la{" "}
+      <a
+        href="/politica-de-privacidad"
+        target="_blank"
+        rel="noreferrer"
+      >
+        política de confidencialidad
+      </a>.
+    </span>
+  </label>
 
-            <label className="checkoutLegalOption">
-              <input
-                type="checkbox"
-                checked={data.acknowledgePrivacy}
-                onChange={(e) =>
-                  update("acknowledgePrivacy", e.target.checked)
-                }
-                required
-              />
-              <span>
-                Confirmo que he leído la{" "}
-                <a
-                  href="/politica-de-privacidad"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  política de privacidad
-                </a>.
-              </span>
-            </label>
+  <div className="checkoutLegalOption">
+    <strong>Privacidad de los datos del cliente</strong>
+    <p>
+      Los datos personales que proporciona son utilizados para
+      satisfacer sus necesidades, procesar pedidos o permitirle
+      el acceso a una información específica.
+    </p>
+  </div>
 
-            <button
-              type="button"
-              className="checkoutContinue"
-              onClick={onSubmit}
-            >
-              Continuar al pago seguro
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+  <button
+    type="button"
+    className="checkoutContinue"
+    onClick={onSubmit}
+  >
+    Continuar al pago seguro
+  </button>
+</div>
   );
 }
