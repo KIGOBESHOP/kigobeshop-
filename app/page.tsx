@@ -390,26 +390,8 @@ let list = [...dbProducts];
     </a>
   </div>
 
-  <div className="promoImages">
-    <div className="promoImg">
-      <img
-        src="https://images.pexels.com/photos/31462588/pexels-photo-31462588.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
-        alt="Moda elegante"
-      />
-    </div>
-    <div className="promoImg">
-      <img
-        src="https://images.pexels.com/photos/9267587/pexels-photo-9267587.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
-        alt="Bolsos y complementos"
-      />
-    </div>
-    <div className="promoImg">
-      <img
-        src="https://images.pexels.com/photos/7762477/pexels-photo-7762477.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
-        alt="Moda urbana"
-      />
-    </div>
-  </div>
+  
+
 </section>
 
 
