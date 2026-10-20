@@ -196,9 +196,9 @@ const supabase = createClient(validSupabaseUrl, validSupabaseKey);
     const urlNok = new URL("/pago/error", origin).toString();
 
     const signature = getCecaSignature(
-      merchantId,
-      acquirerBin,
-      terminalId,
+  merchantId!,
+  acquirerBin!,
+  terminalId!,
       operation,
       amount,
       urlOk,
