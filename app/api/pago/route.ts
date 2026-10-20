@@ -73,16 +73,23 @@ export async function POST(request: Request) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    if (
-      !merchantId ||
-      !acquirerBin ||
-      !terminalId ||
-      !encryptionKey ||
-      !supabaseUrl ||
-      !supabaseKey
-    ) {
+      const missing = [
+      ["CECA_TEST_MERCHANT_ID", merchantId],
+      ["CECA_TEST_ACQUIRER_BIN", acquirerBin],
+      ["CECA_TEST_TERMINAL_ID", terminalId],
+      ["CECA_TEST_ENCRYPTION_KEY", encryptionKey],
+      ["NEXT_PUBLIC_SUPABASE_URL", supabaseUrl],
+      ["NEXT_PUBLIC_SUPABASE_ANON_KEY", supabaseKey],
+    ]
+      .filter(([, value]) => !value)
+      .map(([name]) => name);
+
+    if (missing.length > 0) {
       return NextResponse.json(
-        { error: "Falta configurar el TPV de pruebas." },
+        {
+          error: "Falta configurar el TPV de pruebas.",
+          missing,
+        },
         { status: 503 }
       );
     }
