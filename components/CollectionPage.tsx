@@ -19,14 +19,19 @@ type CartItem = {
 };
 
 type CustomerData = {
+  gender: string;
   name: string;
+  surname: string;
   email: string;
   phone: string;
+  birthDate: string;
   address: string;
   city: string;
   postalCode: string;
+  shippingMethod: string;
+  acceptTerms: boolean;
+  acknowledgePrivacy: boolean;
 };
-
 type Props = { collection: Product["collection"] };
 
 const titles: Record<Product["collection"], string> = {
