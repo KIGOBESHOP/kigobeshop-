@@ -268,7 +268,7 @@ const handleCheckoutSubmit = () => {
 
  const filteredProducts = useMemo(() => {
 
-let list = [...products, ...dbProducts];
+let list = [...dbProducts];
 
 
   if (categoryGender !== "") {
