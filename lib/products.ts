@@ -14,9 +14,9 @@ export type Product = {
   oldPrice?: number;
   image: string;
   tag?: "NUEVO" | "OFERTA" | "TRENDING";
-  description: string;
+    description: string;
+  sizes?: string[];
   variants?: ProductVariant[];
-};
 
 export const products: Product[] = [
  
