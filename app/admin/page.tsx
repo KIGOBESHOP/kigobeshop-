@@ -15,6 +15,7 @@ export default function AdminPage() {
   const [category, setCategory] = useState("Ropa");
   const [collection, setCollection] = useState("Mujer");
   const [description, setDescription] = useState("");
+  const [sizes, setSizes] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [variants, setVariants] = useState<
   { color: string; files: File[] }[]
@@ -341,7 +342,11 @@ async function saveProduct(event: React.FormEvent<HTMLFormElement>) {
         category,
         collection,
         description: description.trim(),
-        image: mainImage,
+sizes: sizes
+  .split(",")
+  .map((size) => size.trim())
+  .filter(Boolean),
+image: mainImage,
         variants: savedVariants,
       });
 
@@ -353,6 +358,7 @@ async function saveProduct(event: React.FormEvent<HTMLFormElement>) {
     setName("");
     setPrice("");
     setDescription("");
+    setSizes("");
     setFile(null);
     setVariants([]);
 
@@ -518,7 +524,13 @@ async function saveProduct(event: React.FormEvent<HTMLFormElement>) {
             <option value="Bolsos">Bolsos</option>
           )}
         </select>
-
+<label>Tallas disponibles</label>
+<input
+  value={sizes}
+  onChange={(e) => setSizes(e.target.value)}
+  placeholder="Ej. S, M, L, XL o Talla única"
+  style={fieldStyle}
+/>
         <label>Descripción</label>
         <textarea
           value={description}
