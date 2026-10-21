@@ -685,7 +685,12 @@ image: mainImage,
           <p>Categoría: {product.category}</p>
           <p>Colección: {product.collection}</p>
           <p>{product.description}</p>
-
+<p>
+  Tallas:{" "}
+  {Array.isArray(product.sizes) && product.sizes.length > 0
+    ? product.sizes.join(", ")
+    : "Sin tallas"}
+</p>
           <button
             type="button"
             style={{ ...buttonStyle, background: "#dc2626" }}
