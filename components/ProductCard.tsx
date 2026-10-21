@@ -148,7 +148,42 @@ export default function ProductCard({
           <span className="productCategory">{product.category}</span>
           <h3 className="productName">{product.name}</h3>
           <p className="productDesc">{product.description}</p>
+{sizes.length > 0 && (
+  <div style={{ margin: "12px 0" }}>
+    <span
+      style={{
+        display: "block",
+        fontSize: 13,
+        marginBottom: 7,
+        fontWeight: 600,
+      }}
+    >
+      Tallas disponibles:
+    </span>
 
+    <div
+      style={{
+        display: "flex",
+        gap: 8,
+        flexWrap: "wrap",
+      }}
+    >
+      {sizes.map((size) => (
+        <span
+          key={size}
+          style={{
+            padding: "6px 10px",
+            border: "1px solid #ddd",
+            borderRadius: 8,
+            fontSize: 13,
+          }}
+        >
+          {size}
+        </span>
+      ))}
+    </div>
+  </div>
+)}
           {variants.length > 0 && (
             <div style={{ margin: "12px 0" }}>
               <label
