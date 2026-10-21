@@ -26,6 +26,8 @@ export default function AdminPage() {
 
   const [products, setProducts] = useState<any[]>([]);
 const [loadingProducts, setLoadingProducts] = useState(false);
+  const [orders, setOrders] = useState<any[]>([]);
+const [loadingOrders, setLoadingOrders] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -62,7 +64,48 @@ async function loadProducts() {
   setLoadingProducts(false);
 }
 
+async function loadOrders() {
+  setLoadingOrders(true);
+  setMessage("");
 
+  try {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError || !session) {
+      setMessage("Inicia sesión para consultar los pedidos.");
+      setOrders([]);
+      return;
+    }
+
+    const response = await fetch("/api/pedidos", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      cache: "no-store",
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "No se han podido cargar los pedidos.");
+    }
+
+    setOrders(result.orders ?? []);
+  } catch (error) {
+    console.error("Error cargando pedidos:", error);
+    setMessage(
+      error instanceof Error
+        ? error.message
+        : "No se han podido cargar los pedidos."
+    );
+  } finally {
+    setLoadingOrders(false);
+  }
+}
 async function editProduct(product: any) {
   const newName = window.prompt(
     "Nombre del producto:",
@@ -700,10 +743,73 @@ image: mainImage,
             Eliminar producto
           </button>
         </div>
+     
+      ))}
+
+      <h2>Mis pedidos</h2>
+
+      <button
+        type="button"
+        style={buttonStyle}
+        onClick={loadOrders}
+        disabled={loadingOrders}
+      >
+        {loadingOrders ? "Cargando pedidos..." : "Ver mis pedidos"}
+      </button>
+
+      {orders.length === 0 && !loadingOrders && (
+        <p>
+          Todavía no hay pedidos cargados o pulsa «Ver mis pedidos» para
+          consultar si hay alguno.
+        </p>
+      )}
+
+      {orders.map((order) => (
+        <div
+          key={order.id}
+          style={{
+            border: "1px solid #d8b4fe",
+            borderRadius: 10,
+            padding: 14,
+            marginTop: 14,
+          }}
+        >
+          <h3>Pedido {order.id}</h3>
+          <p>
+            Fecha: {new Date(order.created_at).toLocaleString("es-ES")}
+          </p>
+          <p>
+            Cliente: {order.customer_name} {order.customer_surname ?? ""}
+          </p>
+          <p>Correo: {order.customer_email}</p>
+          <p>Teléfono: {order.customer_phone}</p>
+          <p>
+            Dirección: {order.customer_address}, {order.customer_postal_code}{" "}
+            {order.customer_city}
+          </p>
+          <p>
+            Total: {(Number(order.total_cents) / 100).toFixed(2)} €
+          </p>
+          <p>Estado del pago: {order.payment_status}</p>
+
+          <h4>Productos del pedido</h4>
+          {order.items?.map((item: any) => (
+            <div key={item.id}>
+              <p>
+                {item.product_name} × {item.quantity}
+                {" — "}
+                {(Number(item.unit_price_cents) / 100).toFixed(2)} € por unidad
+              </p>
+              {item.selected_size && <p>Talla: {item.selected_size}</p>}
+              {item.selected_color && <p>Color: {item.selected_color}</p>}
+            </div>
+          ))}
+        </div>
       ))}
 
     </main>
   );
 }
+
 
 
