@@ -12,7 +12,10 @@ type SelectedVariant = {
 type Props = {
   product: Product;
   isFavorite: boolean;
-  onAddToCart: (variant?: SelectedVariant) => void;
+  onAddToCart: (
+    variant?: SelectedVariant,
+    size?: string
+  ) => void;
   onToggleFavorite: () => void;
 };
 
@@ -260,15 +263,16 @@ export default function ProductCard({
             <button
               className="cartButton"
               onClick={() =>
-                onAddToCart(
-                  selectedVariant
-                    ? {
-                        color: selectedVariant.color,
-                        image: currentImage,
-                      }
-                    : undefined
-                )
-              }
+  onAddToCart(
+    selectedVariant
+      ? {
+          color: selectedVariant.color,
+          image: currentImage,
+        }
+      : undefined,
+    selectedSize || undefined
+  )
+}
               aria-label={`Añadir ${product.name} al carrito`}
             >
               <svg
