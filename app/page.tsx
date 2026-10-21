@@ -16,6 +16,7 @@ type CartItem = {
   qty: number;
   selectedColor?: string;
   selectedImage?: string;
+  selectedSize?: string;
 };
 type CustomerData = {
   gender: string;
@@ -166,9 +167,10 @@ const loadedProducts: Product[] = (data ?? []).map((p) => ({
 const addToCart = useCallback(
   (
     product: Product,
-    variant?: { color: string; image: string }
+    variant?: { color: string; image: string },
+    size?: string
   ) => {
-    const cartKey = `${product.id}::${variant?.color ?? ""}`;
+    const cartKey = `${product.id}::${variant?.color ?? ""}::${size ?? ""}`;
 
     setCart((prev) => {
       const existing = prev.find(
@@ -190,11 +192,12 @@ const addToCart = useCallback(
           product,
           qty: 1,
           ...(variant
-            ? {
-                selectedColor: variant.color,
-                selectedImage: variant.image,
-              }
-            : {}),
+  ? {
+      selectedColor: variant.color,
+      selectedImage: variant.image,
+    }
+  : {}),
+...(size ? { selectedSize: size } : {}),
         },
       ];
     });
@@ -202,7 +205,7 @@ const addToCart = useCallback(
     setBadgeKey((k) => k + 1);
 
     showToast(
-      `${product.name}${variant ? ` (${variant.color})` : ""} añadido al carrito`
+      `${product.name}${variant ? ` (${variant.color})` : ""}${size ? ` - Talla ${size}` : ""} añadido al carrito`
     );
   },
   [showToast]
