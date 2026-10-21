@@ -166,11 +166,7 @@ if (
   alert("Escribe NUEVO, OFERTA, TRENDING o deja el campo vacío.");
   return;
 }
-    "Descripción del producto:",
-    product.description || ""
-  );
-  if (newDescription === null) return;
-
+   
   const newCategory = window.prompt(
     "Categoría: escribe Ropa o Bolsos",
     product.category || "Ropa"
