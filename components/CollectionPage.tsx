@@ -219,7 +219,6 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
     customerData.surname,
     customerData.email,
     customerData.phone,
-    customerData.birthDate,
     customerData.address,
     customerData.city,
     customerData.postalCode,
