@@ -131,6 +131,24 @@ if (newSizes === null) return;
   }
 
   const newDescription = window.prompt(
+    const newTag = window.prompt(
+  "Etiqueta: deja vacío para ninguna, o escribe NUEVO, OFERTA o TRENDING",
+  product.tag || ""
+);
+
+if (newTag === null) return;
+
+const tagValue = newTag.trim().toUpperCase();
+
+if (
+  tagValue !== "" &&
+  tagValue !== "NUEVO" &&
+  tagValue !== "OFERTA" &&
+  tagValue !== "TRENDING"
+) {
+  alert("Escribe NUEVO, OFERTA, TRENDING o deja el campo vacío.");
+  return;
+}
     "Descripción del producto:",
     product.description || ""
   );
@@ -176,20 +194,21 @@ if (newSizes === null) return;
   setMessage("");
 
   try {
-    const { error } = await supabase
-      .from("products")
-      .update({
-        name: newName.trim(),
-        price: parsedPrice,
-        description: newDescription.trim(),
-        sizes: newSizes
-  .split(",")
-  .map((size: string) => size.trim())
-  .filter(Boolean),
-        category: categoryValue,
-        collection: newCollection,
-      })
-      .eq("id", product.id);
+   const { error } = await supabase
+  .from("products")
+  .update({
+    name: newName.trim(),
+    price: parsedPrice,
+    description: newDescription.trim(),
+    sizes: newSizes
+      .split(",")
+      .map((size: string) => size.trim())
+      .filter(Boolean),
+    category: categoryValue,
+    collection: newCollection,
+    tag: tagValue || null,
+  })
+  .eq("id", product.id);
 
     if (error) throw error;
 
@@ -393,6 +412,7 @@ async function saveProduct(event: React.FormEvent<HTMLFormElement>) {
         price: Number(price),
         category,
         collection,
+        tag: tag || null,
         description: description.trim(),
 sizes: sizes
   .split(",")
@@ -410,6 +430,7 @@ image: mainImage,
     setName("");
     setPrice("");
     setDescription("");
+    setTag("");
     setSizes("");
     setFile(null);
     setVariants([]);
