@@ -25,12 +25,15 @@ function getCecaSignature(
   const decodedKey = Buffer.from(encryptionKey, "base64");
 
   if (decodedKey.length !== 24) {
-    throw new Error("La clave de pruebas de CECA no tiene el formato esperado.");
+    throw new Error(
+      "La clave de pruebas de CECA no tiene el formato esperado."
+    );
   }
 
   const iv = Buffer.alloc(8, 0);
   const operationBytes = Buffer.from(operation, "utf8");
-  const paddedLength = Math.ceil(operationBytes.length / 8) * 8;
+  const paddedLength =
+    Math.ceil(operationBytes.length / 8) * 8;
   const paddedOperation = Buffer.alloc(paddedLength, 0);
   operationBytes.copy(paddedOperation);
 
@@ -65,6 +68,8 @@ function getCecaSignature(
 }
 
 export async function POST(request: Request) {
+  let createdOrderId: string | null = null;
+
   try {
     const merchantId = process.env.CECA_TEST_MERCHANT_ID;
     const acquirerBin = process.env.CECA_TEST_ACQUIRER_BIN;
@@ -73,13 +78,13 @@ export async function POST(request: Request) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-      const missing = [
+    const missing = [
       ["CECA_TEST_MERCHANT_ID", merchantId],
       ["CECA_TEST_ACQUIRER_BIN", acquirerBin],
       ["CECA_TEST_TERMINAL_ID", terminalId],
       ["CECA_TEST_ENCRYPTION_KEY", encryptionKey],
       ["NEXT_PUBLIC_SUPABASE_URL", supabaseUrl],
-    ["SUPABASE_SERVICE_ROLE_KEY", supabaseKey],
+      ["SUPABASE_SERVICE_ROLE_KEY", supabaseKey],
     ]
       .filter(([, value]) => !value)
       .map(([name]) => name);
@@ -87,7 +92,7 @@ export async function POST(request: Request) {
     if (missing.length > 0) {
       return NextResponse.json(
         {
-          error: "Falta configurar el TPV de pruebas.",
+          error: "Falta configurar el pago o la base de datos.",
           missing,
         },
         { status: 503 }
@@ -95,7 +100,29 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+    const customer = body.customer;
     const items = body.items;
+
+    if (
+      !customer ||
+      typeof customer.name !== "string" ||
+      !customer.name.trim() ||
+      typeof customer.email !== "string" ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email.trim()) ||
+      typeof customer.phone !== "string" ||
+      !customer.phone.trim() ||
+      typeof customer.address !== "string" ||
+      !customer.address.trim() ||
+      typeof customer.city !== "string" ||
+      !customer.city.trim() ||
+      typeof customer.postalCode !== "string" ||
+      !customer.postalCode.trim()
+    ) {
+      return NextResponse.json(
+        { error: "Los datos del cliente no son válidos." },
+        { status: 400 }
+      );
+    }
 
     if (
       !Array.isArray(items) ||
@@ -111,6 +138,18 @@ export async function POST(request: Request) {
     const normalizedItems = items.map((item: any) => ({
       id: Number(item.productId),
       qty: Number(item.qty),
+      selectedSize:
+        typeof item.selectedSize === "string"
+          ? item.selectedSize.slice(0, 50)
+          : "",
+      selectedColor:
+        typeof item.selectedColor === "string"
+          ? item.selectedColor.slice(0, 100)
+          : "",
+      selectedImage:
+        typeof item.selectedImage === "string"
+          ? item.selectedImage.slice(0, 2000)
+          : "",
     }));
 
     if (
@@ -129,7 +168,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const dbIds = normalizedItems.map((item) => item.id - 1000000);
+    const dbIds = normalizedItems.map(
+      (item) => item.id - 1000000
+    );
 
     if (new Set(dbIds).size !== dbIds.length) {
       return NextResponse.json(
@@ -138,35 +179,60 @@ export async function POST(request: Request) {
       );
     }
 
-   const validSupabaseUrl = supabaseUrl!;
-const validSupabaseKey = supabaseKey!;
-const supabase = createClient(validSupabaseUrl, validSupabaseKey);
+    const supabase = createClient(
+      supabaseUrl!,
+      supabaseKey!,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      }
+    );
 
-    const { data: products, error } = await supabase
-      .from("products")
-      .select("id, price")
-      .in("id", dbIds);
+    const { data: products, error: productsError } =
+      await supabase
+        .from("products")
+        .select("id, name, price, image")
+        .in("id", dbIds);
 
-    if (error || !products || products.length !== dbIds.length) {
+    if (
+      productsError ||
+      !products ||
+      products.length !== dbIds.length
+    ) {
+      console.error(
+        "Error verificando productos:",
+        productsError
+      );
+
       return NextResponse.json(
-        { error: "No se han podido verificar los productos del carrito." },
+        {
+          error:
+            "No se han podido verificar los productos del carrito.",
+        },
         { status: 400 }
       );
     }
 
-    const priceById = new Map(
+    const productById = new Map(
       products.map((product) => [
         Number(product.id),
-        Number(product.price),
+        product,
       ])
     );
 
     let totalCents = 0;
 
     for (const item of normalizedItems) {
-      const price = priceById.get(item.id - 1000000);
+      const product = productById.get(item.id - 1000000);
+      const price = Number(product?.price);
 
-      if (price === undefined || !Number.isFinite(price) || price <= 0) {
+      if (
+        !product ||
+        !Number.isFinite(price) ||
+        price <= 0
+      ) {
         return NextResponse.json(
           { error: "Hay un precio de producto no válido." },
           { status: 400 }
@@ -195,22 +261,101 @@ const supabase = createClient(validSupabaseUrl, validSupabaseKey);
     const urlOk = new URL("/pago/ok", origin).toString();
     const urlNok = new URL("/pago/error", origin).toString();
 
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
+      .insert({
+        customer_name: customer.name.trim().slice(0, 150),
+        customer_surname:
+          typeof customer.surname === "string"
+            ? customer.surname.trim().slice(0, 200)
+            : "",
+        customer_email: customer.email.trim().slice(0, 254),
+        customer_phone: customer.phone.trim().slice(0, 50),
+        customer_address: customer.address.trim().slice(0, 300),
+        customer_city: customer.city.trim().slice(0, 150),
+        customer_postal_code:
+          customer.postalCode.trim().slice(0, 20),
+        shipping_method:
+          typeof customer.shippingMethod === "string"
+            ? customer.shippingMethod.slice(0, 50)
+            : "standard",
+        total_cents: totalCents,
+        currency: "EUR",
+        payment_status: "pending",
+        payment_reference: operation,
+      })
+      .select("id")
+      .single();
+
+    if (orderError || !order) {
+      console.error("Error guardando pedido:", orderError);
+
+      return NextResponse.json(
+        { error: "No se ha podido guardar el pedido." },
+        { status: 500 }
+      );
+    }
+
+    createdOrderId = order.id;
+
+    const orderItems = normalizedItems.map((item) => {
+      const product = productById.get(item.id - 1000000)!;
+
+      return {
+        order_id: order.id,
+        product_id: Number(product.id),
+        product_name: String(product.name),
+        quantity: item.qty,
+        unit_price_cents: Math.round(
+          Number(product.price) * 100
+        ),
+        selected_size: item.selectedSize || null,
+        selected_color: item.selectedColor || null,
+        selected_image:
+          item.selectedImage || product.image || null,
+      };
+    });
+
+    const { error: itemsError } = await supabase
+      .from("order_items")
+      .insert(orderItems);
+
+    if (itemsError) {
+      console.error(
+        "Error guardando líneas del pedido:",
+        itemsError
+      );
+
+      await supabase
+        .from("orders")
+        .delete()
+        .eq("id", order.id);
+
+      createdOrderId = null;
+
+      return NextResponse.json(
+        { error: "No se han podido guardar los productos del pedido." },
+        { status: 500 }
+      );
+    }
+
     const signature = getCecaSignature(
-  merchantId!,
-  acquirerBin!,
-  terminalId!,
-  operation,
-  amount,
-  urlOk,
-  urlNok,
-  encryptionKey!
-);
+      merchantId!,
+      acquirerBin!,
+      terminalId!,
+      operation,
+      amount,
+      urlOk,
+      urlNok,
+      encryptionKey!
+    );
+
     return NextResponse.json({
       action: CECA_TEST_URL,
       fields: {
-        MerchantID: merchantId,
-        AcquirerBIN: acquirerBin,
-        TerminalID: terminalId,
+        MerchantID: merchantId!,
+        AcquirerBIN: acquirerBin!,
+        TerminalID: terminalId!,
         Num_operacion: operation,
         Importe: amount,
         TipoMoneda: "978",
@@ -223,10 +368,10 @@ const supabase = createClient(validSupabaseUrl, validSupabaseKey);
       },
     });
   } catch (error) {
-    console.error("Error preparando el pago CECA:", error);
+    console.error("Error preparando pedido y pago CECA:", error);
 
     return NextResponse.json(
-      { error: "No se ha podido preparar el pago de pruebas." },
+      { error: "No se ha podido preparar el pedido y el pago de pruebas." },
       { status: 500 }
     );
   }
