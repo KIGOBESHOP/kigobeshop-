@@ -7,7 +7,6 @@ type CustomerData = {
   surname: string;
   email: string;
   phone: string;
-  birthDate: string;
   address: string;
   city: string;
   postalCode: string;
