@@ -456,7 +456,34 @@ let list = [...dbProducts];
           )}
         </div>
       </section>
+      <section className="section" id="novedades">
+        <div className="sectionHeader">
+          <h2>Novedades</h2>
+          <p>Descubre nuestras últimas incorporaciones</p>
+        </div>
 
+        <div className="productGrid">
+          {dbProducts.filter((product) => product.tag === "NUEVO").length > 0 ? (
+            dbProducts
+              .filter((product) => product.tag === "NUEVO")
+              .map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  isFavorite={favorites.includes(product.id)}
+                  onAddToCart={(variant, size) =>
+                    addToCart(product, variant, size)
+                  }
+                  onToggleFavorite={() => toggleFavorite(product.id)}
+                />
+              ))
+          ) : (
+            <div className="noResults">
+              Próximamente encontrarás aquí nuestras novedades.
+            </div>
+          )}
+        </div>
+      </section>
      
 <section className="promotion" id="ofertas">
   <div className="promoContent">
