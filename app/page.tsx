@@ -281,12 +281,27 @@ const handleCheckoutSubmit = async () => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        items: cart.map((item) => ({
-          productId: item.product.id,
-          qty: item.qty,
-        })),
-      }),
+     body: JSON.stringify({
+  customer: {
+    gender: customerData.gender,
+    name: customerData.name.trim(),
+    surname: customerData.surname.trim(),
+    email: customerData.email.trim(),
+    phone: customerData.phone.trim(),
+    birthDate: customerData.birthDate,
+    address: customerData.address.trim(),
+    city: customerData.city.trim(),
+    postalCode: customerData.postalCode.trim(),
+    shippingMethod: customerData.shippingMethod,
+  },
+  items: cart.map((item) => ({
+    productId: item.product.id,
+    qty: item.qty,
+    selectedSize: item.selectedSize ?? "",
+    selectedColor: item.selectedColor ?? "",
+    selectedImage: item.selectedImage ?? item.product.image,
+  })),
+}),
     });
 
     const result = await response.json();
