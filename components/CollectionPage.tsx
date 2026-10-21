@@ -57,7 +57,6 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
   surname: "",
   email: "",
   phone: "",
-  birthDate: "",
   address: "",
   city: "",
   postalCode: "",
