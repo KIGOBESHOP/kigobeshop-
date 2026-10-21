@@ -18,6 +18,10 @@ export type Product = {
   sizes?: string[];
   variants?: ProductVariant[];
 
+};
+
+export const products: Product[] = [
+
 export const products: Product[] = [
  
   {
