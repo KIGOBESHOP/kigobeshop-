@@ -71,7 +71,7 @@ export async function POST(request: Request) {
     const terminalId = process.env.CECA_TEST_TERMINAL_ID;
     const encryptionKey = process.env.CECA_TEST_ENCRYPTION_KEY;
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
       const missing = [
       ["CECA_TEST_MERCHANT_ID", merchantId],
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
       ["CECA_TEST_TERMINAL_ID", terminalId],
       ["CECA_TEST_ENCRYPTION_KEY", encryptionKey],
       ["NEXT_PUBLIC_SUPABASE_URL", supabaseUrl],
-      ["NEXT_PUBLIC_SUPABASE_ANON_KEY", supabaseKey],
+    ["SUPABASE_SERVICE_ROLE_KEY", supabaseKey],
     ]
       .filter(([, value]) => !value)
       .map(([name]) => name);
