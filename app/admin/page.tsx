@@ -69,7 +69,11 @@ async function editProduct(product: any) {
     product.name
   );
   if (newName === null || !newName.trim()) return;
-
+const newSizes = window.prompt(
+  "Tallas disponibles (separadas por comas; deja vacío si no aplica):",
+  Array.isArray(product.sizes) ? product.sizes.join(", ") : ""
+);
+if (newSizes === null) return;
   const newPrice = window.prompt(
     "Precio en euros:",
     String(product.price)
@@ -134,6 +138,10 @@ async function editProduct(product: any) {
         name: newName.trim(),
         price: parsedPrice,
         description: newDescription.trim(),
+        sizes: newSizes
+  .split(",")
+  .map((size: string) => size.trim())
+  .filter(Boolean),
         category: categoryValue,
         collection: newCollection,
       })
