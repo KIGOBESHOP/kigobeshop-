@@ -168,12 +168,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const dbIds = [
-  ...new Set(
-    normalizedItems.map((item) => item.id - 1000000)
-  ),
-];
     
+const dbIds = Array.from(
+  new Set(
+    normalizedItems.map((item) => item.id - 1000000)
+  )
+);
 
     const supabase = createClient(
       supabaseUrl!,
