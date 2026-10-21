@@ -21,9 +21,6 @@ export type Product = {
 };
 
 export const products: Product[] = [
-
-export const products: Product[] = [
- 
   {
     id: 1,
     name: "Vestido Lila Dream",
