@@ -154,19 +154,7 @@ if (
   alert("Escribe NUEVO, OFERTA, TRENDING o deja el campo vacío.");
   return;
 }
-
-const tagValue = newTag.trim().toUpperCase();
-
-if (
-  tagValue !== "" &&
-  tagValue !== "NUEVO" &&
-  tagValue !== "OFERTA" &&
-  tagValue !== "TRENDING"
-) {
-  alert("Escribe NUEVO, OFERTA, TRENDING o deja el campo vacío.");
-  return;
-}
-   
+  
   const newCategory = window.prompt(
     "Categoría: escribe Ropa o Bolsos",
     product.category || "Ropa"
