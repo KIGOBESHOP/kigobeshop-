@@ -1,6 +1,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { Resend } from "resend";
 import {
   createCipheriv,
   createHmac,
@@ -333,6 +334,65 @@ const dbIds = Array.from(
         { error: "No se han podido guardar los productos del pedido." },
         { status: 500 }
       );
+    }
+
+    // Aviso por correo del pedido creado
+    const resendApiKey = process.env.RESEND_API_KEY;
+
+    if (resendApiKey) {
+      try {
+        const resend = new Resend(resendApiKey);
+
+        const productSummary = orderItems
+          .map(
+            (item) =>
+              `${item.product_name} x ${item.quantity} — ${(
+                item.unit_price_cents / 100
+              ).toFixed(2)} €` +
+              (item.selected_color
+                ? ` | Color: ${item.selected_color}`
+                : "") +
+              (item.selected_size
+                ? ` | Talla: ${item.selected_size}`
+                : "")
+          )
+          .join("\n");
+
+        const emailResult = await resend.emails.send({
+          from: "KigobeShop <onboarding@resend.dev>",
+          to: ["kigobeshop@gmail.com"],
+          subject: `Nuevo pedido ${order.id} — pago pendiente`,
+          text: [
+            "Se ha registrado un nuevo pedido en KigobeShop.",
+            "",
+            `Pedido: ${order.id}`,
+            `Cliente: ${customer.name} ${customer.surname ?? ""}`,
+            `Correo: ${customer.email}`,
+            `Teléfono: ${customer.phone}`,
+            `Dirección: ${customer.address}`,
+            `Ciudad: ${customer.city}`,
+            `Código postal: ${customer.postalCode}`,
+            "",
+            "Productos:",
+            productSummary,
+            "",
+            `Total: ${(totalCents / 100).toFixed(2)} €`,
+            "Estado del pago: PENDIENTE DE CONFIRMACIÓN",
+          ].join("\n"),
+        });
+
+        if (emailResult.error) {
+          console.error(
+            "Error enviando aviso del pedido:",
+            emailResult.error
+          );
+        }
+      } catch (emailError) {
+        console.error(
+          "Error en la notificación por correo:",
+          emailError
+        );
+      }
     }
 
     const signature = getCecaSignature(
