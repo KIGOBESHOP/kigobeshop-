@@ -15,6 +15,7 @@ export default function AdminPage() {
   const [category, setCategory] = useState("Ropa");
   const [collection, setCollection] = useState("Mujer");
   const [description, setDescription] = useState("");
+  const [tag, setTag] = useState("");
   const [sizes, setSizes] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [variants, setVariants] = useState<
@@ -589,7 +590,14 @@ image: mainImage,
           placeholder="Describe el producto..."
           style={fieldStyle}
         />
-
+        
+<label>Etiqueta del producto</label>
+<select value={tag} onChange={(e) => setTag(e.target.value)}>
+  <option value="">Sin etiqueta</option>
+  <option value="NUEVO">NUEVO</option>
+  <option value="OFERTA">OFERTA</option>
+  <option value="TRENDING">TRENDING</option>
+</select>
 <div style={{ border: "1px solid #d8b4fe", borderRadius: 10, padding: 14, marginBottom: 20 }}>
   <h3>Colores y fotos de cada variante</h3>
 
