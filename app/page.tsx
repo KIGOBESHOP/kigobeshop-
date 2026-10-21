@@ -135,6 +135,9 @@ const loadedProducts: Product[] = (data ?? []).map((p) => ({
     : {}),
   image: p.image,
   description: p.description ?? "",
+  ...(p.tag === "NUEVO" || p.tag === "OFERTA" || p.tag === "TRENDING"
+  ? { tag: p.tag }
+  : {}),
   sizes: Array.isArray(p.sizes) ? p.sizes : [],
   variants: Array.isArray(p.variants) ? p.variants : [],
 }));
