@@ -24,7 +24,6 @@ type CustomerData = {
   surname: string;
   email: string;
   phone: string;
-  birthDate: string;
   address: string;
   city: string;
   postalCode: string;
@@ -40,7 +39,6 @@ const [customerData, setCustomerData] = useState<CustomerData>({
   surname: "",
   email: "",
   phone: "",
-  birthDate: "",
   address: "",
   city: "",
   postalCode: "",
@@ -291,7 +289,6 @@ const handleCheckoutSubmit = async () => {
     surname: customerData.surname.trim(),
     email: customerData.email.trim(),
     phone: customerData.phone.trim(),
-    birthDate: customerData.birthDate,
     address: customerData.address.trim(),
     city: customerData.city.trim(),
     postalCode: customerData.postalCode.trim(),
