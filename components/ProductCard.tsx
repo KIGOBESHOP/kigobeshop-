@@ -24,6 +24,7 @@ export default function ProductCard({
 }: Props) {
   const variants = product.variants ?? [];
     const sizes = product.sizes ?? [];
+  const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState(
     variants[0]?.color ?? ""
   );
