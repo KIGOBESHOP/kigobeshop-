@@ -149,6 +149,7 @@ export default function ProductCard({
           <span className="productCategory">{product.category}</span>
           <h3 className="productName">{product.name}</h3>
           <p className="productDesc">{product.description}</p>
+
 {sizes.length > 0 && (
   <div style={{ margin: "12px 0" }}>
     <span
@@ -159,7 +160,7 @@ export default function ProductCard({
         fontWeight: 600,
       }}
     >
-      Tallas disponibles:
+      Elige tu talla: {selectedSize && ` ${selectedSize}`}
     </span>
 
     <div
@@ -170,21 +171,32 @@ export default function ProductCard({
       }}
     >
       {sizes.map((size) => (
-        <span
+        <button
           key={size}
+          type="button"
+          onClick={() => setSelectedSize(size)}
+          aria-pressed={selectedSize === size}
           style={{
-            padding: "6px 10px",
-            border: "1px solid #ddd",
+            padding: "8px 13px",
             borderRadius: 8,
-            fontSize: 13,
+            border:
+              selectedSize === size
+                ? "2px solid #7e22ce"
+                : "1px solid #ddd",
+            background:
+              selectedSize === size ? "#f3e8ff" : "white",
+            color: "#30213c",
+            fontWeight: selectedSize === size ? 700 : 400,
+            cursor: "pointer",
           }}
         >
           {size}
-        </span>
+        </button>
       ))}
     </div>
   </div>
 )}
+
           {variants.length > 0 && (
             <div style={{ margin: "12px 0" }}>
               <label
