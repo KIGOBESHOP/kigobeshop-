@@ -131,12 +131,29 @@ if (newSizes === null) return;
   }
 
   const newDescription = window.prompt(
-    const newTag = window.prompt(
+  "Descripción del producto:",
+  product.description || ""
+);
+if (newDescription === null) return;
+
+const newTag = window.prompt(
   "Etiqueta: deja vacío para ninguna, o escribe NUEVO, OFERTA o TRENDING",
   product.tag || ""
 );
 
 if (newTag === null) return;
+
+const tagValue = newTag.trim().toUpperCase();
+
+if (
+  tagValue !== "" &&
+  tagValue !== "NUEVO" &&
+  tagValue !== "OFERTA" &&
+  tagValue !== "TRENDING"
+) {
+  alert("Escribe NUEVO, OFERTA, TRENDING o deja el campo vacío.");
+  return;
+}
 
 const tagValue = newTag.trim().toUpperCase();
 
