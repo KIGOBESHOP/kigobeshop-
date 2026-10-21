@@ -68,7 +68,7 @@ function getCecaSignature(
 }
 
 export async function POST(request: Request) {
-  let createdOrderId: string | null = null;
+  
 
   try {
     const merchantId = process.env.CECA_TEST_MERCHANT_ID;
@@ -168,16 +168,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const dbIds = normalizedItems.map(
-      (item) => item.id - 1000000
-    );
-
-    if (new Set(dbIds).size !== dbIds.length) {
-      return NextResponse.json(
-        { error: "El carrito contiene productos duplicados." },
-        { status: 400 }
-      );
-    }
+    const dbIds = [
+  ...new Set(
+    normalizedItems.map((item) => item.id - 1000000)
+  ),
+];
+    
 
     const supabase = createClient(
       supabaseUrl!,
@@ -296,7 +292,7 @@ export async function POST(request: Request) {
       );
     }
 
-    createdOrderId = order.id;
+  
 
     const orderItems = normalizedItems.map((item) => {
       const product = productById.get(item.id - 1000000)!;
@@ -331,7 +327,7 @@ export async function POST(request: Request) {
         .delete()
         .eq("id", order.id);
 
-      createdOrderId = null;
+     
 
       return NextResponse.json(
         { error: "No se han podido guardar los productos del pedido." },
