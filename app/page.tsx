@@ -427,7 +427,7 @@ let list = [...dbProducts];
                 key={product.id}
                 product={product}
                 isFavorite={favorites.includes(product.id)}
-              onAddToCart={(variant) => addToCart(product, variant)}
+            onAddToCart={(variant, size) => addToCart(product, variant, size)}
                 onToggleFavorite={() => toggleFavorite(product.id)}
               />
             ))
