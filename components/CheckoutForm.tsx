@@ -122,17 +122,7 @@ export default function CheckoutForm({
               required
             />
 
-            <label htmlFor="checkoutBirthDate">
-              Fecha de nacimiento
-            </label>
-            <input
-              id="checkoutBirthDate"
-              type="date"
-              autoComplete="bday"
-              value={data.birthDate}
-              onChange={(e) => update("birthDate", e.target.value)}
-              required
-            />
+            
           </div>
 
           {/* 02. Dirección de envío */}
