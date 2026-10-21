@@ -23,6 +23,7 @@ export default function ProductCard({
   onToggleFavorite,
 }: Props) {
   const variants = product.variants ?? [];
+    const sizes = product.sizes ?? [];
   const [selectedColor, setSelectedColor] = useState(
     variants[0]?.color ?? ""
   );
