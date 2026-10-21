@@ -41,12 +41,14 @@ export default function Header({
         </span>
       </a>
 
-      <nav className={`nav ${menuOpen ? "open" : ""}`}>
-        <a href="#inicio" onClick={closeMenu}>Inicio</a>
-     <a href="#categorias" onClick={closeMenu}>Categorías</a>
-        <a href="#novedades" onClick={closeMenu}>Novedades</a>
-        <a href="#ofertas" onClick={closeMenu}>Ofertas</a>
-      </nav>
+      
+<nav className={`nav ${menuOpen ? "open" : ""}`}>
+  <a href="/#inicio" onClick={closeMenu}>Inicio</a>
+  <a href="/#categorias" onClick={closeMenu}>Categorías</a>
+  <a href="/#novedades" onClick={closeMenu}>Novedades</a>
+  <a href="/#ofertas" onClick={closeMenu}>Ofertas</a>
+</nav>
+
 
       <div className="headerActions">
         <button className="iconButton" onClick={onFavClick} aria-label="Favoritos">
