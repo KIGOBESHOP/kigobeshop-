@@ -205,10 +205,9 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
   const removeFromCart = (cartKey: string) =>
     setCart((prev) => prev.filter((item) => item.cartKey !== cartKey));
 
- const collectionProducts = [...products, ...dbProducts].filter(
+ const collectionProducts = dbProducts.filter(
   (product) => product.collection === collection
 );
-
   const favoriteProducts = products.filter((product) =>
     favorites.includes(product.id)
   );
