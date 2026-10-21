@@ -3,6 +3,7 @@ type CartItem = {
   cartKey: string;
   selectedColor?: string;
   selectedImage?: string;
+  selectedSize?: string;
   product: {
     id: number;
     name: string;
@@ -104,6 +105,11 @@ export default function CartDrawer({
                   <span className="cartItemName">
                     {item.product.name}
                   </span>
+                  {item.selectedSize && (
+  <span style={{ display: "block", fontSize: 13, marginTop: 4 }}>
+    Talla: {item.selectedSize}
+  </span>
+)}
 
                   {item.selectedColor && (
                     <span style={{ display: "block", fontSize: 13, marginTop: 4 }}>
