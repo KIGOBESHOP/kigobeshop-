@@ -1,8 +1,8 @@
 
-import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createHash, timingSafeEqual } from "crypto";
 import { Resend } from "resend";
+
 export const runtime = "nodejs";
 
 function sha256(text: string) {
@@ -20,16 +20,12 @@ function sameSignature(a: string, b: string) {
   );
 }
 
-
-
 function cecaResponse(ok: boolean) {
   return new Response(ok ? "*$OKY*$" : "*$NOK*$", {
     status: 200,
     headers: { "Content-Type": "text/plain; charset=utf-8" },
   });
 }
-
-
 
 export async function POST(request: Request) {
   try {
@@ -134,7 +130,7 @@ export async function POST(request: Request) {
       return cecaResponse(false);
     }
 
-    // Una repetición de una notificación válida no debe fallar.
+    // Una notificación repetida de un pedido ya pagado es válida.
     if (order.payment_status === "paid") {
       return cecaResponse(true);
     }
@@ -144,54 +140,60 @@ export async function POST(request: Request) {
       return cecaResponse(false);
     }
 
-    const { data: updatedOrder, error: updateError } = await supabase
-      .from("orders")
-      .update({ payment_status: "paid" })
-      .eq("id", order.id)
-      .eq("payment_status", "pending")
-      .select("id")
-      .maybeSingle();
+    // Confirma el pago y consume la reserva de stock en una operación segura.
+    const { data: confirmation, error: confirmationError } =
+      await supabase.rpc("confirm_order_paid", {
+        p_order_id: order.id,
+      });
 
-    if (updateError || !updatedOrder) {
-      console.error("No se pudo actualizar el pedido:", updateError);
+    if (confirmationError || confirmation?.ok !== true) {
+      console.error(
+        "No se pudo confirmar el pago/reserva:",
+        confirmationError ?? confirmation
+      );
       return cecaResponse(false);
     }
 
-   const resendApiKey = process.env.RESEND_API_KEY;
-
-if (resendApiKey) {
-  try {
-    const resend = new Resend(resendApiKey);
-
-    const emailResult = await resend.emails.send({
-      from: "KigobeShop <onboarding@resend.dev>",
-      to: ["kigobeshop@gmail.com"],
-      subject: `Pago confirmado — pedido ${order.id}`,
-      text: [
-        "CECA ha confirmado el pago de un pedido de KigobeShop.",
-        "",
-        `Pedido: ${order.id}`,
-        `Importe pagado: ${(amountCents / 100).toFixed(2)} €`,
-        "Estado del pago: PAGADO",
-      ].join("\n"),
-    });
-
-    if (emailResult.error) {
-      console.error(
-        "Error enviando aviso de pago confirmado:",
-        emailResult.error
-      );
+    // Si otra notificación ya confirmó el pago, no duplicamos el correo.
+    if (confirmation.already_paid === true) {
+      return cecaResponse(true);
     }
-  } catch (emailError) {
-    console.error(
-      "Error en el correo de pago confirmado:",
-      emailError
-    );
-  }
-}
 
-console.log("Pago CECA confirmado para pedido:", order.id);
-return cecaResponse(true);
+    const resendApiKey = process.env.RESEND_API_KEY;
+
+    if (resendApiKey) {
+      try {
+        const resend = new Resend(resendApiKey);
+
+        const emailResult = await resend.emails.send({
+          from: "KigobeShop <onboarding@resend.dev>",
+          to: ["kigobeshop@gmail.com"],
+          subject: `Pago confirmado — pedido ${order.id}`,
+          text: [
+            "CECA ha confirmado el pago de un pedido de KigobeShop.",
+            "",
+            `Pedido: ${order.id}`,
+            `Importe pagado: ${(amountCents / 100).toFixed(2)} €`,
+            "Estado del pago: PAGADO",
+          ].join("\n"),
+        });
+
+        if (emailResult.error) {
+          console.error(
+            "Error enviando aviso de pago confirmado:",
+            emailResult.error
+          );
+        }
+      } catch (emailError) {
+        console.error(
+          "Error en el correo de pago confirmado:",
+          emailError
+        );
+      }
+    }
+
+    console.log("Pago CECA confirmado para pedido:", order.id);
+    return cecaResponse(true);
   } catch (error) {
     console.error("Error procesando la notificación CECA:", error);
     return cecaResponse(false);
