@@ -33,16 +33,11 @@ function getCecaSignature(
 
   const iv = Buffer.alloc(8, 0);
   const operationBytes = Buffer.from(operation, "utf8");
-  const paddedLength =
-    Math.ceil(operationBytes.length / 8) * 8;
+  const paddedLength = Math.ceil(operationBytes.length / 8) * 8;
   const paddedOperation = Buffer.alloc(paddedLength, 0);
   operationBytes.copy(paddedOperation);
 
-  const cipher = createCipheriv(
-    "des-ede3-cbc",
-    decodedKey,
-    iv
-  );
+  const cipher = createCipheriv("des-ede3-cbc", decodedKey, iv);
   cipher.setAutoPadding(false);
 
   const encryptedOperation = Buffer.concat([
@@ -69,8 +64,6 @@ function getCecaSignature(
 }
 
 export async function POST(request: Request) {
-  
-
   try {
     const merchantId = process.env.CECA_TEST_MERCHANT_ID;
     const acquirerBin = process.env.CECA_TEST_ACQUIRER_BIN;
@@ -169,12 +162,9 @@ export async function POST(request: Request) {
       );
     }
 
-    
-const dbIds = Array.from(
-  new Set(
-    normalizedItems.map((item) => item.id - 1000000)
-  )
-);
+    const dbIds = Array.from(
+      new Set(normalizedItems.map((item) => item.id - 1000000))
+    );
 
     const supabase = createClient(
       supabaseUrl!,
@@ -187,36 +177,26 @@ const dbIds = Array.from(
       }
     );
 
-    const { data: products, error: productsError } =
-      await supabase
-        .from("products")
-        .select("id, name, price, image")
-        .in("id", dbIds);
+    const { data: products, error: productsError } = await supabase
+      .from("products")
+      .select("id, name, price, image")
+      .in("id", dbIds);
 
     if (
       productsError ||
       !products ||
       products.length !== dbIds.length
     ) {
-      console.error(
-        "Error verificando productos:",
-        productsError
-      );
+      console.error("Error verificando productos:", productsError);
 
       return NextResponse.json(
-        {
-          error:
-            "No se han podido verificar los productos del carrito.",
-        },
+        { error: "No se han podido verificar los productos del carrito." },
         { status: 400 }
       );
     }
 
     const productById = new Map(
-      products.map((product) => [
-        Number(product.id),
-        product,
-      ])
+      products.map((product) => [Number(product.id), product])
     );
 
     let totalCents = 0;
@@ -225,11 +205,7 @@ const dbIds = Array.from(
       const product = productById.get(item.id - 1000000);
       const price = Number(product?.price);
 
-      if (
-        !product ||
-        !Number.isFinite(price) ||
-        price <= 0
-      ) {
+      if (!product || !Number.isFinite(price) || price <= 0) {
         return NextResponse.json(
           { error: "Hay un precio de producto no válido." },
           { status: 400 }
@@ -258,6 +234,18 @@ const dbIds = Array.from(
     const urlOk = new URL("/pago/ok", origin).toString();
     const urlNok = new URL("/pago/error", origin).toString();
 
+    // Calculamos la firma una sola vez, antes de crear el pedido.
+    const signature = getCecaSignature(
+      merchantId!,
+      acquirerBin!,
+      terminalId!,
+      operation,
+      amount,
+      urlOk,
+      urlNok,
+      encryptionKey!
+    );
+
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
@@ -270,8 +258,7 @@ const dbIds = Array.from(
         customer_phone: customer.phone.trim().slice(0, 50),
         customer_address: customer.address.trim().slice(0, 300),
         customer_city: customer.city.trim().slice(0, 150),
-        customer_postal_code:
-          customer.postalCode.trim().slice(0, 20),
+        customer_postal_code: customer.postalCode.trim().slice(0, 20),
         shipping_method:
           typeof customer.shippingMethod === "string"
             ? customer.shippingMethod.slice(0, 50)
@@ -293,8 +280,6 @@ const dbIds = Array.from(
       );
     }
 
-  
-
     const orderItems = normalizedItems.map((item) => {
       const product = productById.get(item.id - 1000000)!;
 
@@ -303,13 +288,10 @@ const dbIds = Array.from(
         product_id: Number(product.id),
         product_name: String(product.name),
         quantity: item.qty,
-        unit_price_cents: Math.round(
-          Number(product.price) * 100
-        ),
+        unit_price_cents: Math.round(Number(product.price) * 100),
         selected_size: item.selectedSize || null,
         selected_color: item.selectedColor || null,
-        selected_image:
-          item.selectedImage || product.image || null,
+        selected_image: item.selectedImage || product.image || null,
       };
     });
 
@@ -318,17 +300,9 @@ const dbIds = Array.from(
       .insert(orderItems);
 
     if (itemsError) {
-      console.error(
-        "Error guardando líneas del pedido:",
-        itemsError
-      );
+      console.error("Error guardando líneas del pedido:", itemsError);
 
-      await supabase
-        .from("orders")
-        .delete()
-        .eq("id", order.id);
-
-     
+      await supabase.from("orders").delete().eq("id", order.id);
 
       return NextResponse.json(
         { error: "No se han podido guardar los productos del pedido." },
@@ -336,7 +310,42 @@ const dbIds = Array.from(
       );
     }
 
-    // Aviso por correo del pedido creado
+    // Reservar el stock por color y talla antes de enviar a CECA.
+    const { data: reservation, error: reservationError } =
+      await supabase.rpc("reserve_order_stock", {
+        p_order_id: order.id,
+      });
+
+    if (reservationError) {
+      console.error("No se pudo confirmar la reserva de stock:", reservationError);
+
+      // No borramos el pedido: el resultado de la reserva podría ser incierto.
+      return NextResponse.json(
+        {
+          error:
+            "No se ha podido verificar la reserva de stock. No continúes al pago; contacta con la tienda.",
+        },
+        { status: 503 }
+      );
+    }
+
+    if (reservation?.ok !== true) {
+      console.error("Reserva de stock rechazada:", reservation);
+
+      await supabase.from("orders").delete().eq("id", order.id);
+
+      return NextResponse.json(
+        {
+          error:
+            reservation?.error === "insufficient_stock"
+              ? "Ya no hay suficientes unidades de este producto, color o talla."
+              : "No se ha podido reservar el stock del pedido.",
+        },
+        { status: 409 }
+      );
+    }
+
+    // Aviso por correo: pedido pendiente de confirmación del pago.
     const resendApiKey = process.env.RESEND_API_KEY;
 
     if (resendApiKey) {
@@ -349,12 +358,8 @@ const dbIds = Array.from(
               `${item.product_name} x ${item.quantity} — ${(
                 item.unit_price_cents / 100
               ).toFixed(2)} €` +
-              (item.selected_color
-                ? ` | Color: ${item.selected_color}`
-                : "") +
-              (item.selected_size
-                ? ` | Talla: ${item.selected_size}`
-                : "")
+              (item.selected_color ? ` | Color: ${item.selected_color}` : "") +
+              (item.selected_size ? ` | Talla: ${item.selected_size}` : "")
           )
           .join("\n");
 
@@ -382,29 +387,12 @@ const dbIds = Array.from(
         });
 
         if (emailResult.error) {
-          console.error(
-            "Error enviando aviso del pedido:",
-            emailResult.error
-          );
+          console.error("Error enviando aviso del pedido:", emailResult.error);
         }
       } catch (emailError) {
-        console.error(
-          "Error en la notificación por correo:",
-          emailError
-        );
+        console.error("Error en la notificación por correo:", emailError);
       }
     }
-
-    const signature = getCecaSignature(
-      merchantId!,
-      acquirerBin!,
-      terminalId!,
-      operation,
-      amount,
-      urlOk,
-      urlNok,
-      encryptionKey!
-    );
 
     return NextResponse.json({
       action: CECA_TEST_URL,
@@ -427,7 +415,10 @@ const dbIds = Array.from(
     console.error("Error preparando pedido y pago CECA:", error);
 
     return NextResponse.json(
-      { error: "No se ha podido preparar el pedido y el pago de pruebas." },
+      {
+        error:
+          "No se ha podido preparar el pedido y el pago de pruebas.",
+      },
       { status: 500 }
     );
   }
