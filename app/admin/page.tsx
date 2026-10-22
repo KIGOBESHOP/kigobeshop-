@@ -280,6 +280,66 @@ function updateVariantFiles(index: number, files: File[]) {
 function removeVariant(index: number) {
   setVariants((prev) => prev.filter((_, i) => i !== index));
 }
+async function manageStock(product: any) {
+  const colors = Array.isArray(product.variants)
+    ? product.variants.map((v: any) => v.color).filter(Boolean)
+    : [];
+
+  const sizes = Array.isArray(product.sizes) && product.sizes.length
+    ? product.sizes
+    : ["Única"];
+
+  const stock: Record<string, Record<string, number>> =
+    product.stock && typeof product.stock === "object"
+      ? { ...product.stock }
+      : {};
+
+  const productColors = colors.length ? colors : ["Único"];
+
+  for (const color of productColors) {
+    stock[color] = { ...(stock[color] || {}) };
+
+    for (const size of sizes) {
+      const current = stock[color][size] ?? 0;
+
+      const answer = window.prompt(
+        `Unidades disponibles de ${product.name}\nColor: ${color}\nTalla: ${size}`,
+        String(current)
+      );
+
+      if (answer === null) return;
+
+      const quantity = Number(answer);
+
+      if (!Number.isInteger(quantity) || quantity < 0) {
+        alert("Introduce un número entero igual o superior a cero.");
+        return;
+      }
+
+      stock[color][size] = quantity;
+    }
+  }
+
+  setBusy(true);
+  setMessage("");
+
+  try {
+    const { error } = await supabase
+      .from("products")
+      .update({ stock })
+      .eq("id", product.id);
+
+    if (error) throw error;
+
+    setMessage("Stock actualizado correctamente.");
+    await loadProducts();
+  } catch (error) {
+    console.error(error);
+    setMessage("No se ha podido actualizar el stock.");
+  } finally {
+    setBusy(false);
+  }
+}  
 async function deleteProduct(id: string) {
   const confirmed = window.confirm(
     "¿Seguro que quieres eliminar este producto?"
@@ -753,7 +813,14 @@ image: mainImage,
           >
           Editar producto
           </button>
-
+<button
+  type="button"
+  style={{ ...buttonStyle, marginTop: 8 }}
+  disabled={busy}
+  onClick={() => manageStock(product)}
+>
+  Gestionar stock
+</button>
           <p>Precio: {Number(product.price).toFixed(2)} €</p>
           <p>Categoría: {product.category}</p>
           <p>Colección: {product.collection}</p>
