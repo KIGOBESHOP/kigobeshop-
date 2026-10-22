@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createHash, timingSafeEqual } from "crypto";
-
+import { Resend } from "resend";
 export const runtime = "nodejs";
 
 function sha256(text: string) {
@@ -155,8 +155,41 @@ export async function POST(request: Request) {
       return cecaResponse(false);
     }
 
-    console.log("Pago CECA confirmado para pedido:", order.id);
-    return cecaResponse(true);
+   const resendApiKey = process.env.RESEND_API_KEY;
+
+if (resendApiKey) {
+  try {
+    const resend = new Resend(resendApiKey);
+
+    const emailResult = await resend.emails.send({
+      from: "KigobeShop <onboarding@resend.dev>",
+      to: ["kigobeshop@gmail.com"],
+      subject: `Pago confirmado — pedido ${order.id}`,
+      text: [
+        "CECA ha confirmado el pago de un pedido de KigobeShop.",
+        "",
+        `Pedido: ${order.id}`,
+        `Importe pagado: ${(amountCents / 100).toFixed(2)} €`,
+        "Estado del pago: PAGADO",
+      ].join("\n"),
+    });
+
+    if (emailResult.error) {
+      console.error(
+        "Error enviando aviso de pago confirmado:",
+        emailResult.error
+      );
+    }
+  } catch (emailError) {
+    console.error(
+      "Error en el correo de pago confirmado:",
+      emailError
+    );
+  }
+}
+
+console.log("Pago CECA confirmado para pedido:", order.id);
+return cecaResponse(true);
   } catch (error) {
     console.error("Error procesando la notificación CECA:", error);
     return cecaResponse(false);
