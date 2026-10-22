@@ -594,6 +594,39 @@ image: mainImage,
 
   return (
     <main style={{ maxWidth: 650, margin: "40px auto", padding: 24 }}>
+      <div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+    gap: 12,
+    marginBottom: 28,
+  }}
+>
+  {[
+    { title: "🏠 Inicio", url: "/admin" },
+    { title: "👗 Productos", url: "/admin/productos" },
+    { title: "📦 Stock", url: "/admin/stock" },
+    { title: "🛍️ Pedidos", url: "/admin/pedidos" },
+  ].map((item) => (
+    <button
+      key={item.url}
+      type="button"
+      onClick={() => window.location.href = item.url}
+      style={{
+        padding: "16px 10px",
+        background: "#f3e8ff",
+        color: "#6b21a8",
+        border: "1px solid #d8b4fe",
+        borderRadius: 12,
+        cursor: "pointer",
+        fontWeight: "bold",
+        fontSize: 15,
+      }}
+    >
+      {item.title}
+    </button>
+  ))}
+</div>
       <h1>Panel de KIGOBESHOP 💜</h1>
       <p>Sesión iniciada: {user.email}</p>
 
