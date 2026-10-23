@@ -385,8 +385,9 @@ export async function POST(request: Request) {
         URL_OK: urlOk,
         URL_NOK: urlNok,
         Firma: signature,
-        Cifrado: "SHA2",
-        Idioma: "1",
+       Cifrado: "SHA2",
+Pago_soportado: "SSL",
+Idioma: "1",
       },
     });
   } catch (error) {
