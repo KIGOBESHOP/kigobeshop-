@@ -87,6 +87,7 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
             : {}),
                     image: p.image,
           description: p.description ?? "",
+          sizes: Array.isArray(p.sizes) ? p.sizes : [],
           variants: Array.isArray(p.variants) ? p.variants : [],
         }));
 
