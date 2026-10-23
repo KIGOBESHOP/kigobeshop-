@@ -260,6 +260,7 @@ const handleCustomerChange = (data: CustomerData) => {
 
 
 const handleCheckoutSubmit = async () => {
+    if (checkoutSubmitting.current) return;
   if (
     !customerData.name.trim() ||
     !customerData.email.trim() ||
@@ -277,7 +278,9 @@ const handleCheckoutSubmit = async () => {
     return;
   }
 
-  try {
+    try {
+    checkoutSubmitting.current = true;
+
     const response = await fetch("/api/pago", {
       method: "POST",
       headers: {
@@ -307,12 +310,13 @@ const handleCheckoutSubmit = async () => {
 
     const result = await response.json();
 
-    if (!response.ok) {
-      showToast(
-        result.error ?? "No se ha podido preparar el pago."
-      );
-      return;
-    }
+   if (!response.ok) {
+  checkoutSubmitting.current = false;
+  showToast(
+    result.error ?? "No se ha podido preparar el pago."
+  );
+  return;
+}
 
     const form = document.createElement("form");
     form.method = "POST";
@@ -330,13 +334,13 @@ const handleCheckoutSubmit = async () => {
 
     document.body.appendChild(form);
     form.submit();
-  } catch {
+   } catch {
+    checkoutSubmitting.current = false;
     showToast(
       "No se ha podido conectar con el TPV de pruebas."
     );
   }
 };
-
   const handleSubscribe = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setEmailSubscribed(true);
