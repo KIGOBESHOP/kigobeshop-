@@ -13,6 +13,9 @@ export const runtime = "nodejs";
 const CECA_TEST_URL =
   "https://tpv.ceca.es/tpvweb/tpv/compra.action";
 
+
+import { createHash } from "crypto";
+
 function getCecaSignature(
   merchantId: string,
   acquirerBin: string,
@@ -23,13 +26,24 @@ function getCecaSignature(
   urlNok: string,
   encryptionKey: string
 ) {
-  const decodedKey = Buffer.from(encryptionKey, "base64");
+  const signingText =
+    encryptionKey +
+    merchantId +
+    acquirerBin +
+    terminalId +
+    operation +
+    amount +
+    "978" +
+    "2" +
+    "SHA2" +
+    urlOk +
+    urlNok;
 
-  if (decodedKey.length !== 24) {
-    throw new Error(
-      "La clave de pruebas de CECA no tiene el formato esperado."
-    );
-  }
+  return createHash("sha256")
+    .update(signingText, "utf8")
+    .digest("hex");
+}
+
 
   const iv = Buffer.alloc(8, 0);
   const operationBytes = Buffer.from(operation, "utf8");
@@ -407,7 +421,7 @@ export async function POST(request: Request) {
         URL_OK: urlOk,
         URL_NOK: urlNok,
         Firma: signature,
-        Cifrado: "HMAC",
+        Cifrado: "SHA2",
         Idioma: "1",
       },
     });
