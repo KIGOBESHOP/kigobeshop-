@@ -1,114 +1,97 @@
 
-    // Reservar el stock por color y talla antes de enviar a CECA.
-    const { data: reservation, error: reservationError } =
-      await supabase.rpc("reserve_order_stock", {
-        p_order_id: order.id,
-      });
 
-    if (reservationError) {
-      console.error("No se pudo confirmar la reserva de stock:", reservationError);
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import { Resend } from "resend";
+import {
+  createHash,
+  randomBytes,
+} from "crypto";
 
-      // No borramos el pedido: el resultado de la reserva podría ser incierto.
+export const runtime = "nodejs";
+
+const CECA_TEST_URL =
+  "https://tpv.ceca.es/tpvweb/tpv/compra.action";
+
+function getCecaSignature(
+  merchantId: string,
+  acquirerBin: string,
+  terminalId: string,
+  operation: string,
+  amount: string,
+  urlOk: string,
+  urlNok: string,
+  encryptionKey: string
+) {
+  const signingText =
+    encryptionKey +
+    merchantId +
+    acquirerBin +
+    terminalId +
+    operation +
+    amount +
+    "978" +
+    "2" +
+    "SHA2" +
+    urlOk +
+    urlNok;
+
+  return createHash("sha256")
+    .update(signingText, "utf8")
+    .digest("hex");
+}
+
+export async function POST(request: Request) {
+  try {
+    const merchantId = process.env.CECA_TEST_MERCHANT_ID;
+    const acquirerBin = process.env.CECA_TEST_ACQUIRER_BIN;
+    const terminalId = process.env.CECA_TEST_TERMINAL_ID;
+    const encryptionKey = process.env.CECA_TEST_ENCRYPTION_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    const missing = [
+      ["CECA_TEST_MERCHANT_ID", merchantId],
+      ["CECA_TEST_ACQUIRER_BIN", acquirerBin],
+      ["CECA_TEST_TERMINAL_ID", terminalId],
+      ["CECA_TEST_ENCRYPTION_KEY", encryptionKey],
+      ["NEXT_PUBLIC_SUPABASE_URL", supabaseUrl],
+      ["SUPABASE_SERVICE_ROLE_KEY", supabaseKey],
+    ]
+      .filter(([, value]) => !value)
+      .map(([name]) => name);
+
+    if (missing.length > 0) {
       return NextResponse.json(
         {
-          error:
-            "No se ha podido verificar la reserva de stock. No continúes al pago; contacta con la tienda.",
+          error: "Falta configurar el pago o la base de datos.",
+          missing,
         },
         { status: 503 }
       );
     }
 
-    if (reservation?.ok !== true) {
-      console.error("Reserva de stock rechazada:", reservation);
+    const body = await request.json();
+    const customer = body.customer;
+    const items = body.items;
 
-      await supabase.from("orders").delete().eq("id", order.id);
-
+    if (
+      !customer ||
+      typeof customer.name !== "string" ||
+      !customer.name.trim() ||
+      typeof customer.email !== "string" ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email.trim()) ||
+      typeof customer.phone !== "string" ||
+      !customer.phone.trim() ||
+      typeof customer.address !== "string" ||
+      !customer.address.trim() ||
+      typeof customer.city !== "string" ||
+      !customer.city.trim() ||
+      typeof customer.postalCode !== "string" ||
+      !customer.postalCode.trim()
+    ) {
       return NextResponse.json(
-        {
-          error:
-            reservation?.error === "insufficient_stock"
-              ? "Ya no hay suficientes unidades de este producto, color o talla."
-              : "No se ha podido reservar el stock del pedido.",
-        },
-        { status: 409 }
+        { error: "Los datos del cliente no son válidos." },
+        { status: 400 }
       );
     }
-
-    // Aviso por correo: pedido pendiente de confirmación del pago.
-    const resendApiKey = process.env.RESEND_API_KEY;
-
-    if (resendApiKey) {
-      try {
-        const resend = new Resend(resendApiKey);
-
-        const productSummary = orderItems
-          .map(
-            (item) =>
-              `${item.product_name} x ${item.quantity} — ${(
-                item.unit_price_cents / 100
-              ).toFixed(2)} €` +
-              (item.selected_color ? ` | Color: ${item.selected_color}` : "") +
-              (item.selected_size ? ` | Talla: ${item.selected_size}` : "")
-          )
-          .join("\n");
-
-        const emailResult = await resend.emails.send({
-          from: "KigobeShop <onboarding@resend.dev>",
-          to: ["kigobeshop@gmail.com"],
-          subject: `Nuevo pedido ${order.id} — pago pendiente`,
-          text: [
-            "Se ha registrado un nuevo pedido en KigobeShop.",
-            "",
-            `Pedido: ${order.id}`,
-            `Cliente: ${customer.name} ${customer.surname ?? ""}`,
-            `Correo: ${customer.email}`,
-            `Teléfono: ${customer.phone}`,
-            `Dirección: ${customer.address}`,
-            `Ciudad: ${customer.city}`,
-            `Código postal: ${customer.postalCode}`,
-            "",
-            "Productos:",
-            productSummary,
-            "",
-            `Total: ${(totalCents / 100).toFixed(2)} €`,
-            "Estado del pago: PENDIENTE DE CONFIRMACIÓN",
-          ].join("\n"),
-        });
-
-        if (emailResult.error) {
-          console.error("Error enviando aviso del pedido:", emailResult.error);
-        }
-      } catch (emailError) {
-        console.error("Error en la notificación por correo:", emailError);
-      }
-    }
-
-    return NextResponse.json({
-      action: CECA_TEST_URL,
-      fields: {
-        MerchantID: merchantId!,
-        AcquirerBIN: acquirerBin!,
-        TerminalID: terminalId!,
-        Num_operacion: operation,
-        Importe: amount,
-        TipoMoneda: "978",
-        Exponente: "2",
-        URL_OK: urlOk,
-        URL_NOK: urlNok,
-        Firma: signature,
-        Cifrado: "SHA2",
-        Idioma: "1",
-      },
-    });
-  } catch (error) {
-    console.error("Error preparando pedido y pago CECA:", error);
-
-    return NextResponse.json(
-      {
-        error:
-          "No se ha podido preparar el pedido y el pago de pruebas.",
-      },
-      { status: 500 }
-    );
-  }
-}
