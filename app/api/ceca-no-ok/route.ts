@@ -20,7 +20,7 @@ function sameSignature(a: string, b: string) {
 }
 
 function cecaResponse(ok: boolean) {
-  return new Response(ok ? "*$OKY*$" : "*$NOK*$", {
+  return new Response(ok ? "$*$OKY$*$" : "$*$NOK$*$", {
     status: 200,
     headers: { "Content-Type": "text/plain; charset=utf-8" },
   });
