@@ -47,6 +47,7 @@ const [customerData, setCustomerData] = useState<CustomerData>({
   acknowledgePrivacy: false,
 });
 const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const checkoutSubmitting = useRef(false);
   const [favorites, setFavorites] = useState<number[]>([]);
   const [storageLoaded, setStorageLoaded] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
