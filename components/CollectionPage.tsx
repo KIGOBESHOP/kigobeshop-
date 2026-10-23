@@ -16,6 +16,7 @@ type CartItem = {
   qty: number;
   selectedColor?: string;
   selectedImage?: string;
+  selectedSize?: string;
 };
 
 type CustomerData = {
@@ -145,11 +146,12 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
     setTimeout(() => setToast(""), 4000);
   }, []);
 
-  const addToCart = (
-    product: Product,
-    variant?: { color: string; image: string }
-  ) => {
-    const cartKey = `${product.id}::${variant?.color ?? ""}`;
+ const addToCart = (
+  product: Product,
+  variant?: { color: string; image: string },
+  size?: string
+) => {
+    const cartKey = `${product.id}::${variant?.color ?? ""}::${size ?? ""}`;
 
     setCart((prev) => {
       const existing = prev.find((item) => item.cartKey === cartKey);
@@ -168,6 +170,7 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
               qty: 1,
               selectedColor: variant?.color,
               selectedImage: variant?.image,
+              selectedSize: size,
             },
           ];
     });
@@ -276,7 +279,7 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
                 key={product.id}
                 product={product}
                 isFavorite={favorites.includes(product.id)}
-                onAddToCart={(variant) => addToCart(product, variant)}
+               onAddToCart={(variant, size) => addToCart(product, variant, size)}
                 onToggleFavorite={() => toggleFavorite(product.id)}
               />
             ))}
@@ -324,7 +327,7 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
                     key={product.id}
                     product={product}
                     isFavorite
-                    onAddToCart={(variant) => addToCart(product, variant)}
+                   onAddToCart={(variant, size) => addToCart(product, variant, size)}
                     onToggleFavorite={() => toggleFavorite(product.id)}
                   />
                 ))}
