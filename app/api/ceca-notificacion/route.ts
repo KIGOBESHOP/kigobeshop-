@@ -66,17 +66,28 @@ export async function POST(request: Request) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (
-      !merchantId ||
-      !acquirerBin ||
-      !terminalId ||
-      !encryptionKey ||
-      !supabaseUrl ||
-      !serviceKey
-    ) {
-      console.error("Falta configuración para la notificación CECA.");
-      return cecaResponse(false);
-    }
+   
+if (
+  !merchantId ||
+  !acquirerBin ||
+  !terminalId ||
+  !encryptionKey ||
+  !supabaseUrl ||
+  !serviceKey
+) {
+  await saveCecaDiagnostic("configuracion_incompleta", null, {
+    merchantIdPresente: Boolean(merchantId),
+    acquirerBinPresente: Boolean(acquirerBin),
+    terminalIdPresente: Boolean(terminalId),
+    claveCecaPresente: Boolean(encryptionKey),
+    urlSupabasePresente: Boolean(supabaseUrl),
+    claveSupabasePresente: Boolean(serviceKey),
+  });
+
+  console.error("Falta configuración para la notificación CECA.");
+  return cecaResponse(false);
+}
+
 
     const rawBody = await request.text();
     const params = new URLSearchParams(rawBody);
@@ -93,18 +104,34 @@ export async function POST(request: Request) {
       signature: params.get("Firma") ?? "",
     };
 
-    if (
-      received.merchantId !== merchantId ||
-      received.acquirerBin !== acquirerBin ||
-      received.terminalId !== terminalId ||
-      !received.operation ||
-      !/^\d+$/.test(received.amount) ||
-      received.currency !== "978" ||
-      received.exponent !== "2"
-    ) {
-      console.error("Datos de notificación CECA no válidos.");
-      return cecaResponse(false);
+   
+if (
+  received.merchantId !== merchantId ||
+  received.acquirerBin !== acquirerBin ||
+  received.terminalId !== terminalId ||
+  !received.operation ||
+  !/^\d+$/.test(received.amount) ||
+  received.currency !== "978" ||
+  received.exponent !== "2"
+) {
+  await saveCecaDiagnostic(
+    "datos_no_validos",
+    received.operation || null,
+    {
+      merchantIdCorrecto: received.merchantId === merchantId,
+      acquirerBinCorrecto: received.acquirerBin === acquirerBin,
+      terminalIdCorrecto: received.terminalId === terminalId,
+      operacionPresente: Boolean(received.operation),
+      importeNumerico: /^\d+$/.test(received.amount),
+      monedaCorrecta: received.currency === "978",
+      exponenteCorrecto: received.exponent === "2",
     }
+  );
+
+  console.error("Datos de notificación CECA no válidos.");
+  return cecaResponse(false);
+}
+
 
     // CECA utiliza el importe de 12 posiciones para calcular la firma.
     const paddedAmount = received.amount.padStart(12, "0");
@@ -126,10 +153,24 @@ export async function POST(request: Request) {
 
     const expectedSignature = sha256(signingText);
 
-    if (!sameSignature(received.signature, expectedSignature)) {
-      console.error("Firma de notificación CECA no válida.");
-      return cecaResponse(false);
+    
+if (!sameSignature(received.signature, expectedSignature)) {
+  await saveCecaDiagnostic(
+    "firma_no_valida",
+    received.operation || null,
+    {
+      merchantIdCorrecto: received.merchantId === merchantId,
+      acquirerBinCorrecto: received.acquirerBin === acquirerBin,
+      terminalIdCorrecto: received.terminalId === terminalId,
+      importeConFormatoValido: /^\d+$/.test(received.amount),
+      longitudFirmaRecibida: received.signature.length,
     }
+  );
+
+  console.error("Firma de notificación CECA no válida.");
+  return cecaResponse(false);
+}
+
 
     const amountCents = Number(received.amount);
 
@@ -150,15 +191,35 @@ export async function POST(request: Request) {
       .eq("payment_reference", received.operation)
       .maybeSingle();
 
-    if (orderError || !order) {
-      console.error("No se encontró el pedido de la notificación CECA.");
-      return cecaResponse(false);
+  
+if (orderError || !order) {
+  await saveCecaDiagnostic(
+    "pedido_no_encontrado",
+    received.operation || null,
+    {
+      error: orderError?.message ?? null,
+      pedidoEncontrado: Boolean(order),
     }
+  );
 
-    if (Number(order.total_cents) !== amountCents) {
-      console.error("El importe CECA no coincide con el pedido.");
-      return cecaResponse(false);
+  console.error("No se encontró el pedido de la notificación CECA.");
+  return cecaResponse(false);
+}
+
+    
+if (Number(order.total_cents) !== amountCents) {
+  await saveCecaDiagnostic(
+    "importe_no_coincide",
+    received.operation || null,
+    {
+      importePedidoEnCentimos: Number(order.total_cents),
+      importeCECAEnCentimos: amountCents,
     }
+  );
+
+  console.error("El importe CECA no coincide con el pedido.");
+  return cecaResponse(false);
+}
 
     // Una notificación repetida de un pedido ya pagado es válida.
     if (order.payment_status === "paid") {
@@ -176,13 +237,24 @@ export async function POST(request: Request) {
         p_order_id: order.id,
       });
 
-    if (confirmationError || confirmation?.ok !== true) {
-      console.error(
-        "No se pudo confirmar el pago/reserva:",
-        confirmationError ?? confirmation
-      );
-      return cecaResponse(false);
+    
+if (confirmationError || confirmation?.ok !== true) {
+  await saveCecaDiagnostic(
+    "confirmacion_pago_fallida",
+    received.operation || null,
+    {
+      error: confirmationError?.message ?? null,
+      respuestaRPC: confirmationError ? null : confirmation,
     }
+  );
+
+  console.error(
+    "No se pudo confirmar el pago/reserva:",
+    confirmationError ?? confirmation
+  );
+  return cecaResponse(false);
+}
+
 
     // Si otra notificación ya confirmó el pago, no duplicamos el correo.
     if (confirmation.already_paid === true) {
@@ -221,7 +293,14 @@ export async function POST(request: Request) {
         );
       }
     }
-
+await saveCecaDiagnostic(
+  "pago_confirmado",
+  received.operation || null,
+  {
+    pedidoId: order.id,
+    importeEnCentimos: amountCents,
+  }
+);
     console.log("Pago CECA confirmado para pedido:", order.id);
     return cecaResponse(true);
   } catch (error) {
