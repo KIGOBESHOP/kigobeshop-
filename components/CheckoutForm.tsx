@@ -238,14 +238,25 @@ export default function CheckoutForm({
               </span>
             </label>
 
-            <div className="checkoutLegalOption">
-              <strong>Privacidad de los datos del cliente</strong>
-              <p>
-                Los datos personales que proporciona son utilizados
-                para satisfacer sus necesidades, procesar pedidos o
-                permitirle el acceso a una información específica.
-              </p>
-            </div>
+           
+<label className="checkoutLegalOption">
+  <input
+    type="checkbox"
+    checked={data.acknowledgePrivacy}
+    onChange={(e) =>
+      update("acknowledgePrivacy", e.target.checked)
+    }
+    required
+  />
+  <span>
+    <strong>Privacidad de los datos del cliente</strong>
+    <p>
+      He leído la política de privacidad y acepto el
+      tratamiento de mis datos para gestionar mi pedido.
+    </p>
+  </span>
+</label>
+
 
             <button
               type="button"
