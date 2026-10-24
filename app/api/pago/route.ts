@@ -39,6 +39,7 @@ function getCecaSignature(
 
   const decodedKey = Buffer.from(encryptionKey, "base64");
 
+
   if (decodedKey.length !== 24) {
     throw new Error(
       "La clave de encriptación CECA no tiene el formato esperado."
@@ -54,7 +55,7 @@ function getCecaSignature(
     Buffer.alloc(paddingLength, 0),
   ]);
 
- const cipher = createCipheriv(
+const cipher = createCipheriv(
   "des-ede3-cbc",
   decodedKey,
   iv
