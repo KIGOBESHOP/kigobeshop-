@@ -110,6 +110,19 @@ if (
       signature: params.get("Firma") ?? "",
     };
 
+    await saveCecaDiagnostic(
+      "datos_notificacion_recibidos",
+      received.operation || null,
+      {
+        camposPresentes: Object.keys(params),
+        merchantIdPresente: Boolean(received.merchantId),
+        acquirerBinPresente: Boolean(received.acquirerBin),
+        terminalIdPresente: Boolean(received.terminalId),
+        importePresente: Boolean(received.amount),
+        firmaPresente: Boolean(received.signature),
+      }
+    );
+
    
 if (
   received.merchantId !== merchantId ||
