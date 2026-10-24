@@ -258,7 +258,12 @@ if (order.payment_status !== "pending") {
       });
 
     
-if (confirmationError || confirmation?.ok !== true) {
+
+const confirmationResult = Array.isArray(confirmation)
+  ? confirmation[0]
+  : confirmation;
+
+if (confirmationError || confirmationResult?.ok !== true) {
   await saveCecaDiagnostic(
     "confirmacion_pago_fallida",
     received.operation || null,
@@ -277,7 +282,7 @@ if (confirmationError || confirmation?.ok !== true) {
 
 
     // Si otra notificación ya confirmó el pago, no duplicamos el correo.
-    if (confirmation.already_paid === true) {
+   if (confirmationResult?.already_paid === true) {
       return cecaResponse(true);
     }
 
