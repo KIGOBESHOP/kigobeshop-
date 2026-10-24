@@ -58,6 +58,10 @@ async function saveCecaDiagnostic(
 }
 
 export async function POST(request: Request) {
+    await saveCecaDiagnostic("notificacion_recibida", null, {
+    metodo: request.method,
+    contentType: request.headers.get("content-type"),
+  });
   try {
     const merchantId = process.env.CECA_TEST_MERCHANT_ID;
     const acquirerBin = process.env.CECA_TEST_ACQUIRER_BIN;
