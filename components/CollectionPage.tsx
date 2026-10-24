@@ -216,7 +216,8 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
 
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
 
-  const handleCheckoutSubmit = () => {
+  
+const handleCheckoutSubmit = async () => {
   const requiredFields = [
     customerData.gender,
     customerData.name,
@@ -249,10 +250,65 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
     return;
   }
 
-  showToast(
-    "Datos comprobados. El pago de esta página de colección aún está pendiente de conectar."
-  );
+  if (cart.length === 0) {
+    showToast("Tu carrito está vacío.");
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/pago", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        customer: customerData,
+        items: cart.map((item) => ({
+          productId: item.product.id,
+          qty: item.qty,
+          selectedSize: item.selectedSize ?? "",
+          selectedColor: item.selectedColor ?? "",
+          selectedImage: item.selectedImage ?? item.product.image,
+        })),
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      showToast(result.error || "No se ha podido preparar el pago.");
+      return;
+    }
+
+    if (
+      typeof result.action !== "string" ||
+      !result.fields ||
+      typeof result.fields !== "object"
+    ) {
+      showToast("La respuesta del pago no es válida.");
+      return;
+    }
+
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = result.action;
+
+    for (const [name, value] of Object.entries(result.fields)) {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = name;
+      input.value = String(value);
+      form.appendChild(input);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+  } catch (error) {
+    console.error("Error iniciando el pago:", error);
+    showToast("No se ha podido conectar con el servicio de pago.");
+  }
 };
+
   return (
     <main>
       <Header
