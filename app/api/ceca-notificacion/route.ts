@@ -136,9 +136,18 @@ if (
     // CECA utiliza el importe de 12 posiciones para calcular la firma.
     const paddedAmount = received.amount.padStart(12, "0");
 
-    if (paddedAmount.length !== 12) {
-      return cecaResponse(false);
+   if (paddedAmount.length !== 12) {
+  await saveCecaDiagnostic(
+    "formato_importe_invalido",
+    received.operation || null,
+    {
+      longitudImporte: received.amount.length,
+      longitudImporteRellenado: paddedAmount.length,
     }
+  );
+
+  return cecaResponse(false);
+}
 
     const signingText =
       encryptionKey +
@@ -226,10 +235,21 @@ if (Number(order.total_cents) !== amountCents) {
       return cecaResponse(true);
     }
 
-    if (order.payment_status !== "pending") {
-      console.error("El pedido no está pendiente de pago.");
-      return cecaResponse(false);
+   
+if (order.payment_status !== "pending") {
+  await saveCecaDiagnostic(
+    "estado_pedido_invalido",
+    received.operation || null,
+    {
+      estadoActual: order.payment_status,
+      pedidoId: order.id,
     }
+  );
+
+  console.error("El pedido no está pendiente de pago.");
+  return cecaResponse(false);
+}
+
 
     // Confirma el pago y consume la reserva de stock en una operación segura.
     const { data: confirmation, error: confirmationError } =
@@ -303,8 +323,18 @@ await saveCecaDiagnostic(
 );
     console.log("Pago CECA confirmado para pedido:", order.id);
     return cecaResponse(true);
-  } catch (error) {
-    console.error("Error procesando la notificación CECA:", error);
-    return cecaResponse(false);
-  }
+ 
+} catch (error) {
+  await saveCecaDiagnostic(
+    "error_inesperado",
+    null,
+    {
+      mensaje: error instanceof Error ? error.message : "Error desconocido",
+    }
+  );
+
+  console.error("Error procesando la notificación CECA:", error);
+  return cecaResponse(false);
+}
+
 }
