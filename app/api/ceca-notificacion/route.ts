@@ -27,6 +27,36 @@ return new Response(ok ? "$*$OKY$*$" : "$*$NOK$*$", {
   });
 }
 
+async function saveCecaDiagnostic(
+  step: string,
+  operation: string | null = null,
+  details: Record<string, unknown> = {}
+) {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !serviceKey) return;
+
+    const supabase = createClient(supabaseUrl, serviceKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+
+    const { error } = await supabase
+      .from("ceca_notification_logs")
+      .insert({ step, operation, details });
+
+    if (error) {
+      console.error("Error guardando diagnóstico CECA:", error.message);
+    }
+  } catch (error) {
+    console.error("Error guardando diagnóstico CECA:", error);
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const merchantId = process.env.CECA_TEST_MERCHANT_ID;
