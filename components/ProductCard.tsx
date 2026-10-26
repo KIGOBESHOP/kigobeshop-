@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import type { Product } from "@/lib/products";
 
 type SelectedVariant = {
@@ -42,6 +42,14 @@ export default function ProductCard({
       : [product.image];
 
   const [imageIndex, setImageIndex] = useState(0);
+    const touchStartX = useRef(0);
+
+  function changeImage(direction: number) {
+    setImageIndex((current) => {
+      const total = images.length;
+      return (current + direction + total) % total;
+    });
+  }
   const [imageOpen, setImageOpen] = useState(false);
   const currentImage = images[imageIndex] ?? product.image;
 
@@ -76,33 +84,101 @@ export default function ProductCard({
           </svg>
         </button>
 
-        <div className="productImageWrap">
-          <button
-            type="button"
-            onClick={() => setImageOpen(true)}
-            aria-label={`Ampliar foto de ${product.name}`}
-            style={{
-              display: "block",
-              width: "100%",
-              height: "100%",
-              padding: 0,
-              border: 0,
-              background: "transparent",
-              cursor: "zoom-in",
-            }}
-          >
-            <img
-              src={currentImage}
-              alt={`${product.name}${selectedColor ? ` - ${selectedColor}` : ""}`}
-              loading="lazy"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-              }}
-            />
-          </button>
-        </div>
+       <div
+  className="productImageWrap"
+  onTouchStart={(event) => {
+    touchStartX.current = event.touches[0].clientX;
+  }}
+  onTouchEnd={(event) => {
+    const difference =
+      event.changedTouches[0].clientX - touchStartX.current;
+
+    if (Math.abs(difference) > 40 && images.length > 1) {
+      changeImage(difference < 0 ? 1 : -1);
+    }
+  }}
+  style={{ position: "relative", touchAction: "pan-y" }}
+>
+  <button
+    type="button"
+    onClick={() => setImageOpen(true)}
+    aria-label={`Ampliar foto de ${product.name}`}
+    style={{
+      display: "block",
+      width: "100%",
+      height: "100%",
+      padding: 0,
+      border: 0,
+      background: "transparent",
+      cursor: "zoom-in",
+    }}
+  >
+    <img
+      src={currentImage}
+      alt={`${product.name}${selectedColor ? ` - ${selectedColor}` : ""}`}
+      loading="lazy"
+      style={{
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+      }}
+    />
+  </button>
+
+  {images.length > 1 && (
+    <>
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          changeImage(-1);
+        }}
+        aria-label="Foto anterior"
+        style={{
+          position: "absolute",
+          left: 8,
+          top: "50%",
+          transform: "translateY(-50%)",
+          border: 0,
+          borderRadius: "50%",
+          width: 34,
+          height: 34,
+          background: "rgba(255,255,255,0.9)",
+          color: "#581c87",
+          fontSize: 22,
+          cursor: "pointer",
+        }}
+      >
+        ‹
+      </button>
+
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          changeImage(1);
+        }}
+        aria-label="Foto siguiente"
+        style={{
+          position: "absolute",
+          right: 8,
+          top: "50%",
+          transform: "translateY(-50%)",
+          border: 0,
+          borderRadius: "50%",
+          width: 34,
+          height: 34,
+          background: "rgba(255,255,255,0.9)",
+          color: "#581c87",
+          fontSize: 22,
+          cursor: "pointer",
+        }}
+      >
+        ›
+      </button>
+    </>
+  )}
+</div>
 
         {images.length > 1 && (
           <div
@@ -332,7 +408,57 @@ export default function ProductCard({
           >
             ×
           </button>
+{images.length > 1 && (
+  <>
+    <button
+      type="button"
+      onClick={(event) => {
+        event.stopPropagation();
+        changeImage(-1);
+      }}
+      aria-label="Foto anterior"
+      style={{
+        position: "absolute",
+        left: 20,
+        top: "50%",
+        border: 0,
+        borderRadius: "50%",
+        width: 44,
+        height: 44,
+        background: "white",
+        color: "#581c87",
+        fontSize: 28,
+        cursor: "pointer",
+      }}
+    >
+      ‹
+    </button>
 
+    <button
+      type="button"
+      onClick={(event) => {
+        event.stopPropagation();
+        changeImage(1);
+      }}
+      aria-label="Foto siguiente"
+      style={{
+        position: "absolute",
+        right: 20,
+        top: "50%",
+        border: 0,
+        borderRadius: "50%",
+        width: 44,
+        height: 44,
+        background: "white",
+        color: "#581c87",
+        fontSize: 28,
+        cursor: "pointer",
+      }}
+    >
+      ›
+    </button>
+  </>
+)}
           <img
             src={currentImage}
             alt={`${product.name}${selectedColor ? ` - ${selectedColor}` : ""}`}
