@@ -18,6 +18,7 @@ export default function AdminPage() {
   const [tag, setTag] = useState("");
   const [sizes, setSizes] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [mainImageSource, setMainImageSource] = useState("upload");
   const [variants, setVariants] = useState<
   { color: string; files: File[] }[]
 >([]);
@@ -408,10 +409,10 @@ redirectTo: "https://www.kigobeshop.com/auth/reset-password",
 async function saveProduct(event: React.FormEvent<HTMLFormElement>) {
   event.preventDefault();
 
-  if (!file) {
-    setMessage("Selecciona una foto principal del producto.");
-    return;
-  }
+ if (!file && mainImageSource === "upload") {
+  setMessage("Sube una foto principal o elige una foto de los colores.");
+  return;
+}
 
   if (
     variants.some(
@@ -449,9 +450,7 @@ async function saveProduct(event: React.FormEvent<HTMLFormElement>) {
           return data.publicUrl;
     };
 
-    const mainImage = await uploadImage(file);
-
-    const savedVariants = [];
+   const savedVariants = [];
 
     for (const variant of variants) {
       const images: string[] = [];
@@ -465,7 +464,26 @@ async function saveProduct(event: React.FormEvent<HTMLFormElement>) {
         images,
       });
     }
+let mainImage: string;
 
+if (mainImageSource === "upload") {
+  if (!file) {
+    throw new Error("Selecciona una foto principal.");
+  }
+  mainImage = await uploadImage(file);
+} else {
+  const [variantIndexText, imageIndexText] = mainImageSource.split(":");
+  const variantIndex = Number(variantIndexText);
+  const imageIndex = Number(imageIndexText);
+
+  const selectedImage = savedVariants[variantIndex]?.images[imageIndex];
+
+  if (!selectedImage) {
+    throw new Error("Selecciona una foto principal válida.");
+  }
+
+  mainImage = selectedImage;
+}
     const { error: insertError } = await supabase
       .from("products")
       .insert({
@@ -763,13 +781,39 @@ image: mainImage,
 </div>
 
         <label>Foto del producto</label>
-        <input
-          required
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          style={fieldStyle}
-        />
+
+<select
+  value={mainImageSource}
+  onChange={(e) => setMainImageSource(e.target.value)}
+>
+  <option value="upload">Subir una foto principal nueva</option>
+
+  {variants.flatMap((variant, variantIndex) =>
+    variant.files.map((variantFile, fileIndex) => (
+      <option
+        key={`${variantIndex}:${fileIndex}`}
+        value={`${variantIndex}:${fileIndex}`}
+      >
+        {`${variant.color || `Color ${variantIndex + 1}`} — ${variantFile.name}`}
+      </option>
+    ))
+  )}
+</select>
+
+{mainImageSource === "upload" && (
+  <input
+    type="file"
+    accept="image/jpeg,image/png,image/webp"
+    onChange={(e) => {
+      setFile(e.target.files?.[0] ?? null);
+      setMainImageSource("upload");
+    }}
+  />
+)}
+
+<p>
+  Puedes elegir una foto de los colores sin volver a subirla.
+</p>
 
         <button disabled={busy} type="submit" style={buttonStyle}>
           {busy ? "Guardando..." : "Guardar producto"}
