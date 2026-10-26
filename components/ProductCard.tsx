@@ -44,6 +44,8 @@ export default function ProductCard({
   )
 );
   const [imageIndex, setImageIndex] = useState(0);
+  const safeImageIndex = Math.min(imageIndex, images.length - 1);
+const currentImage = images[safeImageIndex] ?? product.image;
     const touchStartX = useRef(0);
 
   function changeImage(direction: number) {
@@ -53,8 +55,7 @@ export default function ProductCard({
     });
   }
   const [imageOpen, setImageOpen] = useState(false);
-  const currentImage = images[imageIndex] ?? product.image;
-
+ 
    function changeColor(color: string) {
   setSelectedColor(color);
   setImageIndex(0);
