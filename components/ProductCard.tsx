@@ -36,10 +36,11 @@ export default function ProductCard({
   );
     const images = Array.from(
   new Set(
-    [
-      product.image,
-      ...(selectedVariant?.images ?? []),
-    ].filter(Boolean)
+    (
+      selectedVariant?.images?.length
+        ? selectedVariant.images
+        : [product.image]
+    ).filter(Boolean)
   )
 );
   const [imageIndex, setImageIndex] = useState(0);
