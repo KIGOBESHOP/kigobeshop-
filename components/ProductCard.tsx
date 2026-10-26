@@ -34,15 +34,17 @@ export default function ProductCard({
   const selectedVariant = variants.find(
     (variant) => variant.color === selectedColor
   );
-    const images = Array.from(
+   
+const images = Array.from(
   new Set(
-    (
-      selectedVariant?.images?.length
-        ? selectedVariant.images
-        : [product.image]
-    ).filter(Boolean)
+    [
+      product.image,
+      ...(selectedVariant?.images ?? []),
+      ...variants.flatMap((variant) => variant.images ?? []),
+    ].filter(Boolean)
   )
 );
+
   const [imageIndex, setImageIndex] = useState(0);
   const safeImageIndex = Math.min(imageIndex, images.length - 1);
 const currentImage = images[safeImageIndex] ?? product.image;
