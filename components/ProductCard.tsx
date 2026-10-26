@@ -98,8 +98,7 @@ export default function ProductCard({
       changeImage(difference < 0 ? 1 : -1);
     }
   }}
- style={{ position: "relative", touchAction: "pan-x pan-y" }}
->
+style={{ position: "relative", touchAction: "pan-y" }}
   <button
     type="button"
     onClick={() => setImageOpen(true)}
