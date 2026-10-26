@@ -35,13 +35,13 @@ export default function ProductCard({
     (variant) => variant.color === selectedColor
   );
     const images = Array.from(
-  new Set([
-    product.image,
-    ...(selectedVariant?.images ?? []),
-    ...variants.flatMap((variant) => variant.images ?? []),
-  ].filter(Boolean))
+  new Set(
+    [
+      product.image,
+      ...(selectedVariant?.images ?? []),
+    ].filter(Boolean)
+  )
 );
-
   const [imageIndex, setImageIndex] = useState(0);
     const touchStartX = useRef(0);
 
