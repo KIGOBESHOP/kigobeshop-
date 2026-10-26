@@ -55,11 +55,10 @@ export default function ProductCard({
   const [imageOpen, setImageOpen] = useState(false);
   const currentImage = images[imageIndex] ?? product.image;
 
-     function changeColor(color: string) {
-    const variant = variants.find((item) => item.color === color);
-    setSelectedColor(color);
-    setImageIndex(variant?.images.length ? 1 : 0);
-  }
+    function changeColor(color: string) {
+  setSelectedColor(color);
+  setImageIndex(0);
+}
   return (
     <>
       <article className="productCard fadeInUp">
