@@ -35,33 +35,66 @@ export default function ProductCard({
     (variant) => variant.color === selectedColor
   );
    
-const images = Array.from(
-  new Set(
-    [
-      product.image,
-      ...(selectedVariant?.images ?? []),
-      ...variants.flatMap((variant) => variant.images ?? []),
-    ].filter(Boolean)
-  )
-);
+
+  const galleryImages = Array.from(
+    new Map(
+      [
+        {
+          image: product.image,
+          color:
+            variants.find((variant) =>
+              variant.images?.includes(product.image)
+            )?.color ?? null,
+        },
+        ...variants.flatMap((variant) =>
+          (variant.images ?? []).map((image) => ({
+            image,
+            color: variant.color,
+          }))
+        ),
+      ]
+        .filter((item) => Boolean(item.image))
+        .map((item) => [item.image, item])
+    ).values()
+  );
+
+  const images = galleryImages.map((item) => item.image);
 
   const [imageIndex, setImageIndex] = useState(0);
   const safeImageIndex = Math.min(imageIndex, images.length - 1);
-const currentImage = images[safeImageIndex] ?? product.image;
-    const touchStartX = useRef(0);
+  const currentImage = images[safeImageIndex] ?? product.image;
+  const touchStartX = useRef(0);
 
   function changeImage(direction: number) {
     setImageIndex((current) => {
       const total = images.length;
-      return (current + direction + total) % total;
+      if (total === 0) return 0;
+
+      const nextIndex = (current + direction + total) % total;
+      const nextColor = galleryImages[nextIndex]?.color;
+
+      if (nextColor) {
+        setSelectedColor(nextColor);
+      }
+
+      return nextIndex;
     });
   }
+
   const [imageOpen, setImageOpen] = useState(false);
- 
-   function changeColor(color: string) {
-  setSelectedColor(color);
-  setImageIndex(0);
-}
+
+  function changeColor(color: string) {
+    setSelectedColor(color);
+
+    const index = galleryImages.findIndex(
+      (item) => item.color === color
+    );
+
+    if (index >= 0) {
+      setImageIndex(index);
+    }
+  }
+
   return (
     <>
       <article className="productCard fadeInUp">
@@ -198,7 +231,14 @@ const currentImage = images[safeImageIndex] ?? product.image;
               <button
                 key={`${image}-${index}`}
                 type="button"
-                onClick={() => setImageIndex(index)}
+                onClick={() => {
+  setImageIndex(index);
+
+  const color = galleryImages[index]?.color;
+  if (color) {
+    setSelectedColor(color);
+  }
+}}
                 aria-label={`Ver foto ${index + 1}`}
                 style={{
                   width: 42,
