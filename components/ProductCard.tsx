@@ -55,7 +55,7 @@ export default function ProductCard({
   const [imageOpen, setImageOpen] = useState(false);
   const currentImage = images[imageIndex] ?? product.image;
 
-    function changeColor(color: string) {
+   function changeColor(color: string) {
   setSelectedColor(color);
   setImageIndex(0);
 }
@@ -97,8 +97,9 @@ export default function ProductCard({
     if (Math.abs(difference) > 40 && images.length > 1) {
       changeImage(difference < 0 ? 1 : -1);
     }
-  }}
-style={{ position: "relative", touchAction: "pan-y" }}
+   }}
+  style={{ position: "relative", touchAction: "pan-y" }}
+>   
   <button
     type="button"
     onClick={() => setImageOpen(true)}
