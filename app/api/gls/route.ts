@@ -19,18 +19,53 @@ export async function GET(request: NextRequest) {
 
   const action = request.nextUrl.searchParams.get("action");
 
-  // Diagnóstico de pedidos: solo lectura, no crea expediciones.
+  // Diagnóstico de pedidos: solo lectura y solo para la administradora.
   if (action === "orders-test") {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
 
-    if (!supabaseUrl || !serviceKey) {
+    if (!supabaseUrl || !anonKey || !serviceKey || !adminEmail) {
       return NextResponse.json(
-        {
-          ok: false,
-          message: "Falta configurar Supabase en Vercel.",
-        },
-        { status: 500 }
+        { ok: false, message: "Falta configurar Supabase o ADMIN_EMAIL en Vercel." },
+        { status: 503 }
+      );
+    }
+
+    const authorization = request.headers.get("authorization");
+    const token = authorization?.startsWith("Bearer ")
+      ? authorization.slice(7)
+      : "";
+
+    if (!token) {
+      return NextResponse.json(
+        { ok: false, message: "Debes iniciar sesión como administradora." },
+        { status: 401 }
+      );
+    }
+
+    const authClient = createClient(supabaseUrl, anonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+
+    const { data: authData, error: authError } =
+      await authClient.auth.getUser(token);
+
+    if (authError || !authData.user) {
+      return NextResponse.json(
+        { ok: false, message: "La sesión no es válida." },
+        { status: 401 }
+      );
+    }
+
+    if (authData.user.email?.trim().toLowerCase() !== adminEmail) {
+      return NextResponse.json(
+        { ok: false, message: "No tienes permiso para consultar los pedidos." },
+        { status: 403 }
       );
     }
 
