@@ -75,10 +75,12 @@ const encryptedOperation = Buffer.concat([
 
 export async function POST(request: Request) {
   try {
-    const merchantId = process.env.CECA_TEST_MERCHANT_ID;
-    const acquirerBin = process.env.CECA_TEST_ACQUIRER_BIN;
-    const terminalId = process.env.CECA_TEST_TERMINAL_ID;
-    const encryptionKey = process.env.CECA_TEST_ENCRYPTION_KEY;
+    
+const merchantId = process.env.CECA_REAL_MERCHANT_ID;
+const acquirerBin = process.env.CECA_REAL_ACQUIRER_BIN;
+const terminalId = process.env.CECA_REAL_TERMINAL_ID;
+const encryptionKey = process.env.CECA_REAL_ENCRYPTION_KEY;
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
