@@ -93,3 +93,15 @@ export async function GET(request: NextRequest) {
     });
   }
 }
+
+// Preparación segura de datos GLS.
+// No llama a GLS ni crea expediciones.
+export async function POST() {
+  return NextResponse.json({
+    ok: true,
+    ready: false,
+    shipmentCreationEnabled: false,
+    message:
+      "Conexión GLS comprobada. Pendiente configurar el servicio y validar los datos del envío.",
+  });
+}
