@@ -1,5 +1,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +19,62 @@ export async function GET(request: NextRequest) {
 
   const action = request.nextUrl.searchParams.get("action");
 
-  // Comprobación básica existente
+  // Diagnóstico de pedidos: solo lectura, no crea expediciones.
+  if (action === "orders-test") {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !serviceKey) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "Falta configurar Supabase en Vercel.",
+        },
+        { status: 500 }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, serviceKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+
+    const { data: orders, error } = await supabase
+      .from("orders")
+      .select(
+        "id, customer_name, customer_surname, customer_address, customer_city, customer_postal_code, shipping_method, payment_status, gls_status"
+      )
+      .eq("payment_status", "paid")
+      .limit(5);
+
+    if (error) {
+      console.error("Error de diagnóstico GLS:", error);
+      return NextResponse.json(
+        { ok: false, message: "No se pudieron consultar los pedidos." },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      ok: true,
+      mode: "read-only",
+      shipmentCreationEnabled: false,
+      paidOrdersFound: orders?.length ?? 0,
+      orders: (orders ?? []).map((order) => ({
+        id: order.id,
+        hasRecipient: Boolean(order.customer_name),
+        hasAddress: Boolean(order.customer_address),
+        hasCity: Boolean(order.customer_city),
+        hasPostalCode: Boolean(order.customer_postal_code),
+        shippingMethod: order.shipping_method,
+        glsStatus: order.gls_status,
+      })),
+    });
+  }
+
+  // Comprobación básica de conexión.
   if (action !== "soap-test") {
     try {
       const response = await fetch(GLS_URL, {
@@ -32,7 +88,8 @@ export async function GET(request: NextRequest) {
         uidConfigured: true,
         serviceReachable: true,
         httpStatus: response.status,
-        message: "Servidor GLS accesible. SOAP pendiente de comprobar.",
+        shipmentCreationEnabled: false,
+        message: "Servidor GLS accesible. No se han creado expediciones.",
       });
     } catch {
       return NextResponse.json({
@@ -44,7 +101,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Consulta de lectura: no crea expediciones.
+  // Consulta SOAP de lectura: no crea expediciones.
   const envelope = `<?xml version="1.0" encoding="utf-8"?>
 <soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
@@ -80,8 +137,9 @@ export async function GET(request: NextRequest) {
       responseReceived: xml.length > 0,
       soapFault: /<[^>]*Fault\b/i.test(xml),
       resultPresent: /GetPlazaXCPResult/.test(xml),
+      shipmentCreationEnabled: false,
       message: response.ok
-        ? "GLS respondió a la petición SOAP. Revisa los indicadores."
+        ? "GLS respondió a la petición SOAP."
         : "GLS respondió con un estado HTTP de error.",
     });
   } catch {
@@ -94,14 +152,13 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Preparación segura de datos GLS.
-// No llama a GLS ni crea expediciones.
+// POST permanece desactivado: no registra envíos en GLS.
 export async function POST() {
   return NextResponse.json({
     ok: true,
     ready: false,
     shipmentCreationEnabled: false,
     message:
-      "Conexión GLS comprobada. Pendiente configurar el servicio y validar los datos del envío.",
+      "Preparación GLS pendiente. No se ha creado ninguna expedición.",
   });
 }
