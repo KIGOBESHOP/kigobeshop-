@@ -108,6 +108,59 @@ async function loadOrders() {
     setLoadingOrders(false);
   }
 }
+
+async function diagnoseGLS() {
+  setBusy(true);
+  setMessage("");
+
+  try {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError || !session) {
+      throw new Error("Inicia sesión para comprobar GLS.");
+    }
+
+    const response = await fetch("/api/gls?action=orders-test", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      cache: "no-store",
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.ok) {
+      throw new Error(result.message || "No se pudo completar el diagnóstico.");
+    }
+
+    const resumen = (result.orders ?? []).map((order: any) =>
+      `Pedido: ${order.id}\n` +
+      `Destinatario: ${order.hasRecipient ? "Sí" : "No"}\n` +
+      `Dirección: ${order.hasAddress ? "Sí" : "No"}\n` +
+      `Ciudad: ${order.hasCity ? "Sí" : "No"}\n` +
+      `Código postal: ${order.hasPostalCode ? "Sí" : "No"}\n` +
+      `Estado GLS: ${order.glsStatus ?? "Sin estado"}`
+    ).join("\n\n");
+
+    setMessage(
+      `Diagnóstico GLS correcto.\n` +
+      `Pedidos pagados encontrados: ${result.paidOrdersFound}.\n` +
+      `Creación de envíos: desactivada.\n\n` +
+      (resumen || "No se encontraron pedidos pagados.")
+    );
+  } catch (error) {
+    setMessage(
+      error instanceof Error ? error.message : "Error en el diagnóstico GLS."
+    );
+  } finally {
+    setBusy(false);
+  }
+}
+  
 async function editProduct(product: any) {
   const newName = window.prompt(
     "Nombre del producto:",
@@ -930,6 +983,15 @@ image: mainImage,
       >
         {loadingOrders ? "Cargando pedidos..." : "Ver mis pedidos"}
       </button>
+
+<button
+  type="button"
+  style={{ ...buttonStyle, marginTop: 12 }}
+  onClick={diagnoseGLS}
+  disabled={busy}
+>
+  Diagnosticar GLS
+</button>
 
       {orders.length === 0 && !loadingOrders && (
         <p>
