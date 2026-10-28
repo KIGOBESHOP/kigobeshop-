@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -161,6 +160,51 @@ async function diagnoseGLS() {
   }
 }
   
+async function createGLSTestShipment() {
+  const confirmed = window.confirm(
+    "Se enviará una expedición de PRUEBA a GLS usando el identificador de pruebas. ¿Continuar?"
+  );
+  if (!confirmed) return;
+
+  setBusy(true);
+  setMessage("");
+
+  try {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError || !session) {
+      throw new Error("Inicia sesión para realizar la prueba GLS.");
+    }
+
+    const response = await fetch("/api/gls", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action: "shipment-test" }),
+      cache: "no-store",
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.ok) {
+      throw new Error(result.message || result.error || JSON.stringify(result));
+    }
+
+    setMessage("Respuesta de la prueba GLS: " + JSON.stringify(result, null, 2));
+  } catch (error) {
+    setMessage(
+      error instanceof Error ? error.message : "Error al realizar la prueba GLS."
+    );
+  } finally {
+    setBusy(false);
+  }
+}
+
 async function editProduct(product: any) {
   const newName = window.prompt(
     "Nombre del producto:",
@@ -992,19 +1036,16 @@ image: mainImage,
 >
   Diagnosticar GLS
 </button>
-{message && (
-  <p
-    style={{
-      whiteSpace: "pre-wrap",
-      marginTop: 12,
-      padding: 12,
-      border: "1px solid #d8b4fe",
-      borderRadius: 10,
-    }}
-  >
-    {message}
-  </p>
-)}
+
+<button
+  type="button"
+  style={{ ...buttonStyle, marginTop: 12, marginLeft: 8 }}
+  onClick={createGLSTestShipment}
+  disabled={busy}
+>
+  Probar envío GLS (TEST)
+</button>
+
       {orders.length === 0 && !loadingOrders && (
         <p>
           Todavía no hay pedidos cargados o pulsa «Ver mis pedidos» para
