@@ -110,30 +110,48 @@ async function loadOrders() {
 
 async function diagnoseGLS() {
   setBusy(true);
-  setMessage("");
+  setMessage("Comprobando GLS...");
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
 
   try {
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
+    const { data, error } = await supabase.auth.getSession();
+    const session = data.session;
 
-    if (sessionError || !session) {
-      throw new Error("Inicia sesión para comprobar GLS.");
+    if (error || !session) {
+      throw new Error("Tu sesión ha caducado. Cierra sesión y vuelve a entrar.");
     }
 
-    const response = await fetch("/api/gls?action=orders-test", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      cache: "no-store",
-    });
+    setMessage("Conectando con el diagnóstico...");
 
-    const result = await response.json();
+    const response = await fetch(
+      "/api/gls?action=orders-test",
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        cache: "no-store",
+        signal: controller.signal,
+      }
+    );
+
+    const text = await response.text();
+
+    let result: any;
+    try {
+      result = JSON.parse(text);
+    } catch {
+      throw new Error(
+        `La API GLS devolvió una respuesta no válida (HTTP ${response.status}).`
+      );
+    }
 
     if (!response.ok || !result.ok) {
-      throw new Error(result.message || "No se pudo completar el diagnóstico.");
+      throw new Error(
+        result.message || `Error de GLS (HTTP ${response.status}).`
+      );
     }
 
     const resumen = (result.orders ?? []).map((order: any) =>
@@ -146,16 +164,21 @@ async function diagnoseGLS() {
     ).join("\n\n");
 
     setMessage(
-      `Diagnóstico GLS correcto.\n` +
+      `Diagnóstico completado.\n` +
       `Pedidos pagados encontrados: ${result.paidOrdersFound}.\n` +
       `Creación de envíos: desactivada.\n\n` +
       (resumen || "No se encontraron pedidos pagados.")
     );
   } catch (error) {
     setMessage(
-      error instanceof Error ? error.message : "Error en el diagnóstico GLS."
+      error instanceof Error && error.name === "AbortError"
+        ? "La consulta ha tardado demasiado. No se ha creado ningún envío."
+        : error instanceof Error
+          ? error.message
+          : "Error desconocido al diagnosticar GLS."
     );
   } finally {
+    clearTimeout(timeout);
     setBusy(false);
   }
 }
