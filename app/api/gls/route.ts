@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -8,15 +7,6 @@ export const dynamic = "force-dynamic";
 const GLS_URL = "https://ws-customer.gls-spain.es/b2b.asmx";
 
 export async function GET(request: NextRequest) {
-  const uidCliente = process.env.GLS_UIDCLIENTE;
-
-  if (!uidCliente) {
-    return NextResponse.json(
-      { ok: false, message: "Falta GLS_UIDCLIENTE en Vercel." },
-      { status: 500 }
-    );
-  }
-
   const action = request.nextUrl.searchParams.get("action");
 
   // Diagnóstico de pedidos: solo lectura y solo para la administradora.
@@ -107,6 +97,16 @@ export async function GET(request: NextRequest) {
         glsStatus: order.gls_status,
       })),
     });
+  }
+
+  // Las comprobaciones de conexión con GLS sí necesitan el identificador del cliente.
+  const uidCliente = process.env.GLS_UIDCLIENTE;
+
+  if (!uidCliente) {
+    return NextResponse.json(
+      { ok: false, message: "Falta GLS_UIDCLIENTE en Vercel." },
+      { status: 500 }
+    );
   }
 
   // Comprobación básica de conexión.
@@ -412,4 +412,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
