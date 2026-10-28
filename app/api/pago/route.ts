@@ -213,9 +213,8 @@ const encryptionKey = process.env.CECA_REAL_ENCRYPTION_KEY;
     const operation =
       `KG${Date.now()}${randomBytes(4).toString("hex")}`;
 
-    const origin = new URL(request.url).origin;
-    const urlOk = new URL("/pago/ok", origin).toString();
-    const urlNok = new URL("/pago/error", origin).toString();
+   const urlOk = "https://www.kigobeshop.com/pago/ok";
+const urlNok = "https://www.kigobeshop.com/pago/error";
 
     // Calculamos la firma una sola vez, antes de crear el pedido.
     const signature = getCecaSignature(
