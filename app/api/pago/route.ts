@@ -414,7 +414,7 @@ const urlNok = "https://www.kigobeshop.com/pago/error";
         URL_NOK: urlNok,
         Firma: signature,
      Cifrado: "HMAC",
-Pago_soportado: "SSL",
+
 Idioma: "1",
       },
     });
