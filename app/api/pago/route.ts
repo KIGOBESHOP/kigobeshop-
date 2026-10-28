@@ -251,7 +251,19 @@ const urlNok = "https://www.kigobeshop.com/pago/error";
       urlNok,
       encryptionKey!
     );
-
+console.log("[CECA DIAGNOSTICO]", {
+  merchantId,
+  acquirerBin,
+  terminalId,
+  operation,
+  amount,
+  currency: "978",
+  exponent: "2",
+  cipher: "HMAC",
+  urlOk,
+  urlNok,
+  signature,
+});
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
