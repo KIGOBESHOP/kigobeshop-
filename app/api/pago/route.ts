@@ -1,5 +1,3 @@
-
-
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
@@ -39,10 +37,9 @@ function getCecaSignature(
     urlNok;
 
   // Paso 1: decodificar la clave del comercio.
-  const decodedKey = Buffer.from(
-    Buffer.from(encryptionKey, "utf8").toString("utf8"),
-    "base64"
-  );
+  // CECA indica decodificar la clave de 32 caracteres desde Base64.
+  // Para la clave del ejemplo oficial, esto produce exactamente 24 bytes.
+  const decodedKey = Buffer.from(encryptionKey, "base64");
 
   if (decodedKey.length !== 24) {
     throw new Error(
@@ -86,10 +83,10 @@ const encryptionKey = process.env.CECA_TEST_ENCRYPTION_KEY;
 
     
     const missing = [
-      ["CECA_REAL_MERCHANT_ID", merchantId],
-      ["CECA_REAL_ACQUIRER_BIN", acquirerBin],
-      ["CECA_REAL_TERMINAL_ID", terminalId],
-      ["CECA_REAL_ENCRYPTION_KEY", encryptionKey],
+      ["CECA_TEST_MERCHANT_ID", merchantId],
+      ["CECA_TEST_ACQUIRER_BIN", acquirerBin],
+      ["CECA_TEST_TERMINAL_ID", terminalId],
+      ["CECA_TEST_ENCRYPTION_KEY", encryptionKey],
       ["NEXT_PUBLIC_SUPABASE_URL", supabaseUrl],
       ["SUPABASE_SERVICE_ROLE_KEY", supabaseKey],
     ]
@@ -244,8 +241,8 @@ const encryptionKey = process.env.CECA_TEST_ENCRYPTION_KEY;
     const operation =
       `KG${Date.now()}${randomBytes(4).toString("hex")}`;
 
-   const urlOk = "https://www.kigobeshop.com/pago/ok";
-const urlNok = "https://www.kigobeshop.com/pago/error";
+    const urlOk = "https://www.kigobeshop.com/pago/ok";
+    const urlNok = "https://www.kigobeshop.com/pago/error";
 
     // Calculamos la firma una sola vez, antes de crear el pedido.
     const signature = getCecaSignature(
@@ -408,7 +405,7 @@ const urlNok = "https://www.kigobeshop.com/pago/error";
     }
 
     return NextResponse.json({
-  action: CECA_TEST_URL,
+      action: CECA_TEST_URL,
       fields: {
         MerchantID: merchantId!,
         AcquirerBIN: acquirerBin!,
@@ -420,9 +417,9 @@ const urlNok = "https://www.kigobeshop.com/pago/error";
         URL_OK: urlOk,
         URL_NOK: urlNok,
         Firma: signature,
-Cifrado: "HMAC",
-Pago_soportado: "SSL",
-Idioma: "1",
+        Cifrado: "HMAC",
+        Pago_soportado: "SSL",
+        Idioma: "1",
       },
     });
   } catch (error) {
