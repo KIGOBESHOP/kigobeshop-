@@ -195,10 +195,11 @@ async function createGLSTestShipment() {
 
     const result = await response.json();
 
-    if (!response.ok || !result.ok) {
-      throw new Error(result.message || result.error || JSON.stringify(result));
-    }
-
+  if (!response.ok || !result.ok) {
+  throw new Error(
+    "Respuesta de GLS:\n" + JSON.stringify(result, null, 2)
+  );
+}
     setMessage("Respuesta de la prueba GLS: " + JSON.stringify(result, null, 2));
   } catch (error) {
     setMessage(
