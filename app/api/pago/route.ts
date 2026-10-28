@@ -11,7 +11,7 @@ import {
 export const runtime = "nodejs";
 
 
-const CECA_TEST_URL =
+const CECA_PRODUCTION_URL =
   "https://pgw.ceca.es/tpvweb/tpv/compra.action";
 
 
@@ -38,12 +38,19 @@ function getCecaSignature(
     urlOk +
     urlNok;
 
-  const decodedKey = Buffer.from(encryptionKey, "base64");
+  // Paso 1: decodificar la clave del comercio.
+  const decodedKey = Buffer.from(
+    Buffer.from(encryptionKey, "utf8").toString("utf8"),
+    "base64"
+  );
 
   if (decodedKey.length !== 24) {
-    throw new Error("La clave de CECA no tiene el formato esperado.");
+    throw new Error(
+      `Clave CECA inválida: se esperaban 24 bytes y se obtuvieron ${decodedKey.length}.`
+    );
   }
 
+  // Paso 2: cifrar el número de operación con Triple DES.
   const iv = Buffer.alloc(8, 0);
   const operationBytes = Buffer.from(operation, "utf8");
   const paddingLength = (8 - (operationBytes.length % 8)) % 8;
@@ -61,11 +68,11 @@ function getCecaSignature(
     cipher.final(),
   ]);
 
+  // Paso 3: HMAC-SHA256 y salida Base64.
   return createHmac("sha256", encryptedOperation)
     .update(signingText, "utf8")
     .digest("base64");
 }
-
 export async function POST(request: Request) {
   try {
     
@@ -413,7 +420,7 @@ console.log("[CECA DIAGNOSTICO]", {
     }
 
     return NextResponse.json({
-      action: CECA_TEST_URL,
+    action: CECA_PRODUCTION_URL,
       fields: {
         MerchantID: merchantId!,
         AcquirerBIN: acquirerBin!,
