@@ -9,8 +9,8 @@ import {
 export const runtime = "nodejs";
 
 
-const CECA_TEST_URL =
-  "https://tpv.ceca.es/tpvweb/tpv/compra.action";
+const CECA_REAL_URL =
+  "https://pgw.ceca.es/tpvweb/tpv/compra.action";
 
 
 function getCecaSignature(
