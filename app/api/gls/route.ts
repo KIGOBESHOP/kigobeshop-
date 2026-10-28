@@ -275,7 +275,7 @@ export async function POST(request: NextRequest) {
 
     // Envío ficticio; no utiliza ningún pedido de la tienda.
     const docIn = `<Servicios uidcliente="${testUid}" xmlns="http://www.asmred.com/">
-<Servicios uidcliente="${testUid}" xmlns="http://www.asmred.com/">
+
   <Envio codbarras="">
     <Fecha>${fecha}</Fecha>
     <Portes>P</Portes>
