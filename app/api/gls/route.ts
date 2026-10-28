@@ -274,7 +274,7 @@ export async function POST(request: NextRequest) {
     const referencia = `TEST${Date.now()}`;
 
     // Envío ficticio; no utiliza ningún pedido de la tienda.
-    const docIn = `<?xml version="1.0" encoding="utf-8"?>
+    const docIn = `<Servicios uidcliente="${testUid}" xmlns="http://www.asmred.com/">
 <Servicios uidcliente="${testUid}" xmlns="http://www.asmred.com/">
   <Envio codbarras="">
     <Fecha>${fecha}</Fecha>
