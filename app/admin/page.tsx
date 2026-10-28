@@ -1050,6 +1050,20 @@ image: mainImage,
   Probar envío GLS (TEST)
 </button>
 
+      {message && (
+        <p
+          style={{
+            whiteSpace: "pre-wrap",
+            marginTop: 12,
+            padding: 12,
+            border: "1px solid #d8b4fe",
+            borderRadius: 8,
+          }}
+        >
+          {message}
+        </p>
+      )}
+
       {orders.length === 0 && !loadingOrders && (
         <p>
           Todavía no hay pedidos cargados o pulsa «Ver mis pedidos» para
