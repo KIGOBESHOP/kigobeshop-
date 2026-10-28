@@ -4,8 +4,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 import {
-  createHmac,
-  createCipheriv,
+  createHash,
   randomBytes,
 } from "crypto";
 export const runtime = "nodejs";
@@ -34,44 +33,13 @@ function getCecaSignature(
     amount +
     "978" +
     "2" +
-    "HMAC" +
+    "SHA2" +
     urlOk +
     urlNok;
 
-  const decodedKey = Buffer.from(encryptionKey, "base64");
-
-
-  if (decodedKey.length !== 24) {
-    throw new Error(
-      "La clave de encriptación CECA no tiene el formato esperado."
-    );
-  }
-
-  const iv = Buffer.alloc(8, 0);
-
-  const operationBytes = Buffer.from(operation, "utf8");
-  const paddingLength = (8 - (operationBytes.length % 8)) % 8;
-  const paddedOperation = Buffer.concat([
-    operationBytes,
-    Buffer.alloc(paddingLength, 0),
-  ]);
-
-const cipher = createCipheriv(
-  "des-ede3-cbc",
-  decodedKey,
-  iv
-);
-
-cipher.setAutoPadding(false);
-
-const encryptedOperation = Buffer.concat([
-  cipher.update(paddedOperation),
-  cipher.final(),
-]);
-
-  return createHmac("sha256", encryptedOperation)
+  return createHash("sha256")
     .update(signingText, "utf8")
-    .digest("base64");
+    .digest("hex");
 }
 
 export async function POST(request: Request) {
@@ -422,7 +390,7 @@ const encryptionKey = process.env.CECA_REAL_ENCRYPTION_KEY;
         URL_OK: urlOk,
         URL_NOK: urlNok,
         Firma: signature,
-      Cifrado: "HMAC",
+     Cifrado: "SHA2",
 Pago_soportado: "SSL",
 Idioma: "1",
       },
