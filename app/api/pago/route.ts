@@ -11,8 +11,8 @@ import {
 export const runtime = "nodejs";
 
 
-const CECA_PRODUCTION_URL =
-  "https://pgw.ceca.es/tpvweb/tpv/compra.action";
+const CECA_TEST_URL =
+  "https://tpv.ceca.es/tpvweb/tpv/compra.action";
 
 
 function getCecaSignature(
@@ -76,10 +76,10 @@ function getCecaSignature(
 export async function POST(request: Request) {
   try {
     
-const merchantId = process.env.CECA_REAL_MERCHANT_ID;
-const acquirerBin = process.env.CECA_REAL_ACQUIRER_BIN;
-const terminalId = process.env.CECA_REAL_TERMINAL_ID;
-const encryptionKey = process.env.CECA_REAL_ENCRYPTION_KEY;
+const merchantId = process.env.CECA_TEST_MERCHANT_ID;
+const acquirerBin = process.env.CECA_TEST_ACQUIRER_BIN;
+const terminalId = process.env.CECA_TEST_TERMINAL_ID;
+const encryptionKey = process.env.CECA_TEST_ENCRYPTION_KEY;
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -408,7 +408,7 @@ const urlNok = "https://www.kigobeshop.com/pago/error";
     }
 
     return NextResponse.json({
-    action: CECA_PRODUCTION_URL,
+  action: CECA_TEST_URL,
       fields: {
         MerchantID: merchantId!,
         AcquirerBIN: acquirerBin!,
