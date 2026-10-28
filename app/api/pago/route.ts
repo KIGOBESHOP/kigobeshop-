@@ -82,16 +82,18 @@ const encryptionKey = process.env.CECA_REAL_ENCRYPTION_KEY;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     
-    const missing = [
-     const merchantId = process.env.CECA_REAL_MERCHANT_ID;
-const acquirerBin = process.env.CECA_REAL_ACQUIRER_BIN;
-const terminalId = process.env.CECA_REAL_TERMINAL_ID;
-const encryptionKey = process.env.CECA_REAL_ENCRYPTION_KEY;
-      ["NEXT_PUBLIC_SUPABASE_URL", supabaseUrl],
-      ["SUPABASE_SERVICE_ROLE_KEY", supabaseKey],
-    ]
-      .filter(([, value]) => !value)
-      .map(([name]) => name);
+    
+const missing = [
+  ["CECA_REAL_MERCHANT_ID", merchantId],
+  ["CECA_REAL_ACQUIRER_BIN", acquirerBin],
+  ["CECA_REAL_TERMINAL_ID", terminalId],
+  ["CECA_REAL_ENCRYPTION_KEY", encryptionKey],
+  ["NEXT_PUBLIC_SUPABASE_URL", supabaseUrl],
+  ["SUPABASE_SERVICE_ROLE_KEY", supabaseKey],
+]
+  .filter(([, value]) => !value)
+  .map(([name]) => name);
+
 
 
     if (missing.length > 0) {
