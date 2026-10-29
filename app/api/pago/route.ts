@@ -13,6 +13,7 @@ const CECA_REAL_URL =
   "https://pgw.ceca.es/tpvweb/tpv/compra.action";
 
 
+
 function getCecaSignature(
   merchantId: string,
   acquirerBin: string,
@@ -23,7 +24,43 @@ function getCecaSignature(
   urlNok: string,
   encryptionKey: string
 ): string {
-  const signingText = 
+  const key = encryptionKey.trim();
+
+  // CECA: decodificar la clave del comercio en Base64.
+  const decodedKey = Buffer.from(key, "base64");
+
+  if (decodedKey.length !== 24) {
+    throw new Error(
+      "La clave de CECA no se ha decodificado a 24 bytes."
+    );
+  }
+
+  // Triple DES-CBC con IV de ceros y relleno manual con ceros.
+  const operationBytes = Buffer.from(operation, "utf8");
+  const paddingLength = (8 - (operationBytes.length % 8)) % 8;
+
+  const paddedOperation = Buffer.concat([
+    operationBytes,
+    Buffer.alloc(paddingLength, 0),
+  ]);
+
+  const cipher = createCipheriv(
+    "des-ede3-cbc",
+    decodedKey,
+    Buffer.alloc(8, 0)
+  );
+
+  cipher.setAutoPadding(false);
+
+  const secretKc = Buffer.concat([
+    cipher.update(paddedOperation),
+    cipher.final(),
+  ]);
+
+  // CECA: clave + identificadores + operación + importe +
+  // moneda + exponente + cifrado + URLs.
+  const signingText =
+    key +
     merchantId.trim() +
     acquirerBin.trim() +
     terminalId.trim() +
@@ -31,15 +68,15 @@ function getCecaSignature(
     amount.trim() +
     "978" +
     "2" +
+    "HMAC" +
     urlOk.trim() +
-    urlNok.trim() +
-    encryptionKey.trim();
+    urlNok.trim();
 
-  // Sistema moderno de CECA: HMAC-SHA256 directo con la clave limpia
-  return createHmac("sha256", encryptionKey.trim())
+  return createHmac("sha256", secretKc)
     .update(signingText, "utf8")
     .digest("base64");
 }
+
 export async function POST(request: Request) {
   try {
     
