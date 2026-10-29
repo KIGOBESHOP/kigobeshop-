@@ -6,6 +6,15 @@ export const dynamic = "force-dynamic";
 
 const GLS_URL = "https://ws-customer.gls-spain.es/b2b.asmx";
 
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
 export async function GET(request: NextRequest) {
   const action = request.nextUrl.searchParams.get("action");
 
@@ -336,7 +345,7 @@ const envelope = `<?xml version="1.0" encoding="utf-8"?>
  xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
   <soap12:Body>
     <GrabaServicios xmlns="http://www.asmred.com/">
-      <docIn>${docIn}</docIn>
+     <docIn>${escapeXml(docIn)}</docIn>
     </GrabaServicios>
   </soap12:Body>
 </soap12:Envelope>`;
