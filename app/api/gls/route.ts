@@ -329,11 +329,9 @@ export async function POST(request: NextRequest) {
       <Referencia tipo="C"><![CDATA[${referencia}]]></Referencia>
     </Referencias>
     
-    <DevuelveAdicionales>
-      <PlazaDestino />
-      <Etiqueta tipo="PDF" modo=""></Etiqueta>
-    </DevuelveAdicionales>
-
+  <DevuelveAdicionales>
+  <PlazaDestino />
+</DevuelveAdicionales>
   </Envio>
 </Servicios>`;
 
