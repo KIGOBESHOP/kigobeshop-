@@ -23,50 +23,20 @@ function getCecaSignature(
   urlNok: string,
   encryptionKey: string
 ): string {
-  const signingText = [
-    merchantId.trim(),
-    acquirerBin.trim(),
-    terminalId.trim(),
-    operation.trim(),
-    amount.trim(),
-    "978",
-    "2",
-    urlOk.trim(),
-    urlNok.trim(),
-    encryptionKey.trim()
-  ].join("");
-  
-  // Paso 1: decodificar la clave del comercio.
-  // CECA indica decodificar la clave de 32 caracteres desde Base64.
-  // Para la clave del ejemplo oficial, esto produce exactamente 24 bytes.
-  const decodedKey = Buffer.from(encryptionKey, "base64");
+  const signingText = 
+    merchantId.trim() +
+    acquirerBin.trim() +
+    terminalId.trim() +
+    operation.trim() +
+    amount.trim() +
+    "978" +
+    "2" +
+    urlOk.trim() +
+    urlNok.trim() +
+    encryptionKey.trim();
 
-  if (decodedKey.length !== 24) {
-    throw new Error(
-      `Clave CECA inválida: se esperaban 24 bytes y se obtuvieron ${decodedKey.length}.`
-    );
-  }
-
-  // Paso 2: cifrar el número de operación con Triple DES.
-  const iv = Buffer.alloc(8, 0);
-  const operationBytes = Buffer.from(operation, "utf8");
-  const paddingLength = (8 - (operationBytes.length % 8)) % 8;
-
-  const paddedOperation = Buffer.concat([
-    operationBytes,
-    Buffer.alloc(paddingLength, 0),
-  ]);
-
-  const cipher = createCipheriv("des-ede3-cbc", decodedKey, iv);
-  cipher.setAutoPadding(false);
-
-  const encryptedOperation = Buffer.concat([
-    cipher.update(paddedOperation),
-    cipher.final(),
-  ]);
-
-  // Paso 3: HMAC-SHA256 y salida Base64.
-  return createHmac("sha256", encryptedOperation)
+  // Sistema moderno de CECA: HMAC-SHA256 directo con la clave limpia
+  return createHmac("sha256", encryptionKey.trim())
     .update(signingText, "utf8")
     .digest("base64");
 }
