@@ -19,9 +19,9 @@ function sameSignature(a: string, b: string) {
     Buffer.from(b.toLowerCase(), "hex")
   );
 }
-
 function cecaResponse(ok: boolean) {
-  return new Response(ok ? "$*$OKY$*$" : "$*$NOK$*$", {
+  // CECA solo quiere un "OK" limpio en texto plano o un texto vacío con estado 200
+  return new Response(ok ? "OK" : "FAIL", {
     status: 200,
     headers: { "Content-Type": "text/plain; charset=utf-8" },
   });
