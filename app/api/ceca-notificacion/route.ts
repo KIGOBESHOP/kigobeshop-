@@ -99,16 +99,16 @@ if (
     const params = new URLSearchParams(rawBody);
 
     const received = {
-      merchantId: params.get("MerchantID") ?? "",
-      acquirerBin: params.get("AcquirerBIN") ?? "",
-      terminalId: params.get("TerminalID") ?? "",
-      operation: params.get("Num_operacion") ?? "",
-      amount: params.get("Importe") ?? "",
-      currency: params.get("TipoMoneda") ?? "",
-      exponent: params.get("Exponente") ?? "",
-      reference: params.get("Referencia") ?? "",
-      signature: params.get("Firma") ?? "",
-    };
+  merchantId: params.get("MerchantID") || params.get("merchantID") || "",
+  acquirerBin: params.get("AcquirerBIN") || params.get("acquirerBIN") || "",
+  terminalId: params.get("TerminalID") || params.get("terminalID") || "",
+  operation: params.get("Num_operacion") || params.get("num_operacion") || "",
+  amount: params.get("Importe") || params.get("importe") || "",
+  currency: params.get("TipoMoneda") || params.get("tipomoneda") || "",
+  exponent: params.get("Exponente") || params.get("exponente") || "",
+  reference: params.get("Referencia") || params.get("referencia") || "",
+  signature: params.get("Firma") || params.get("firma") || "",
+};
 
     await saveCecaDiagnostic(
       "datos_notificacion_recibidos",
