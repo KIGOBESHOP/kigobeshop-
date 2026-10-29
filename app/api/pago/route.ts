@@ -240,8 +240,8 @@ const missing = [
     }
 
     const amount = String(totalCents);
-    const operation =
-      `KG${Date.now()}${randomBytes(4).toString("hex")}`;
+    
+    const operation = Math.floor(100000000000 + Math.random() * 900000000000).toString();
 
     const urlOk = "https://www.kigobeshop.com/pago/ok";
     const urlNok = "https://www.kigobeshop.com/pago/error";
