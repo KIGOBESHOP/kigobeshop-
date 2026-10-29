@@ -258,6 +258,25 @@ const missing = [
       encryptionKey!
     );
 
+    console.info("[CECA_DIAGNOSTICO]", {
+  fecha: new Date().toISOString(),
+  action: CECA_REAL_URL,
+  MerchantID: merchantId,
+  AcquirerBIN: acquirerBin,
+  TerminalID: terminalId,
+  Num_operacion: operation,
+  Importe: amount,
+  TipoMoneda: "978",
+  Exponente: "2",
+  URL_OK: urlOk,
+  URL_NOK: urlNok,
+  Cifrado: "HMAC",
+  Pago_soportado: "SSL",
+  Idioma: "1",
+  longitudFirma: signature.length,
+  firmaPresente: Boolean(signature),
+  clavePresente: Boolean(encryptionKey),
+});
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
@@ -405,25 +424,7 @@ const missing = [
         console.error("Error en la notificación por correo:", emailError);
       }
     }
-console.info("[CECA_DIAGNOSTICO]", {
-  fecha: new Date().toISOString(),
-  action: CECA_REAL_URL,
-  MerchantID: merchantId,
-  AcquirerBIN: acquirerBin,
-  TerminalID: terminalId,
-  Num_operacion: operation,
-  Importe: amount,
-  TipoMoneda: "978",
-  Exponente: "2",
-  URL_OK: urlOk,
-  URL_NOK: urlNok,
-  Cifrado: "HMAC",
-  Pago_soportado: "SSL",
-  Idioma: "1",
-  longitudFirma: signature.length,
-  firmaPresente: Boolean(signature),
-  clavePresente: Boolean(encryptionKey),
-});
+
     return NextResponse.json({
      action: CECA_REAL_URL,
       fields: {
