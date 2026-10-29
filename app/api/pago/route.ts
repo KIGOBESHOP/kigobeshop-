@@ -23,8 +23,7 @@ function getCecaSignature(
   urlNok: string,
   encryptionKey: string
 ): string {
-  const signingText =
-    encryptionKey +
+  const signingText = 
     merchantId +
     acquirerBin +
     terminalId +
@@ -32,9 +31,9 @@ function getCecaSignature(
     amount +
     "978" +
     "2" +
-    "HMAC" +
     urlOk +
-    urlNok;
+    urlNok +
+    encryptionKey;
 
   // Paso 1: decodificar la clave del comercio.
   // CECA indica decodificar la clave de 32 caracteres desde Base64.
