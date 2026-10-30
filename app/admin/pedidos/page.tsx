@@ -12,6 +12,8 @@ export default function PedidosPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [glsLoading, setGlsLoading] = useState(false);
+const [glsMessage, setGlsMessage] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -70,7 +72,51 @@ export default function PedidosPage() {
       setLoading(false);
     }
   }
+async function testGLS() {
+  const confirmed = window.confirm(
+    "Vas a enviar una expedición de prueba a GLS con datos ficticios. ¿GLS ha confirmado que no generará cargos ni recogidas reales?"
+  );
 
+  if (!confirmed) return;
+
+  setGlsLoading(true);
+  setGlsMessage("");
+
+  try {
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
+
+    if (error || !session) {
+      throw new Error("Tu sesión ha caducado. Vuelve a iniciar sesión.");
+    }
+
+    const response = await fetch("/api/gls", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action: "shipment-test" }),
+    });
+
+    const result = await response.json();
+
+    setGlsMessage(
+      result.ok
+        ? `GLS ha aceptado la prueba. Código: ${result.glsReturnCode}. Código de barras: ${result.barcode || "No recibido"}.`
+        : result.message || "GLS no ha confirmado la prueba."
+    );
+  } catch (error) {
+    setGlsMessage(
+      error instanceof Error ? error.message : "Error al probar GLS."
+    );
+  } finally {
+    setGlsLoading(false);
+  }
+}
+  
   if (checking) {
     return <main style={{ padding: 24 }}>Comprobando sesión...</main>;
   }
@@ -107,6 +153,19 @@ export default function PedidosPage() {
         {loading ? "Cargando pedidos..." : "Actualizar pedidos"}
       </button>
 
+      <button
+  onClick={testGLS}
+  disabled={glsLoading}
+  style={{ ...buttonStyle, marginLeft: 10, background: "#16a34a" }}
+>
+  {glsLoading ? "Comprobando GLS..." : "Probar envío GLS"}
+</button>
+
+{glsMessage && (
+  <p role="status" style={{ marginTop: 12 }}>
+    {glsMessage}
+  </p>
+)}
       {message && <p role="alert">{message}</p>}
 
       {!message && orders.length === 0 && !loading && (
