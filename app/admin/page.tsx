@@ -1034,24 +1034,6 @@ image: mainImage,
         {loadingOrders ? "Cargando pedidos..." : "Ver mis pedidos"}
       </button>
 
-<button
-  type="button"
-  style={{ ...buttonStyle, marginTop: 12 }}
-  onClick={diagnoseGLS}
-  disabled={busy}
->
-  Diagnosticar GLS
-</button>
-
-<button
-  type="button"
-  style={{ ...buttonStyle, marginTop: 12, marginLeft: 8 }}
-  onClick={createGLSTestShipment}
-  disabled={busy}
->
-  Probar envío GLS (TEST)
-</button>
-
       {message && (
         <p
           style={{
