@@ -21,7 +21,6 @@ type CartItem = {
   selectedSize?: string;
 };
 
-// CORREGIDO: Eliminada la propiedad gender para cumplir con la minimización de datos
 type CustomerData = {
   name: string;
   surname: string;
@@ -38,7 +37,6 @@ type CustomerData = {
 export default function Home() {
   const [cart, setCart] = useState<CartItem[]>([]);
   
-  // CORREGIDO: Eliminado gender de los datos iniciales del cliente
   const [customerData, setCustomerData] = useState<CustomerData>({
     name: "",
     surname: "",
@@ -82,12 +80,15 @@ export default function Home() {
   const [toast, setToast] = useState("");
   const [emailSubscribed, setEmailSubscribed] = useState(false);
 
+  // 🚨 CORREGIDO: Sincronización radical inmediata del carro al cargar la Home
   useEffect(() => {
     try {
       const savedCart = localStorage.getItem("kigobeshop-cart");
       const savedFavorites = localStorage.getItem("kigobeshop-favorites");
 
-      if (savedCart) {
+      if (!savedCart || savedCart === "[]" || savedCart === "{}") {
+        setCart([]);
+      } else {
         const parsedCart = JSON.parse(savedCart);
         setCart(
           parsedCart.map((item: any) => ({
@@ -108,7 +109,11 @@ export default function Home() {
 
   useEffect(() => {
     if (!storageLoaded) return;
-    localStorage.setItem("kigobeshop-cart", JSON.stringify(cart));
+    if (cart.length === 0) {
+      localStorage.setItem("kigobeshop-cart", "[]");
+    } else {
+      localStorage.setItem("kigobeshop-cart", JSON.stringify(cart));
+    }
     localStorage.setItem("kigobeshop-favorites", JSON.stringify(favorites));
   }, [cart, favorites, storageLoaded]);
   
@@ -260,7 +265,6 @@ export default function Home() {
         },
         body: JSON.stringify({
           customer: {
-            // CORREGIDO: Se quita la propiedad gender del JSON de envío al backend
             name: customerData.name.trim(),
             surname: customerData.surname.trim(),
             email: customerData.email.trim(),
@@ -310,7 +314,7 @@ export default function Home() {
 
   const handleSubscribe = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setEmailSubscribed(true);
+   setEmailSubscribed(true);
     setTimeout(() => setEmailSubscribed(false), 4000);
     (e.target as HTMLFormElement).reset();
   };
@@ -337,22 +341,17 @@ export default function Home() {
         list = list
           .filter((p) => p.oldPrice)
           .sort((a, b) => {
-        const aDisc = a.oldPrice ? (a.oldPrice - a.price) / a.oldPrice : 0;
-          const bDisc = b.oldPrice ? (b.oldPrice - b.price) / b.oldPrice : 0;
-          return bDisc - aDisc;
-        });
-      break;
-    default:
-      break;
-  }
+            const aDisc = a.oldPrice ? (a.oldPrice - a.price) / a.oldPrice : 0;
+            const bDisc = b.oldPrice ? (b.oldPrice - b.price) / b.oldPrice : 0;
+            return bDisc - aDisc;
+          });
+        break;
+      default:
+        break;
+    }
 
-  return list;
-}, [activeFilter, sortBy, categoryGender, dbProducts]);
-
-  const countByCategory = (cat: string) => {
-    if (cat === "Todos") return products.length;
-    return products.filter((p) => p.category === cat).length; 
-  };
+    return list;
+  }, [activeFilter, sortBy, categoryGender, dbProducts]);
 
   return (
     <main>
@@ -590,26 +589,8 @@ export default function Home() {
         </svg>
         {toast}
       </div>
-      {checkoutOpen && (
-        <CheckoutForm
-          data={customerData}
-          onChange={handleCustomerChange}
-          onClose={() => setCheckoutOpen(false)}
-          onSubmit={handleCheckoutSubmit}
-        />
-      )}
 
-      <div className={`toast ${toast ? "show" : ""}`}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-          <polyline points="22 4 12 14.01 9 11.01" />
-        </svg>
-        {toast}
-      </div>
-
-      {/* AÑADIDO: El banner de cookies flotante obligatorio */}
       <CookieBanner />
     </main>
   );
 }
-    
