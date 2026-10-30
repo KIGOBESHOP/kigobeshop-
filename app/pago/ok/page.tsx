@@ -5,20 +5,23 @@ import { useEffect } from "react";
 export default function PagoOkPage() {
   useEffect(() => {
     try {
-      // 1. Limpieza radical de almacenes locales comunes del navegador
-      localStorage.removeItem("cart");
-      localStorage.removeItem("cart-storage");
-      localStorage.removeItem("kigobeshop-cart");
-      sessionStorage.removeItem("cart");
+      // 1. Limpieza absoluta de toda la memoria local del navegador
+      localStorage.clear(); 
+      sessionStorage.clear();
 
-      // 2. Limpieza de cookies por si acaso tu plantilla las usa
-      document.cookie = "cart=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-      document.cookie = "kigobeshop-cart=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      // 2. Limpieza de todas las cookies existentes
+      const cookies = document.cookie.split(";");
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i];
+        const eqPos = cookie.indexOf("=");
+        const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+        document.cookie = name.trim() + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+      }
 
-      // 3. Lanzar un evento global para avisar a la barra de navegación de que se vacíe
+      // 3. Forzar un refresco controlado de los componentes para vaciar el estado de React
       window.dispatchEvent(new Event("storage"));
     } catch (error) {
-      console.error("Error al vaciar el carrito:", error);
+      console.error("Error al limpiar el carro:", error);
     }
   }, []);
 
@@ -40,6 +43,8 @@ export default function PagoOkPage() {
       <h1>¡Gracias por tu compra!</h1>
       <p>Estamos comprobando el estado de tu pago.</p>
       <p>Recibirás la confirmación de tu pedido cuando se verifique el pago.</p>
+      
+      {/* CORREGIDO: Usamos un enlace normal con refresh completo para limpiar la barra de navegación */}
       <a
         href="/"
         style={{
@@ -49,6 +54,7 @@ export default function PagoOkPage() {
           background: "#6b3fa0",
           color: "#fff",
           textDecoration: "none",
+          fontWeight: "bold"
         }}
       >
         Volver a KigobeShop
