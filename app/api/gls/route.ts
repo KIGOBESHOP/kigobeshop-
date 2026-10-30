@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// Dirección confirmada en el manual específico facilitado por GLS.
 const GLS_URL = "https://ws-customer.gls-spain.es/b2b.asmx";
 
 function escapeXml(value: string): string {
@@ -24,7 +25,6 @@ function unescapeXml(value: string): string {
     .replace(/&amp;/g, "&");
 }
 
-
 async function authenticateAdmin(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -41,9 +41,7 @@ async function authenticateAdmin(request: NextRequest) {
   }
 
   const authorization = request.headers.get("authorization");
-  const token = authorization?.startsWith("Bearer ")
-    ? authorization.slice(7)
-    : "";
+  const token = authorization?.startsWith("Bearer ") ? authorization.slice(7) : "";
 
   if (!token) {
     return {
@@ -58,7 +56,6 @@ async function authenticateAdmin(request: NextRequest) {
   const authClient = createClient(supabaseUrl, anonKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-
   const { data, error } = await authClient.auth.getUser(token);
 
   if (error || !data.user) {
@@ -90,11 +87,10 @@ export async function GET(request: NextRequest) {
   // Diagnóstico de pedidos: solo lectura y solo para la administradora.
   if (action === "orders-test") {
     const auth = await authenticateAdmin(request);
-  if (!auth.ok) return auth.error;
+    if (!auth.ok) return auth.error;
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
     if (!supabaseUrl || !serviceKey) {
       return NextResponse.json(
         { ok: false, message: "Falta SUPABASE_SERVICE_ROLE_KEY en Vercel." },
@@ -105,7 +101,6 @@ export async function GET(request: NextRequest) {
     const supabase = createClient(supabaseUrl, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-
     const { data: orders, error } = await supabase
       .from("orders")
       .select(
@@ -139,27 +134,25 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // Comprobación básica: solo comprueba que el servidor responde.
+  // Esta comprobación GET solo consulta la disponibilidad HTTP del servicio.
   try {
     const response = await fetch(GLS_URL, {
       method: "GET",
       cache: "no-store",
       signal: AbortSignal.timeout(10000),
     });
-
     return NextResponse.json({
       ok: true,
       serviceReachable: true,
       httpStatus: response.status,
       shipmentCreationEnabled: false,
-      message: "Servidor GLS accesible. No se han creado expediciones.",
+      message: "Servidor GLS accesible. Esta comprobación no crea expediciones.",
     });
   } catch (error) {
     console.error(
       "Error de conexión GLS:",
       error instanceof Error ? error.message : "Error desconocido"
     );
-
     return NextResponse.json(
       {
         ok: false,
@@ -174,12 +167,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Esta versión solo permite una prueba ficticia. No genera envíos de pedidos reales.
     const auth = await authenticateAdmin(request);
- if (!auth.ok) return auth.error;
+    if (!auth.ok) return auth.error;
 
     const testUid = process.env.GLS_UIDCLIENTE_TEST;
-
     if (!testUid) {
       return NextResponse.json(
         {
@@ -192,7 +183,6 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => null);
-
     if (body?.action !== "shipment-test") {
       return NextResponse.json(
         {
@@ -204,21 +194,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const parts = new Intl.DateTimeFormat("es-ES", {
+    const dateParts = new Intl.DateTimeFormat("es-ES", {
       timeZone: "Europe/Madrid",
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
     }).formatToParts(new Date());
+    const getPart = (type: string) =>
+      dateParts.find((part) => part.type === type)?.value ?? "";
+    const fecha = `${getPart("day")}/${getPart("month")}/${getPart("year")}`;
+    const referencia = `KIGOBE-TEST-${Date.now()}`;
 
-    const datePart = (type: string) =>
-      parts.find((part) => part.type === type)?.value ?? "";
-
-    const fecha = `${datePart("day")}/${datePart("month")}/${datePart("year")}`;
-    const referencia = `TEST${Date.now()}`;
-
-    // Datos ficticios de prueba. Se conserva la estructura del XML facilitado
-    // en el código de trabajo anterior; no se toman datos de clientes ni pedidos.
+    // Estructura basada en Shipment_Example0_Basic_IN.xml de GLS.
+    // Los datos del destinatario son ficticios. No se usan pedidos reales.
+    // IMPORTANTE: GrabaServicios inserta una expedición en GLS usando el UID indicado.
     const docIn = `<Servicios uidcliente="${escapeXml(testUid)}" xmlns="http://www.asmred.com/">
   <Envio codbarras="">
     <Fecha>${fecha}</Fecha>
@@ -226,14 +215,9 @@ export async function POST(request: NextRequest) {
     <Servicio>96</Servicio>
     <Horario>18</Horario>
     <Bultos>1</Bultos>
-    <Peso>1</Peso>
-    <Volumen></Volumen>
-    <Declarado></Declarado>
-    <DNINomb></DNINomb>
-    <FechaPrevistaEntrega></FechaPrevistaEntrega>
+    <Peso>4</Peso>
     <Retorno>0</Retorno>
     <Pod>N</Pod>
-    <PODObligatorio>N</PODObligatorio>
     <Remite>
       <Plaza></Plaza>
       <Nombre><![CDATA[KigobeShop]]></Nombre>
@@ -242,7 +226,10 @@ export async function POST(request: NextRequest) {
       <Provincia><![CDATA[Almería]]></Provincia>
       <Pais>34</Pais>
       <CP>04008</CP>
+      <Telefono><![CDATA[]]></Telefono>
+      <Movil><![CDATA[]]></Movil>
       <Email><![CDATA[kigobeshop@gmail.com]]></Email>
+      <Observaciones><![CDATA[]]></Observaciones>
     </Remite>
     <Destinatario>
       <Codigo></Codigo>
@@ -256,19 +243,18 @@ export async function POST(request: NextRequest) {
       <Telefono><![CDATA[933888777]]></Telefono>
       <Movil><![CDATA[666777888]]></Movil>
       <Email><![CDATA[test@test.com]]></Email>
-      <Observaciones><![CDATA[PRUEBA TECNICA]]></Observaciones>
+      <Observaciones><![CDATA[PRUEBA TECNICA KIGOBESHOP]]></Observaciones>
+      <ATT><![CDATA[GLS TEST]]></ATT>
     </Destinatario>
     <Referencias>
       <Referencia tipo="C"><![CDATA[${referencia}]]></Referencia>
     </Referencias>
     <DevuelveAdicionales>
-      <PlazaDestino />
-      <Etiqueta tipo="PDF" modo=""></Etiqueta>
+      <Etiqueta tipo="JPG"></Etiqueta>
     </DevuelveAdicionales>
   </Envio>
 </Servicios>`;
 
-    // docIn es un parámetro de texto SOAP: hay que escapar el XML interior.
     const envelope = `<?xml version="1.0" encoding="utf-8"?>
 <soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
@@ -283,8 +269,7 @@ export async function POST(request: NextRequest) {
     const response = await fetch(GLS_URL, {
       method: "POST",
       headers: {
-        "Content-Type":
-          'application/soap+xml; charset=utf-8; action="http://www.asmred.com/GrabaServicios"',
+        "Content-Type": 'application/soap+xml; charset=utf-8; action="http://www.asmred.com/GrabaServicios"',
       },
       body: envelope,
       cache: "no-store",
@@ -292,25 +277,21 @@ export async function POST(request: NextRequest) {
     });
 
     const responseXml = await response.text();
-
     const match = responseXml.match(
       /<(?:[\w.-]+:)?GrabaServiciosResult\b[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?GrabaServiciosResult>/i
     );
-
     const resultXml = match ? unescapeXml(match[1]) : "";
     const shipmentMatch = resultXml.match(/<Envio\b([^>]*)>/i);
-    const barcodeMatch = shipmentMatch?.[1].match(/\bcodbarras="([^"]*)"/i);
-    const returnMatch = resultXml.match(
-      /<Resultado\b[^>]*\breturn="([^"]*)"/i
-    );
-
-    const returnCode = returnMatch?.[1] ?? null;
-    const barcode = barcodeMatch?.[1] ?? null;
-    const labelReturned = /<Etiqueta\b[^>]*>[\s\S]*?<\/Etiqueta>/i.test(
-      resultXml
-    );
+    const barcode = shipmentMatch?.[1].match(/\bcodbarras="([^"]*)"/i)?.[1] ?? null;
+    const uid = shipmentMatch?.[1].match(/\buid="([^"]*)"/i)?.[1] ?? null;
+    const returnCode = resultXml.match(/<Resultado\b[^>]*\breturn="([^"]*)"/i)?.[1] ?? null;
+    const labelReturned = /<Etiqueta\b[^>]*>[\s\S]*?<\/Etiqueta>/i.test(resultXml);
     const soapFault = /<(?:[\w.-]+:)?Fault\b/i.test(responseXml);
     const success = response.ok && !soapFault && returnCode === "0";
+
+    const safeResult = resultXml
+      ? resultXml.replace(/<Etiqueta\b[^>]*>[\s\S]*?<\/Etiqueta>/gi, "<Etiqueta>[contenido omitido]</Etiqueta>").slice(0, 3000)
+      : responseXml.slice(0, 2000);
 
     return NextResponse.json({
       ok: success,
@@ -319,35 +300,30 @@ export async function POST(request: NextRequest) {
       reference: referencia,
       glsReturnCode: returnCode,
       barcode,
+      shipmentUid: uid,
       labelReturned,
       soapFault,
       responseReceived: responseXml.length > 0,
+      testUidUsed: true,
+      // La operación sí puede crear una expedición en el entorno asociado al UID de test.
+      testShipmentMayBeCreatedInGls: true,
       productionShipmentCreationEnabled: false,
-      testShipmentSubmission: true,
       message: success
-        ? "GLS ha aceptado el envío de prueba."
-        : "GLS no ha confirmado el envío de prueba. Revisa la respuesta recibida.",
-      responseExcerpt: resultXml
-        ? resultXml
-            .replace(
-              /<Etiqueta\b[^>]*>[\s\S]*?<\/Etiqueta>/gi,
-              "<Etiqueta>[omitida]</Etiqueta>"
-            )
-            .slice(0, 3000)
-        : responseXml.slice(0, 1500),
+        ? "GLS ha aceptado la expedición de prueba en el entorno asociado al UID de test."
+        : "GLS no ha confirmado la expedición de prueba. Revisa la respuesta recibida.",
+      responseExcerpt: safeResult,
     });
   } catch (error) {
     console.error(
       "Error en prueba GLS:",
       error instanceof Error ? error.message : "Error desconocido"
     );
-
     return NextResponse.json(
       {
         ok: false,
-        message: "No se pudo completar la prueba de GLS.",
+        message: "No se pudo completar la petición a GLS.",
         productionShipmentCreationEnabled: false,
-        testShipmentSubmission: true,
+        testShipmentMayBeCreatedInGls: true,
       },
       { status: 502 }
     );
