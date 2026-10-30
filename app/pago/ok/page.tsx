@@ -1,14 +1,36 @@
 "use client";
 
+import { useEffect } from "react";
+
 export default function PagoOkPage() {
+  useEffect(() => {
+    try {
+      // 1. BOMBA ATÓMICA: Borra ABSOLUTAMENTE TODO el almacenamiento local, se llame como se llame
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // 2. Borra también todas las cookies por si acaso
+      const cookies = document.cookie.split(";");
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i];
+        const eqPos = cookie.indexOf("=");
+        const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+        document.cookie = name.trim() + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+      }
+    } catch (error) {
+      console.error("Error en la limpieza:", error);
+    }
+  }, []);
+
   const manejarVolver = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     try {
       localStorage.clear();
       sessionStorage.clear();
     } catch (err) {}
-    // Enviamos un parámetro secreto "?clear=true" para obligar a la home a limpiarse
-    window.location.href = "/?clear=true";
+    
+    // 3. REDIRECCIÓN MANUAL: Rompe la memoria de React y fuerza a la Home a cargar de cero
+    window.location.href = "/";
   };
 
   return (
