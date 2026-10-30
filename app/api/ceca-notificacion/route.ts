@@ -358,12 +358,3 @@ export async function POST(request: Request) {
     return cecaResponse(false);
   }
 }
-} catch (error) {
-        await saveCecaDiagnostic("error_inesperado", null, {
-            mensaje: error instanceof Error ? error.message : "Error desconocido",
-        });
-
-        console.error("Error procesando la notificación CECA:", error);
-        return cecaResponse(false);
-    }
-}
