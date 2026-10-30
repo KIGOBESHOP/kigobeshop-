@@ -249,6 +249,7 @@ export async function POST(request: NextRequest) {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
+    
     // Definición de variables para el envío
     let destinatarioNombre = "GLS TEST";
     let destinatarioDireccion = "Calle Juan Esplandi 513b";
@@ -257,7 +258,7 @@ export async function POST(request: NextRequest) {
     let destinatarioCP = "28007";
     let destinatarioTelefono = "933888777";
     let destinatarioEmail = "test@test.com";
-    let referencia = TEST${Date.now()};
+    let referencia = `TEST${Date.now()}`;
 
     // Si pasamos un orderId válido, extraemos la información real de Supabase
     if (orderId) {
@@ -268,17 +269,20 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (orderError || !order) {
-        return NextResponse.json({ ok: false, message: No se encontró el pedido con ID: ${orderId} }, { status: 404 });
+        return NextResponse.json({
+          ok: false,
+          message: `No se encontró el pedido con ID: ${orderId}`
+        }, { status: 404 });
       }
 
-      destinatarioNombre = ${order.customer_name} ${order.customer_surname || ""}.trim();
+      destinatarioNombre = `${order.customer_name} ${order.customer_surname || ""}`.trim();
       destinatarioDireccion = order.customer_address;
       destinatarioPoblacion = order.customer_city;
       destinatarioProvincia = order.customer_provincia || order.customer_city;
       destinatarioCP = order.customer_postal_code;
-      destinatarioTelefono = order.customer_phone || "666777888"; 
+      destinatarioTelefono = order.customer_phone || "666777888";
       destinatarioEmail = order.customer_email || "info@kigobeshop.com";
-      referencia = PEDIDO-${order.id};
+      referencia = `PEDIDO-${order.id}`;
     }
 
     const parts = new Intl.DateTimeFormat("es-ES", {
@@ -288,8 +292,10 @@ export async function POST(request: NextRequest) {
       year: "numeric",
     }).formatToParts(new Date());
 
-    const datePart = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
-    const fecha = ${datePart("day")}/${datePart("month")}/${datePart("year")};
+    const datePart = (type: string) =>
+      parts.find((part) => part.type === type)?.value ?? "";
+
+    const fecha = `${datePart("day")}/${datePart("month")}/${datePart("year")}`;
 
     const docIn = `<Servicios uidcliente="${uidCliente}" xmlns="http://asmred.com">
   <Envio codbarras="">
