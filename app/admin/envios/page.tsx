@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -41,6 +40,7 @@ export default function EnviosPage() {
   const [generating, setGenerating] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [glsTesting, setGlsTesting] = useState(false);
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -84,18 +84,16 @@ export default function EnviosPage() {
     loadOrders();
   }, [loadOrders]);
 
-  async function generateShipment(orderId: string | number) {
-    const id = String(orderId);
-
+  async function testGLS() {
     if (
       !window.confirm(
-        "¿Quieres generar el envío GLS de este pedido? Esta acción creará un envío real."
+        "Se enviará a GLS una solicitud de prueba con datos ficticios. ¿Confirmas que GLS ha autorizado este uso del entorno de pruebas?"
       )
     ) {
       return;
     }
 
-    setGenerating(id);
+    setGlsTesting(true);
     setMessage("");
     setError("");
 
@@ -115,28 +113,31 @@ export default function EnviosPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify({ action: "shipment-test" }),
       });
 
       const data = await response.json();
 
       if (!response.ok || !data.ok) {
-        throw new Error(data.message || "GLS no ha podido generar el envío.");
+        const diagnostic = [
+          data.message || "GLS no ha confirmado la prueba.",
+          data.httpStatus ? `HTTP: ${data.httpStatus}` : "",
+          data.glsReturnCode ? `Código GLS: ${data.glsReturnCode}` : "",
+          data.responseExcerpt ? `Respuesta: ${data.responseExcerpt}` : "",
+        ].filter(Boolean).join("\\n");
+
+        throw new Error(diagnostic);
       }
 
       setMessage(
-        data.barcode
-          ? `Envío generado correctamente. Código: ${data.barcode}`
-          : "GLS ha aceptado la operación. Comprueba el código del envío."
+        `GLS ha aceptado la solicitud de prueba. Código: ${data.glsReturnCode ?? "No indicado"}. Código de barras: ${data.barcode || "No recibido"}.`
       );
-
-      await loadOrders();
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "No se pudo generar el envío."
+        err instanceof Error ? err.message : "No se pudo completar la prueba GLS."
       );
     } finally {
-      setGenerating(null);
+      setGlsTesting(false);
     }
   }
 
@@ -235,19 +236,6 @@ export default function EnviosPage() {
           </div>
         )}
 
-        {!generated && (
-          <button
-            type="button"
-            style={{
-              ...styles.button,
-              opacity: generating === id ? 0.6 : 1,
-            }}
-            disabled={generating !== null}
-            onClick={() => generateShipment(order.id)}
-          >
-            {generating === id ? "Generando envío..." : "Generar envío GLS"}
-          </button>
-        )}
       </article>
     );
   }
@@ -262,14 +250,25 @@ export default function EnviosPage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          style={styles.refreshButton}
-          onClick={loadOrders}
-          disabled={loading}
-        >
-          {loading ? "Cargando..." : "Actualizar"}
-        </button>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            style={styles.refreshButton}
+            onClick={loadOrders}
+            disabled={loading}
+          >
+            {loading ? "Cargando..." : "Actualizar"}
+          </button>
+
+          <button
+            type="button"
+            style={{ ...styles.button, width: "auto", marginTop: 0, padding: "11px 18px" }}
+            onClick={testGLS}
+            disabled={glsTesting}
+          >
+            {glsTesting ? "Probando GLS..." : "Probar envío GLS"}
+          </button>
+        </div>
       </header>
 
       <div style={styles.stats}>
@@ -467,4 +466,3 @@ const styles: Record<string, React.CSSProperties> = {
     textDecoration: "none",
   },
 };
-
