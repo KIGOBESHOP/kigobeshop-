@@ -8,15 +8,23 @@ const poppins = Poppins({
   variable: '--font-poppins',
 });
 
-
 export const metadata: Metadata = {
-  title: 'KIGOBESHOP — Tu estilo, tus reglas.',
+  title: 'KIGOBESHOP | Tienda Online de Moda Urbana y Bolsos',
   description:
-    'Tienda online juvenil de ropa y bolsos. Descubre las últimas tendencias en moda urbana y expresa tu personalidad.',
+    'Descubre las últimas tendencias en moda urbana, ropa juvenil y bolsos exclusivos en KIGOBESHOP. Tu estilo, tus reglas. Envío rápido con GLS.',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
   openGraph: {
-    title: 'KIGOBESHOP — Tu estilo, tus reglas.',
+    title: 'KIGOBESHOP | Tienda Online de Moda Urbana y Bolsos',
     description:
-      'Tienda online juvenil de ropa y bolsos. Descubre las últimas tendencias en moda urbana.',
+      'Descubre las últimas tendencias en moda urbana, ropa juvenil y bolsos exclusivos en KIGOBESHOP. Tu estilo, tus reglas.',
+    url: 'https://kigobeshop.com',
+    siteName: 'KIGOBESHOP',
+    locale: 'es_ES',
+    type: 'website',
   },
 };
 
@@ -27,7 +35,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className={poppins.variable}>
-      <body>{children}</body>
+      <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+      </head>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }
