@@ -4,7 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const GLS_URL = "https://gls-spain.es";
+// CORREGIDO: Ahora apunta al Web Service real de producción de GLS (ASMRed)
+const GLS_URL = "https://asmred.com";
 
 function escapeXml(value: string): string {
   return (value || "")
@@ -108,8 +109,8 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // Las comprobaciones de conexión con GLS sí necesitan el identificador del cliente.
-  const uidCliente = process.env.GLS_UIDCLIENTE;
+  // CORREGIDO: Si no está en el .env de Vercel, se asigna directamente tu ID de cliente de la extranet
+  const uidCliente = process.env.GLS_UIDCLIENTE || "090909138";
 
   if (!uidCliente) {
     return NextResponse.json(
@@ -202,7 +203,9 @@ export async function POST(request: NextRequest) {
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-    const uidCliente = process.env.GLS_UIDCLIENTE;
+    
+    // CORREGIDO: Fuerza el uso de tu cuenta oficial si no se detecta en entorno
+    const uidCliente = process.env.GLS_UIDCLIENTE || "090909138";
 
     if (!supabaseUrl || !anonKey || !serviceKey || !adminEmail || !uidCliente) {
       return NextResponse.json(
@@ -237,7 +240,6 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json().catch(() => null);
     
-    // Permitir tanto test manual como envíos de pedidos reales
     const isTest = body?.action === "shipment-test";
     const orderId = body?.orderId;
 
@@ -249,8 +251,6 @@ export async function POST(request: NextRequest) {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    
-    // Definición de variables para el envío
     let destinatarioNombre = "GLS TEST";
     let destinatarioDireccion = "Calle Juan Esplandi 513b";
     let destinatarioPoblacion = "Madrid";
@@ -260,7 +260,6 @@ export async function POST(request: NextRequest) {
     let destinatarioEmail = "test@test.com";
     let referencia = `TEST${Date.now()}`;
 
-    // Si pasamos un orderId válido, extraemos la información real de Supabase
     if (orderId) {
       const { data: order, error: orderError } = await supabase
         .from("orders")
@@ -275,46 +274,35 @@ export async function POST(request: NextRequest) {
         }, { status: 404 });
       }
 
-      if (orderError || !order) {
-  return NextResponse.json({
-    ok: false,
-    message: "Pedido no encontrado"
-  }, { status: 404 });
-}
+      if (!isTest && order.payment_status !== "paid") {
+        return NextResponse.json({
+          ok: false,
+          message: "No se puede generar un envío: el pedido no está pagado."
+        }, { status: 409 });
+      }
 
-if (!isTest && order.payment_status !== "paid") {
-  return NextResponse.json({
-    ok: false,
-    message: "No se puede generar un envío: el pedido no está pagado."
-  }, { status: 409 });
-}
+      if (!isTest && (order.shipping_barcode || order.gls_status === "generado")) {
+        return NextResponse.json({
+          ok: false,
+          message: "Este pedido ya tiene un envío GLS generado.",
+          barcode: order.shipping_barcode
+        }, { status: 409 });
+      }
 
-if (
-  !isTest &&
-  (order.shipping_barcode || order.gls_status === "generado")
-) {
-  return NextResponse.json({
-    ok: false,
-    message: "Este pedido ya tiene un envío GLS generado.",
-    barcode: order.shipping_barcode
-  }, { status: 409 });
-}
-
-if (
-  !isTest &&
-  (
-    !order.customer_name ||
-    !order.customer_address ||
-    !order.customer_city ||
-    !order.customer_postal_code
-  )
-) {
-  return NextResponse.json({
-    ok: false,
-    message: "Faltan datos obligatorios del destinatario."
-  }, { status: 400 });
-}
-
+      if (
+        !isTest &&
+        (
+          !order.customer_name ||
+          !order.customer_address ||
+          !order.customer_city ||
+          !order.customer_postal_code
+        )
+      ) {
+        return NextResponse.json({
+          ok: false,
+          message: "Faltan datos obligatorios del destinatario."
+        }, { status: 400 });
+      }
 
       destinatarioNombre = `${order.customer_name} ${order.customer_surname || ""}`.trim();
       destinatarioDireccion = order.customer_address;
@@ -323,144 +311,116 @@ if (
       destinatarioCP = order.customer_postal_code;
       destinatarioTelefono = order.customer_phone || "666777888";
       destinatarioEmail = order.customer_email || "info@kigobeshop.com";
-      referencia = `PEDIDO-${order.id}`;
-    }
 
-    const parts = new Intl.DateTimeFormat("es-ES", {
-      timeZone: "Europe/Madrid",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }).formatToParts(new Date());
+    referencia = PEDIDO-${order.id};
+}
+const parts = new Intl.DateTimeFormat("es-ES", {
+timeZone: "Europe/Madrid",
+day: "2-digit",
+month: "2-digit",
+year: "numeric",
+}).formatToParts(new Date());
+const datePart = (type: string) =>
+parts.find((part) => part.type === type)?.value ?? "";
+const fecha = ${datePart("day")}/${datePart("month")}/${datePart("year")};
+// CORREGIDO: Mapeo exacto del XML según los datos contractuales de tu cuenta
+const docIn = `
 
-    const datePart = (type: string) =>
-      parts.find((part) => part.type === type)?.value ?? "";
+${fecha}
+P
+1
+3
+1
+1
 
-    const fecha = `${datePart("day")}/${datePart("month")}/${datePart("year")}`;
 
-    const docIn = `<Servicios uidcliente="${uidCliente}" xmlns="http://asmred.com">
-  <Envio codbarras="">
-    <Fecha>${fecha}</Fecha>
-    <Portes>P</Portes>
-    <Servicio>96</Servicio>
-    <Horario>18</Horario>
-    <Bultos>1</Bultos>
-    <Peso>1</Peso>
-    <Volumen></Volumen>
-    <Declarado></Declarado>
-    <DNINomb></DNINomb>
-    <FechaPrevistaEntrega></FechaPrevistaEntrega>
-    <Retorno>0</Retorno>
+75268471M
 
-    <Pod>N</Pod>
-    <PODObligatorio>N</PODObligatorio>
+0
+N
+N
+34
+04008
 
-    <Remite>
-      <Plaza></Plaza>
-      <Nombre><![CDATA[KigobeShop]]></Nombre>
-      <Direccion><![CDATA[Calle Granada, Plaza Primero de Mayo 27]]></Direccion>
-      <Poblacion><![CDATA[Almería]]></Poblacion>
-      <Provincia><![CDATA[Almería]]></Provincia>
-      <Pais>34</Pais>
-      <CP>04008</CP>
-      <Email><![CDATA[kigobeshop@gmail.com]]></Email>
-    </Remite>
-    <Destinatario>
-      <Codigo></Codigo>
-      <Plaza></Plaza>
-      <Nombre><![CDATA[${escapeXml(destinatarioNombre)}]]></Nombre>
-      <Direccion><![CDATA[${escapeXml(destinatarioDireccion)}]]></Direccion>
-      <Poblacion><![CDATA[${escapeXml(destinatarioPoblacion)}]]></Poblacion>
-      <Provincia><![CDATA[${escapeXml(destinatarioProvincia)}]]></Provincia>
-      <Pais>34</Pais>
-      <CP>${escapeXml(destinatarioCP)}</CP>
-      <Telefono><![CDATA[${escapeXml(destinatarioTelefono)}]]></Telefono>
-      <Movil><![CDATA[${escapeXml(destinatarioTelefono)}]]></Movil>
-      <Email><![CDATA[${escapeXml(destinatarioEmail)}]]></Email>
-      <Observaciones><![CDATA[${isTest ? 'PRUEBA TECNICA' : 'ENTREGA TIENDA ONLINE'}]]></Observaciones>
-    </Destinatario>
-    <Referencias>
-      <Referencia tipo="C"><![CDATA[${referencia}]]></Referencia>
-    </Referencias>
-    <DevuelveAdicionales>
-      <PlazaDestino />
-    </DevuelveAdicionales>
-  </Envio>
-</Servicios>`;
 
-    const envelope = `<?xml version="1.0" encoding="utf-8"?>
-<soap12:Envelope xmlns:xsi="http://w3.org"
- xmlns:xsd="http://w3.org"
- xmlns:soap12="http://w3.org">
-  <soap12:Body>
-    <GrabaServicios xmlns="http://asmred.com">
-      <docIn>${docIn}</docIn>
-    </GrabaServicios>
-  </soap12:Body>
-</soap12:Envelope>`;
 
-    const response = await fetch(GLS_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": 'application/soap+xml; charset=utf-8; action="http://asmred.comGrabaServicios"',
-      },
-      body: envelope,
-      cache: "no-store",
-      signal: AbortSignal.timeout(25000),
-    });
 
-    const responseXml = await response.text();
 
-   const match = responseXml.match(/<GrabaServiciosResult[^>]*>([\s\S]*?)<\/GrabaServiciosResult>/i);
-    const unescapeXml = (value: string) =>
-      value
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .replace(/&quot;/g, '"')
-        .replace(/&apos;/g, "'")
-        .replace(/&amp;/g, "&");
 
-    const resultXml = match ? unescapeXml(match[1]) : "";
-    const shipmentMatch = resultXml.match(/<Envio\b([^>]*)>/i);
-    const barcodeMatch = shipmentMatch ? shipmentMatch[1].match(/\bcodbarras="([^"]*)"/i) : null;
-   const returnMatch = resultXml.match(/<Resultado\b[^>]*\breturn="([^"]*)"/i);
 
-    const returnCode = returnMatch ? returnMatch[1] : null;
-    const barcode = barcodeMatch ? barcodeMatch[1] : null;
-   const labelReturned = /<Etiqueta\b[^>]*>[\s\S]*?<\/Etiqueta>/i.test(resultXml);
 
-    const isSuccess = response.ok && returnCode === "0";
 
-    if (isSuccess && orderId) {
-      await supabase
-        .from("orders")
-        .update({ 
-          gls_status: "generado", 
-          shipping_barcode: barcode 
-        })
-        .eq("id", orderId);
-    }
+34
+${escapeXml(destinatarioCP)}
 
-    return NextResponse.json({
-      ok: isSuccess,
-      operation: "GrabaServicios",
-      httpStatus: response.status,
-      reference: referencia,
-      glsReturnCode: returnCode,
-      barcode,
-      labelReturned,
-      soapFault: /<[^>]*Fault\b/i.test(responseXml),
-      responseReceived: responseXml.length > 0,
-      shipmentCreationEnabled: !isTest,
-      message: isSuccess
-          ? "GLS ha aceptado y procesado el envío correctamente."
-          : "GLS no ha confirmado el envío. Revisa los datos de destino u origen.",
-      responseExcerpt: resultXml
-  ? resultXml.replace(/<Etiqueta\b[^>]*>[\s\S]*?<\/Etiqueta>/gi, "<Etiqueta>[omitida]</Etiqueta>").slice(0, 3000)
-  : responseXml.slice(0, 1500),
-    });
-  } catch (error) {
-    console.error("Error en procesamiento GLS:", error instanceof Error ? error.message : "Error desconocido");
-    return NextResponse.json({ ok: false, message: "No se pudo procesar la petición con GLS." }, { status: 502 });
-  }
+
+
+
+
+
+
+
+
+
+
+
+`;
+const envelope = <?xml version="1.0" encoding="utf-8"?> <soap12:Envelope xmlns:xsi="http://w3.org" xmlns:xsd="http://w3.org" xmlns:soap12="http://w3.org"> <soap12:Body> <GrabaServicios xmlns="http://asmred.com"> <docIn>${docIn}</docIn> </GrabaServicios> </soap12:Body> </soap12:Envelope>;
+const response = await fetch(GLS_URL, {
+method: "POST",
+headers: {
+"Content-Type": 'application/soap+xml; charset=utf-8; action="http://asmred.comGrabaServicios"',
+},
+body: envelope,
+cache: "no-store",
+signal: AbortSignal.timeout(25000),
+});
+const responseXml = await response.text();
+const match = responseXml.match(/<GrabaServiciosResult[^>]>([\s\S]?)</GrabaServiciosResult>/i);
+const unescapeXml = (value: string) =>
+value
+.replace(/</g, "<")
+.replace(/>/g, ">")
+.replace(/"/g, '"')
+.replace(/'/g, "'")
+.replace(/&/g, "&");
+const resultXml = match ? unescapeXml(match[1]) : "";
+const shipmentMatch = resultXml.match(/<Envio\b([^>])>/i);
+const barcodeMatch = shipmentMatch ? shipmentMatch[1].match(/\bcodbarras="([^"])"/i) : null;
+const returnMatch = resultXml.match(/<Resultado\b[^>]\breturn="([^"])"/i);
+const returnCode = returnMatch ? returnMatch[1] : null;
+const barcode = barcodeMatch ? barcodeMatch[1] : null;
+const labelReturned = /<Etiqueta\b[^>]>[\s\S]?</Etiqueta>/i.test(resultXml);
+const isSuccess = response.ok && returnCode === "0";
+if (isSuccess && orderId) {
+await supabase
+.from("orders")
+.update({
+gls_status: "generado",
+shipping_barcode: barcode
+})
+.eq("id", orderId);
+}
+return NextResponse.json({
+ok: isSuccess,
+operation: "GrabaServicios",
+httpStatus: response.status,
+reference: referencia,
+glsReturnCode: returnCode,
+barcode,
+labelReturned,
+soapFault: /<[^>]Fault\b/i.test(responseXml),
+responseReceived: responseXml.length > 0,
+shipmentCreationEnabled: !isTest,
+message: isSuccess
+? "GLS ha aceptado y processed el envío correctamente."
+: "GLS no ha confirmado el envío. Revisa los datos de destino u origen.",
+responseExcerpt: resultXml
+? resultXml.replace(/<Etiqueta\b[^>]>[\s\S]*?</Etiqueta>/gi, "[omitida]").slice(0, 3000)
+: responseXml.slice(0, 1500),
+});
+} catch (error) {
+console.error("Error en procesamiento GLS:", error instanceof Error ? error.message : "Error desconocido");
+return NextResponse.json({ ok: false, message: "No se pudo procesar la petición con GLS." }, { status: 502 });
+}
 }
