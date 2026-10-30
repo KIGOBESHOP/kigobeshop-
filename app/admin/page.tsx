@@ -727,6 +727,7 @@ image: mainImage,
     { title: "👗 Productos", url: "/admin/productos" },
     { title: "📦 Stock", url: "/admin/stock" },
     { title: "🛍️ Pedidos", url: "/admin/pedidos" },
+  { title: "🚚 Envíos GLS", url: "/admin/envios" },
   ].map((item) => (
     <button
       key={item.url}
