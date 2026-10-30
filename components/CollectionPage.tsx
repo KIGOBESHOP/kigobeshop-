@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
@@ -10,6 +9,7 @@ import CheckoutForm from "@/components/CheckoutForm";
 import Footer from "@/components/Footer";
 import { products, type Product } from "@/lib/products";
 import { supabase } from "@/lib/supabase";
+
 type CartItem = {
   cartKey: string;
   product: Product;
@@ -19,8 +19,8 @@ type CartItem = {
   selectedSize?: string;
 };
 
+// CORREGIDO: Eliminado "gender" del tipo de datos
 type CustomerData = {
-  gender: string;
   name: string;
   surname: string;
   email: string;
@@ -32,6 +32,7 @@ type CustomerData = {
   acceptTerms: boolean;
   acknowledgePrivacy: boolean;
 };
+
 type Props = { collection: Product["collection"] };
 
 const titles: Record<Product["collection"], string> = {
@@ -44,7 +45,7 @@ const titles: Record<Product["collection"], string> = {
 export default function CollectionPage({ collection }: Props) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [dbProducts, setDbProducts] = useState<Product[]>([]);
-const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
+  const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
   const [favorites, setFavorites] = useState<number[]>([]);
   const [storageLoaded, setStorageLoaded] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -52,19 +53,20 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [badgeKey, setBadgeKey] = useState(0);
   const [toast, setToast] = useState("");
- const [customerData, setCustomerData] = useState<CustomerData>({
-  gender: "",
-  name: "",
-  surname: "",
-  email: "",
-  phone: "",
-  address: "",
-  city: "",
-  postalCode: "",
-  shippingMethod: "standard",
-  acceptTerms: false,
-  acknowledgePrivacy: false,
-});
+
+  // CORREGIDO: Eliminado "gender: ''" del estado inicial
+  const [customerData, setCustomerData] = useState<CustomerData>({
+    name: "",
+    surname: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    postalCode: "",
+    shippingMethod: "standard",
+    acceptTerms: false,
+    acknowledgePrivacy: false,
+  });
   
   useEffect(() => {
     let cancelled = false;
@@ -83,10 +85,8 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
           category: p.category,
           collection: p.collection,
           price: Number(p.price),
-          ...(p.old_price != null
-            ? { oldPrice: Number(p.old_price) }
-            : {}),
-                    image: p.image,
+          ...(p.old_price != null ? { oldPrice: Number(p.old_price) } : {}),
+          image: p.image,
           description: p.description ?? "",
           sizes: Array.isArray(p.sizes) ? p.sizes : [],
           variants: Array.isArray(p.variants) ? p.variants : [],
@@ -97,7 +97,7 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
         }
       } catch (error) {
         console.error("Error al cargar productos de Supabase:", error);
-      } finally {
+      } finaly {
         if (!cancelled) {
           setDbProductsLoaded(true);
         }
@@ -116,18 +116,15 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
       const savedCart = localStorage.getItem("kigobeshop-cart");
       const savedFavorites = localStorage.getItem("kigobeshop-favorites");
 
-     if (savedCart) {
-  const parsedCart = JSON.parse(savedCart);
-
-  setCart(
-    parsedCart.map((item: any) => ({
-      ...item,
-      cartKey:
-        item.cartKey ??
-        `${item.product.id}::${item.selectedColor ?? ""}`,
-    }))
-  );
-}
+      if (savedCart) {
+        const parsedCart = JSON.parse(savedCart);
+        setCart(
+          parsedCart.map((item: any) => ({
+            ...item,
+            cartKey: item.cartKey ?? `${item.product.id}::${item.selectedColor ?? ""}`,
+          }))
+        );
+      }
       if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
     } catch (error) {
       console.error("Error al cargar los datos guardados", error);
@@ -137,31 +134,26 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
 
   useEffect(() => {
     if (!storageLoaded) return;
-
     localStorage.setItem("kigobeshop-cart", JSON.stringify(cart));
     localStorage.setItem("kigobeshop-favorites", JSON.stringify(favorites));
   }, [cart, favorites, storageLoaded]);
+
   const showToast = useCallback((message: string) => {
     setToast(message);
     setTimeout(() => setToast(""), 4000);
   }, []);
 
- const addToCart = (
-  product: Product,
-  variant?: { color: string; image: string },
-  size?: string
-) => {
+  const addToCart = (
+    product: Product,
+    variant?: { color: string; image: string },
+    size?: string
+  ) => {
     const cartKey = `${product.id}::${variant?.color ?? ""}::${size ?? ""}`;
 
     setCart((prev) => {
       const existing = prev.find((item) => item.cartKey === cartKey);
-
       return existing
-        ? prev.map((item) =>
-            item.cartKey === cartKey
-              ? { ...item, qty: item.qty + 1 }
-              : item
-          )
+        ? prev.map((item) => item.cartKey === cartKey ? { ...item, qty: item.qty + 1 } : item)
         : [
             ...prev,
             {
@@ -181,133 +173,117 @@ const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
 
   const toggleFavorite = (id: number) => {
     setFavorites((prev) =>
-      prev.includes(id)
-        ? prev.filter((favorite) => favorite !== id)
-        : [...prev, id]
+      prev.includes(id) ? prev.filter((favorite) => favorite !== id) : [...prev, id]
     );
     setBadgeKey((key) => key + 1);
   };
 
   const increaseQty = (cartKey: string) =>
     setCart((prev) =>
-      prev.map((item) =>
-        item.cartKey === cartKey ? { ...item, qty: item.qty + 1 } : item
-      )
+      prev.map((item) => item.cartKey === cartKey ? { ...item, qty: item.qty + 1 } : item)
     );
 
   const decreaseQty = (cartKey: string) =>
     setCart((prev) =>
       prev
-        .map((item) =>
-          item.cartKey === cartKey ? { ...item, qty: item.qty - 1 } : item
-        )
+        .map((item) => item.cartKey === cartKey ? { ...item, qty: item.qty - 1 } : item)
         .filter((item) => item.qty > 0)
     );
 
   const removeFromCart = (cartKey: string) =>
     setCart((prev) => prev.filter((item) => item.cartKey !== cartKey));
 
- const collectionProducts = dbProducts.filter(
-  (product) => product.collection === collection
-);
-  const favoriteProducts = products.filter((product) =>
-    favorites.includes(product.id)
-  );
-
+  const collectionProducts = dbProducts.filter((product) => product.collection === collection);
+  const favoriteProducts = products.filter((product) => favorites.includes(product.id));
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
 
-  
-const handleCheckoutSubmit = async () => {
-  const requiredFields = [
-    customerData.gender,
-    customerData.name,
-    customerData.surname,
-    customerData.email,
-    customerData.phone,
-    customerData.address,
-    customerData.city,
-    customerData.postalCode,
-    customerData.shippingMethod,
-  ];
+  const handleCheckoutSubmit = async () => {
+    // CORREGIDO: Eliminado customerData.gender de la lista de campos obligatorios
+    const requiredFields = [
+      customerData.name,
+      customerData.surname,
+      customerData.email,
+      customerData.phone,
+      customerData.address,
+      customerData.city,
+      customerData.postalCode,
+      customerData.shippingMethod,
+    ];
 
-  if (requiredFields.some((value) => !value.trim())) {
-    showToast("Completa todos los datos para continuar.");
-    return;
-  }
-
-  if (!customerData.acceptTerms) {
-    showToast("Debes aceptar las condiciones de compra.");
-    return;
-  }
-
-  if (!customerData.acknowledgePrivacy) {
-    showToast("Confirma que has leído la política de privacidad.");
-    return;
-  }
-
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerData.email)) {
-    showToast("Introduce un correo electrónico válido.");
-    return;
-  }
-
-  if (cart.length === 0) {
-    showToast("Tu carrito está vacío.");
-    return;
-  }
-
-  try {
-    const response = await fetch("/api/pago", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        customer: customerData,
-        items: cart.map((item) => ({
-          productId: item.product.id,
-          qty: item.qty,
-          selectedSize: item.selectedSize ?? "",
-          selectedColor: item.selectedColor ?? "",
-          selectedImage: item.selectedImage ?? item.product.image,
-        })),
-      }),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      showToast(result.error || "No se ha podido preparar el pago.");
+    if (requiredFields.some((value) => !value || !value.trim())) {
+      showToast("Completa todos los datos para continuar.");
       return;
     }
 
-    if (
-      typeof result.action !== "string" ||
-      !result.fields ||
-      typeof result.fields !== "object"
-    ) {
-      showToast("La respuesta del pago no es válida.");
+    if (!customerData.acceptTerms) {
+      showToast("Debes aceptar las condiciones de compra.");
       return;
     }
 
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = result.action;
-
-    for (const [name, value] of Object.entries(result.fields)) {
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = name;
-      input.value = String(value);
-      form.appendChild(input);
+    if (!customerData.acknowledgePrivacy) {
+      showToast("Confirma que has leído la política de privacidad.");
+      return;
     }
 
-    document.body.appendChild(form);
-    form.submit();
-  } catch (error) {
-    console.error("Error iniciando el pago:", error);
-    showToast("No se ha podido conectar con el servicio de pago.");
-  }
-};
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerData.email)) {
+      showToast("Introduce un correo electrónico válido.");
+      return;
+    }
+
+    if (cart.length === 0) {
+      showToast("Tu carrito está vacío.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/pago", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customer: customerData,
+          items: cart.map((item) => ({
+            productId: item.product.id,
+            qty: item.qty,
+            selectedSize: item.selectedSize ?? "",
+            selectedColor: item.selectedColor ?? "",
+            selectedImage: item.selectedImage ?? item.product.image,
+          })),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        showToast(result.error || "No se ha podido preparar el pago.");
+        return;
+      }
+
+      if (typeof result.action !== "string" || !result.fields || typeof result.fields !== "object") {
+        showToast("La respuesta del pago no es válida.");
+        return;
+      }
+
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = result.action;
+
+      for (const [name, value] of Object.entries(result.fields)) {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        input.value = String(value);
+        form.appendChild(input);
+      }
+
+      document.body.appendChild(form);
+      form.submit();
+    } catch (error) {
+      console.error("Error iniciando el pago:", error);
+      showToast("No se ha podido conectar con el servicio de pago.");
+    }
+  };
 
   return (
     <main>
@@ -335,7 +311,7 @@ const handleCheckoutSubmit = async () => {
                 key={product.id}
                 product={product}
                 isFavorite={favorites.includes(product.id)}
-               onAddToCart={(variant, size) => addToCart(product, variant, size)}
+                onAddToCart={(variant, size) => addToCart(product, variant, size)}
                 onToggleFavorite={() => toggleFavorite(product.id)}
               />
             ))}
@@ -359,7 +335,7 @@ const handleCheckoutSubmit = async () => {
             justifyContent: "center",
             alignItems: "center",
             padding: 16,
-          }}
+            }}
         >
           <div
             onClick={(event) => event.stopPropagation()}
@@ -383,7 +359,7 @@ const handleCheckoutSubmit = async () => {
                     key={product.id}
                     product={product}
                     isFavorite
-                   onAddToCart={(variant, size) => addToCart(product, variant, size)}
+                    onAddToCart={(variant, size) => addToCart(product, variant, size)}
                     onToggleFavorite={() => toggleFavorite(product.id)}
                   />
                 ))}
@@ -418,4 +394,3 @@ const handleCheckoutSubmit = async () => {
     </main>
   );
 }
-
