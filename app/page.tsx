@@ -117,15 +117,6 @@ export default function Home() {
     setStorageLoaded(true);
   }, []);
 
-  useEffect(() => {
-    if (!storageLoaded) return;
-    if (cart.length === 0) {
-      localStorage.setItem("kigobeshop-cart", "[]");
-    } else {
-      localStorage.setItem("kigobeshop-cart", JSON.stringify(cart));
-    }
-    localStorage.setItem("kigobeshop-favorites", JSON.stringify(favorites));
-  }, [cart, favorites, storageLoaded]);
   
   useEffect(() => {
     let cancelled = false;
