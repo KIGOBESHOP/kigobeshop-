@@ -358,18 +358,12 @@ export async function POST(request: Request) {
     return cecaResponse(false);
   }
 }
-// 2. CORREGIDO: Enviamos el correo oficial HTML de bienvenida con el cupón al cliente real
-        // NOTA: Cambia 'order.customerEmail' por la variable real donde guardes el email si da error
-        await resend.emails.send({
-            from: 'Tu Tienda <no-reply@tudominio.com>',
-            to: order.customerEmail || 'correo-del-cliente@gmail.com',
-            subject: '¡Bienvenido a KIGOBESHOP!',
-            html: '<p>Gracias por tu compra. Aquí tienes tu cupón...</p>'
+} catch (error) {
+        await saveCecaDiagnostic("error_inesperado", null, {
+            mensaje: error instanceof Error ? error.message : "Error desconocido",
         });
 
-        return cecaResponse(true);
-    } catch (error) {
+        console.error("Error procesando la notificación CECA:", error);
         return cecaResponse(false);
     }
 }
-      
