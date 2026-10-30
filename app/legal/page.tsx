@@ -11,9 +11,9 @@ export default function LegalPage() {
       <h2 style={{ fontSize: "18px", marginTop: "20px", fontWeight: "bold" }}>1. DATOS IDENTIFICATIVOS</h2>
       <ul>
         <li><strong>Titular de la tienda:</strong> Inmaculada Yepes Expósito (KIGOBESHOP)</li>
-        <li><strong>DNI/NIE:</strong> [Introduce tu DNI aquí]</li>
+        <li><strong>DNI/NIE:</strong> [75268471M]</li>
         <li><strong>Domicilio Comercial:</strong> Calle Granada, Plaza Primero de Mayo 27, 04008 Almería, España.</li>
-        <li><strong>Email de contacto:</strong> info@kigobeshop.com</li>
+        <li><strong>Email de contacto:</strong> KIGOBESHOP@GMAIL.COM</li>
         <li><strong>Teléfono:</strong> +34 643 885 699</li>
       </ul>
 
