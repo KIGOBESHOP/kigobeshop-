@@ -306,6 +306,13 @@ export default function Home() {
       });
 
       document.body.appendChild(form);
+
+      try {
+        localStorage.removeItem("kigobeshop-cart");
+        sessionStorage.clear();
+        setCart([]);
+      } catch (err) {}
+
       form.submit();
     } catch {
       checkoutSubmitting.current = false;
