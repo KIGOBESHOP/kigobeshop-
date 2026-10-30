@@ -370,7 +370,7 @@ export async function POST(request: NextRequest) {
 
     const responseXml = await response.text();
 
-    const match = responseXml.match(/<GrabaServiciosResult[^>]>([\s\S]?)<\/GrabaServiciosResult>/i);
+   const match = responseXml.match(/<GrabaServiciosResult[^>]*>([\s\S]*?)<\/GrabaServiciosResult>/i);
     const unescapeXml = (value: string) =>
       value
         .replace(/&lt;/g, "<")
@@ -382,11 +382,11 @@ export async function POST(request: NextRequest) {
     const resultXml = match ? unescapeXml(match[1]) : "";
     const shipmentMatch = resultXml.match(/<Envio\b([^>]*)>/i);
     const barcodeMatch = shipmentMatch ? shipmentMatch[1].match(/\bcodbarras="([^"]*)"/i) : null;
-    const returnMatch = resultXml.match(/<Resultado\b[^>]\breturn="([^"])"/i);
+   const returnMatch = resultXml.match(/<Resultado\b[^>]*\breturn="([^"]*)"/i);
 
     const returnCode = returnMatch ? returnMatch[1] : null;
     const barcode = barcodeMatch ? barcodeMatch[1] : null;
-    const labelReturned = /<Etiqueta\b[^>]>[\s\S]?<\/Etiqueta>/i.test(resultXml);
+   const labelReturned = /<Etiqueta\b[^>]*>[\s\S]*?<\/Etiqueta>/i.test(resultXml);
 
     const isSuccess = response.ok && returnCode === "0";
 
@@ -415,7 +415,7 @@ export async function POST(request: NextRequest) {
           ? "GLS ha aceptado y procesado el envío correctamente."
           : "GLS no ha confirmado el envío. Revisa los datos de destino u origen.",
       responseExcerpt: resultXml
-        ? resultXml.replace(/<Etiqueta\b[^>]>[\s\S]?<\/Etiqueta>/gi, "<Etiqueta>[omitida]</Etiqueta>").slice(0, 3000)
+resultXml.replace(/<Etiqueta\b[^>]*>[\s\S]*?<\/Etiqueta>/gi, "<Etiqueta>[omitida]</Etiqueta>").slice(0, 3000),
         : responseXml.slice(0, 1500),
     });
   } catch (error) {
