@@ -4,10 +4,10 @@ import { createClient } from "@supabase/supabase-js";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const GLS_URL = "https://ws-customer.gls-spain.es/b2b.asmx";
+const GLS_URL = "https://gls-spain.es";
 
 function escapeXml(value: string): string {
-  return value
+  return (value || "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -147,11 +147,11 @@ export async function GET(request: NextRequest) {
 
   // Consulta SOAP de lectura: no crea expediciones.
   const envelope = `<?xml version="1.0" encoding="utf-8"?>
-<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- xmlns:xsd="http://www.w3.org/2001/XMLSchema"
- xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
+<soap12:Envelope xmlns:xsi="http://w3.org"
+ xmlns:xsd="http://w3.org"
+ xmlns:soap12="http://w3.org">
   <soap12:Body>
-    <GetPlazaXCP xmlns="http://www.asmred.com/">
+    <GetPlazaXCP xmlns="http://asmred.com">
       <codPais>34</codPais>
       <cp>08338</cp>
     </GetPlazaXCP>
@@ -163,7 +163,7 @@ export async function GET(request: NextRequest) {
       method: "POST",
       headers: {
         "Content-Type":
-          'application/soap+xml; charset=utf-8; action="http://www.asmred.com/GetPlazaXCP"',
+          'application/soap+xml; charset=utf-8; action="http://asmred.comGetPlazaXCP"',
       },
       body: envelope,
       cache: "no-store",
@@ -196,77 +196,91 @@ export async function GET(request: NextRequest) {
   }
 }
 
-
 export async function POST(request: NextRequest) {
   try {
-    // Solo permite ejecutar la prueba a la administradora.
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-// Cambiamos el UID de test por el UID real de producción de tu cliente
-const testUid = process.env.GLS_UIDCLIENTE; 
+    const uidCliente = process.env.GLS_UIDCLIENTE;
 
-if (!supabaseUrl || !anonKey || !adminEmail || !testUid) {
-  return NextResponse.json(
-    {
-      ok: false,
-      message:
-        "Falta configurar Supabase, ADMIN_EMAIL o GLS_UIDCLIENTE en Vercel.",
-    },
-    { status: 503 }
-  );
-}
-
-    const authorization = request.headers.get("authorization");
-    const token = authorization?.startsWith("Bearer ")
-      ? authorization.slice(7)
-      : "";
-
-    if (!token) {
-      return NextResponse.json(
-        { ok: false, message: "Debes iniciar sesión como administradora." },
-        { status: 401 }
-      );
-    }
-
-    const authClient = createClient(supabaseUrl, anonKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    });
-
-    const { data, error } = await authClient.auth.getUser(token);
-
-    if (error || !data.user) {
-      return NextResponse.json(
-        { ok: false, message: "La sesión no es válida." },
-        { status: 401 }
-      );
-    }
-
-    if (data.user.email?.trim().toLowerCase() !== adminEmail) {
-      return NextResponse.json(
-        { ok: false, message: "No tienes permiso para ejecutar la prueba." },
-        { status: 403 }
-      );
-    }
-
-    // Evita ejecutar accidentalmente una petición distinta.
-    const body = await request.json().catch(() => null);
-
-    if (body?.action !== "shipment-test") {
+    if (!supabaseUrl || !anonKey || !serviceKey || !adminEmail || !uidCliente) {
       return NextResponse.json(
         {
           ok: false,
-          message: 'La acción debe ser "shipment-test".',
-          shipmentCreationEnabled: false,
+          message: "Falta configurar dependencias esenciales (Supabase, EMAIL o GLS_UIDCLIENTE) en Vercel.",
         },
-        { status: 400 }
+        { status: 503 }
       );
     }
 
-    // Fecha de hoy en España, con formato DD/MM/YYYY.
+    const authorization = request.headers.get("authorization");
+    const token = authorization?.startsWith("Bearer ") ? authorization.slice(7) : "";
+
+    if (!token) {
+      return NextResponse.json({ ok: false, message: "Debes iniciar sesión como administradora." }, { status: 401 });
+    }
+
+    const authClient = createClient(supabaseUrl, anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const { data: userData, error: authError } = await authClient.auth.getUser(token);
+
+    if (authError || !userData.user) {
+      return NextResponse.json({ ok: false, message: "La sesión no es válida." }, { status: 401 });
+    }
+
+    if (userData.user.email?.trim().toLowerCase() !== adminEmail) {
+      return NextResponse.json({ ok: false, message: "No tienes permiso para ejecutar esta acción." }, { status: 403 });
+    }
+
+    const body = await request.json().catch(() => null);
+    
+    // Permitir tanto test manual como envíos de pedidos reales
+    const isTest = body?.action === "shipment-test";
+    const orderId = body?.orderId;
+
+    if (!isTest && !orderId) {
+      return NextResponse.json({ ok: false, message: "Falta el parámetro orderId o una acción válida." }, { status: 400 });
+    }
+
+    const supabase = createClient(supabaseUrl, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    // Definición de variables para el envío
+    let destinatarioNombre = "GLS TEST";
+    let destinatarioDireccion = "Calle Juan Esplandi 513b";
+    let destinatarioPoblacion = "Madrid";
+    let destinatarioProvincia = "Madrid";
+    let destinatarioCP = "28007";
+    let destinatarioTelefono = "933888777";
+    let destinatarioEmail = "test@test.com";
+    let referencia = TEST${Date.now()};
+
+    // Si pasamos un orderId válido, extraemos la información real de Supabase
+    if (orderId) {
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("id", orderId)
+        .single();
+
+      if (orderError || !order) {
+        return NextResponse.json({ ok: false, message: No se encontró el pedido con ID: ${orderId} }, { status: 404 });
+      }
+
+      destinatarioNombre = ${order.customer_name} ${order.customer_surname || ""}.trim();
+      destinatarioDireccion = order.customer_address;
+      destinatarioPoblacion = order.customer_city;
+      destinatarioProvincia = order.customer_provincia || order.customer_city;
+      destinatarioCP = order.customer_postal_code;
+      destinatarioTelefono = order.customer_phone || "666777888"; 
+      destinatarioEmail = order.customer_email || "info@kigobeshop.com";
+      referencia = PEDIDO-${order.id};
+    }
+
     const parts = new Intl.DateTimeFormat("es-ES", {
       timeZone: "Europe/Madrid",
       day: "2-digit",
@@ -274,31 +288,23 @@ if (!supabaseUrl || !anonKey || !adminEmail || !testUid) {
       year: "numeric",
     }).formatToParts(new Date());
 
-    const datePart = (type: string) =>
-      parts.find((part) => part.type === type)?.value ?? "";
+    const datePart = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
+    const fecha = ${datePart("day")}/${datePart("month")}/${datePart("year")};
 
-    const fecha =
-      `${datePart("day")}/${datePart("month")}/${datePart("year")}`;
-
-    // Referencia única para identificar esta prueba.
-    const referencia = `TEST${Date.now()}`;
-
-    // Envío ficticio; no utiliza ningún pedido de la tienda.
-    const docIn = `<Servicios uidcliente="${testUid}" xmlns="http://www.asmred.com/">
-
+    const docIn = `<Servicios uidcliente="${uidCliente}" xmlns="http://asmred.com">
   <Envio codbarras="">
     <Fecha>${fecha}</Fecha>
     <Portes>P</Portes>
     <Servicio>96</Servicio>
     <Horario>18</Horario>
     <Bultos>1</Bultos>
-   
     <Peso>1</Peso>
     <Volumen></Volumen>
     <Declarado></Declarado>
     <DNINomb></DNINomb>
     <FechaPrevistaEntrega></FechaPrevistaEntrega>
     <Retorno>0</Retorno>
+
     <Pod>N</Pod>
     <PODObligatorio>N</PODObligatorio>
 
@@ -315,36 +321,33 @@ if (!supabaseUrl || !anonKey || !adminEmail || !testUid) {
     <Destinatario>
       <Codigo></Codigo>
       <Plaza></Plaza>
-      <Nombre><![CDATA[GLS TEST]]></Nombre>
-      <Direccion><![CDATA[Calle Juan Esplandi 513b]]></Direccion>
-      <Poblacion><![CDATA[Madrid]]></Poblacion>
-      <Provincia><![CDATA[Madrid]]></Provincia>
+      <Nombre><![CDATA[${escapeXml(destinatarioNombre)}]]></Nombre>
+      <Direccion><![CDATA[${escapeXml(destinatarioDireccion)}]]></Direccion>
+      <Poblacion><![CDATA[${escapeXml(destinatarioPoblacion)}]]></Poblacion>
+      <Provincia><![CDATA[${escapeXml(destinatarioProvincia)}]]></Provincia>
       <Pais>34</Pais>
-      <CP>28007</CP>
-      <Telefono><![CDATA[933888777]]></Telefono>
-      <Movil><![CDATA[666777888]]></Movil>
-      <Email><![CDATA[test@test.com]]></Email>
-      <Observaciones><![CDATA[PRUEBA TECNICA]]></Observaciones>
+      <CP>${escapeXml(destinatarioCP)}</CP>
+      <Telefono><![CDATA[${escapeXml(destinatarioTelefono)}]]></Telefono>
+      <Movil><![CDATA[${escapeXml(destinatarioTelefono)}]]></Movil>
+      <Email><![CDATA[${escapeXml(destinatarioEmail)}]]></Email>
+      <Observaciones><![CDATA[${isTest ? 'PRUEBA TECNICA' : 'ENTREGA TIENDA ONLINE'}]]></Observaciones>
     </Destinatario>
     <Referencias>
       <Referencia tipo="C"><![CDATA[${referencia}]]></Referencia>
     </Referencias>
-    
-  <DevuelveAdicionales>
-  <PlazaDestino />
-</DevuelveAdicionales>
+    <DevuelveAdicionales>
+      <PlazaDestino />
+    </DevuelveAdicionales>
   </Envio>
 </Servicios>`;
 
-    // docIn es texto XML dentro del sobre SOAP.
-   
-const envelope = `<?xml version="1.0" encoding="utf-8"?>
-<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- xmlns:xsd="http://www.w3.org/2001/XMLSchema"
- xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
+    const envelope = `<?xml version="1.0" encoding="utf-8"?>
+<soap12:Envelope xmlns:xsi="http://w3.org"
+ xmlns:xsd="http://w3.org"
+ xmlns:soap12="http://w3.org">
   <soap12:Body>
-    <GrabaServicios xmlns="http://www.asmred.com/">
-   <docIn>${docIn}</docIn>
+    <GrabaServicios xmlns="http://asmred.com">
+      <docIn>${docIn}</docIn>
     </GrabaServicios>
   </soap12:Body>
 </soap12:Envelope>`;
@@ -352,8 +355,7 @@ const envelope = `<?xml version="1.0" encoding="utf-8"?>
     const response = await fetch(GLS_URL, {
       method: "POST",
       headers: {
-        "Content-Type":
-          'application/soap+xml; charset=utf-8; action="http://www.asmred.com/GrabaServicios"',
+        "Content-Type": 'application/soap+xml; charset=utf-8; action="http://asmred.comGrabaServicios"',
       },
       body: envelope,
       cache: "no-store",
@@ -362,11 +364,7 @@ const envelope = `<?xml version="1.0" encoding="utf-8"?>
 
     const responseXml = await response.text();
 
-    // Extrae el resultado XML que GLS devuelve dentro de SOAP.
-    const match = responseXml.match(
-      /<GrabaServiciosResult[^>]*>([\s\S]*?)<\/GrabaServiciosResult>/i
-    );
-
+    const match = responseXml.match(/<GrabaServiciosResult[^>]>([\s\S]?)<\/GrabaServiciosResult>/i);
     const unescapeXml = (value: string) =>
       value
         .replace(/&lt;/g, "<")
@@ -377,21 +375,27 @@ const envelope = `<?xml version="1.0" encoding="utf-8"?>
 
     const resultXml = match ? unescapeXml(match[1]) : "";
     const shipmentMatch = resultXml.match(/<Envio\b([^>]*)>/i);
-    const barcodeMatch = shipmentMatch?.[1].match(
-      /\bcodbarras="([^"]*)"/i
-    );
-    const returnMatch = resultXml.match(
-      /<Resultado\b[^>]*\breturn="([^"]*)"/i
-    );
+    const barcodeMatch = shipmentMatch ? shipmentMatch[1].match(/\bcodbarras="([^"]*)"/i) : null;
+    const returnMatch = resultXml.match(/<Resultado\b[^>]\breturn="([^"])"/i);
 
-    const returnCode = returnMatch?.[1] ?? null;
-    const barcode = barcodeMatch?.[1] ?? null;
-    const labelReturned = /<Etiqueta\b[^>]*>[\s\S]*?<\/Etiqueta>/i.test(
-      resultXml
-    );
+    const returnCode = returnMatch ? returnMatch[1] : null;
+    const barcode = barcodeMatch ? barcodeMatch[1] : null;
+    const labelReturned = /<Etiqueta\b[^>]>[\s\S]?<\/Etiqueta>/i.test(resultXml);
+
+    const isSuccess = response.ok && returnCode === "0";
+
+    if (isSuccess && orderId) {
+      await supabase
+        .from("orders")
+        .update({ 
+          gls_status: "generado", 
+          shipping_barcode: barcode 
+        })
+        .eq("id", orderId);
+    }
 
     return NextResponse.json({
-      ok: response.ok && returnCode === "0",
+      ok: isSuccess,
       operation: "GrabaServicios",
       httpStatus: response.status,
       reference: referencia,
@@ -400,29 +404,16 @@ const envelope = `<?xml version="1.0" encoding="utf-8"?>
       labelReturned,
       soapFault: /<[^>]*Fault\b/i.test(responseXml),
       responseReceived: responseXml.length > 0,
-      shipmentCreationEnabled: false,
-      message:
-        response.ok && returnCode === "0"
-          ? "GLS ha aceptado el envío de prueba."
-          : "GLS no ha confirmado el envío. Revisa el código de respuesta.",
-      // Evitamos devolver el contenido completo de la etiqueta.
+      shipmentCreationEnabled: !isTest,
+      message: isSuccess
+          ? "GLS ha aceptado y procesado el envío correctamente."
+          : "GLS no ha confirmado el envío. Revisa los datos de destino u origen.",
       responseExcerpt: resultXml
-        ? resultXml.replace(/<Etiqueta\b[^>]*>[\s\S]*?<\/Etiqueta>/gi, "<Etiqueta>[omitida]</Etiqueta>").slice(0, 3000)
+        ? resultXml.replace(/<Etiqueta\b[^>]>[\s\S]?<\/Etiqueta>/gi, "<Etiqueta>[omitida]</Etiqueta>").slice(0, 3000)
         : responseXml.slice(0, 1500),
     });
   } catch (error) {
-    console.error(
-      "Error en prueba GLS:",
-      error instanceof Error ? error.message : "Error desconocido"
-    );
-
-    return NextResponse.json(
-      {
-        ok: false,
-        message: "No se pudo completar la prueba de GLS.",
-        shipmentCreationEnabled: false,
-      },
-      { status: 502 }
-    );
+    console.error("Error en procesamiento GLS:", error instanceof Error ? error.message : "Error desconocido");
+    return NextResponse.json({ ok: false, message: "No se pudo procesar la petición con GLS." }, { status: 502 });
   }
 }
