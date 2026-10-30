@@ -81,8 +81,18 @@ export default function Home() {
   const [emailSubscribed, setEmailSubscribed] = useState(false);
 
   // 🚨 CORREGIDO: Sincronización radical inmediata del carro al cargar la Home
+ // 🚨 TRUCO DEFINITIVO: Detectar si venimos de pagar y aniquilar el carrito
   useEffect(() => {
     try {
+      if (typeof window !== "undefined" && window.location.search.includes("clear=true")) {
+        localStorage.clear();
+        sessionStorage.clear();
+        setCart([]);
+        window.history.replaceState({}, document.title, "/");
+        setStorageLoaded(true);
+        return;
+      }
+
       const savedCart = localStorage.getItem("kigobeshop-cart");
       const savedFavorites = localStorage.getItem("kigobeshop-favorites");
 
@@ -104,6 +114,8 @@ export default function Home() {
     } catch (error) {
       console.error("Error al cargar los datos guardados", error);
     }
+    setStorageLoaded(true);
+  }, []);
     setStorageLoaded(true);
   }, []);
 
