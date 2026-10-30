@@ -97,7 +97,7 @@ export default function CollectionPage({ collection }: Props) {
         }
       } catch (error) {
         console.error("Error al cargar productos de Supabase:", error);
-      } finaly {
+      } finally {
         if (!cancelled) {
           setDbProductsLoaded(true);
         }
