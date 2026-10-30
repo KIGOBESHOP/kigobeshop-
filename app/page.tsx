@@ -116,8 +116,6 @@ export default function Home() {
     }
     setStorageLoaded(true);
   }, []);
-    setStorageLoaded(true);
-  }, []);
 
   useEffect(() => {
     if (!storageLoaded) return;
