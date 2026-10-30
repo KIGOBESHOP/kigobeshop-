@@ -5,11 +5,10 @@ import { useEffect } from "react";
 export default function PagoOkPage() {
   useEffect(() => {
     try {
-      // 1. Limpieza radical de toda la memoria local del navegador
+      // Borrado preventivo total en el navegador al entrar
       localStorage.clear();
       sessionStorage.clear();
-
-      // 2. Limpieza exhaustiva de todas las cookies por si acaso
+      
       const cookies = document.cookie.split(";");
       for (let i = 0; i < cookies.length; i++) {
         const cookie = cookies[i];
@@ -29,8 +28,8 @@ export default function PagoOkPage() {
       sessionStorage.clear();
     } catch (err) {}
     
-    // 3. RUTA RELATIVA CON TRUCO: Forzamos la recarga en la web actual en la que estés navegando
-    window.location.href = "/?clear=true";
+    // 🚨 DESTRUCCIÓN EN CADENA: Forzamos al navegador a viajar a la home metiendo el comando secreto de limpieza en la URL
+    window.location.href = window.location.origin + "/?clear=true";
   };
 
   return (
