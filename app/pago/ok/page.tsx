@@ -1,41 +1,25 @@
 "use client";
 
 import { useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
 
 export default function PagoOkPage() {
   useEffect(() => {
-    async function limpiarCarritoBaseDatos() {
-      try {
-        // 1. Limpieza absoluta preventiva en el navegador
-        localStorage.clear();
-        sessionStorage.clear();
+    try {
+      // 1. Limpieza radical de toda la memoria local del navegador
+      localStorage.clear();
+      sessionStorage.clear();
 
-        // 2. Conexión rápida a Supabase para borrar el carro del servidor
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-        if (supabaseUrl && supabaseAnonKey) {
-          const supabase = createClient(supabaseUrl, supabaseAnonKey);
-          
-          // Obtenemos el usuario que tiene la sesión abierta
-          const { data: { user } } = await supabase.auth.getUser();
-          
-          if (user) {
-            // Borramos las filas del carrito vinculadas a tu ID de usuario en Supabase
-            // (Ajusta el nombre de la tabla 'cart' o 'cart_items' si da error de compilación)
-            await supabase
-              .from("cart")
-              .delete()
-              .eq("user_id", user.id);
-          }
-        }
-      } catch (error) {
-        console.error("Error al limpiar el carrito en el servidor:", error);
+      // 2. Limpieza exhaustiva de todas las cookies por si acaso
+      const cookies = document.cookie.split(";");
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i];
+        const eqPos = cookie.indexOf("=");
+        const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+        document.cookie = name.trim() + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
       }
+    } catch (error) {
+      console.error("Error en la limpieza preventiva:", error);
     }
-
-    limpiarCarritoBaseDatos();
   }, []);
 
   const manejarVolver = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -44,7 +28,8 @@ export default function PagoOkPage() {
       localStorage.clear();
       sessionStorage.clear();
     } catch (err) {}
-    // Fuerza una recarga completa destruyendo la sesión intermedia
+    
+    // 3. RUTA RELATIVA CON TRUCO: Forzamos la recarga en la web actual en la que estés navegando
     window.location.href = "/?clear=true";
   };
 
