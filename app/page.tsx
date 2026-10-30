@@ -10,6 +10,7 @@ import Footer from "@/components/Footer";
 import { products, categories, type Product } from "@/lib/products";
 import { supabase } from "@/lib/supabase";
 import CheckoutForm from "@/components/CheckoutForm";
+import CookieBanner from "@/components/CookieBanner";
 
 type CartItem = {
   cartKey: string;
@@ -589,6 +590,26 @@ export default function Home() {
         </svg>
         {toast}
       </div>
+      {checkoutOpen && (
+        <CheckoutForm
+          data={customerData}
+          onChange={handleCustomerChange}
+          onClose={() => setCheckoutOpen(false)}
+          onSubmit={handleCheckoutSubmit}
+        />
+      )}
+
+      <div className={`toast ${toast ? "show" : ""}`}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+        {toast}
+      </div>
+
+      {/* AÑADIDO: El banner de cookies flotante obligatorio */}
+      <CookieBanner />
     </main>
   );
-}    
+}
+    
