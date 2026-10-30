@@ -203,18 +203,19 @@ export async function POST(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-    const testUid = process.env.GLS_UIDCLIENTE_TEST;
+// Cambiamos el UID de test por el UID real de producción de tu cliente
+const testUid = process.env.GLS_UIDCLIENTE; 
 
-    if (!supabaseUrl || !anonKey || !adminEmail || !testUid) {
-      return NextResponse.json(
-        {
-          ok: false,
-          message:
-            "Falta configurar Supabase, ADMIN_EMAIL o GLS_UIDCLIENTE_TEST en Vercel.",
-        },
-        { status: 503 }
-      );
-    }
+if (!supabaseUrl || !anonKey || !adminEmail || !testUid) {
+  return NextResponse.json(
+    {
+      ok: false,
+      message:
+        "Falta configurar Supabase, ADMIN_EMAIL o GLS_UIDCLIENTE en Vercel.",
+    },
+    { status: 503 }
+  );
+}
 
     const authorization = request.headers.get("authorization");
     const token = authorization?.startsWith("Bearer ")
