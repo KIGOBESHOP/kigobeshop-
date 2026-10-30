@@ -275,6 +275,47 @@ export async function POST(request: NextRequest) {
         }, { status: 404 });
       }
 
+      if (orderError || !order) {
+  return NextResponse.json({
+    ok: false,
+    message: "Pedido no encontrado"
+  }, { status: 404 });
+}
+
+if (!isTest && order.payment_status !== "paid") {
+  return NextResponse.json({
+    ok: false,
+    message: "No se puede generar un envío: el pedido no está pagado."
+  }, { status: 409 });
+}
+
+if (
+  !isTest &&
+  (order.shipping_barcode || order.gls_status === "generado")
+) {
+  return NextResponse.json({
+    ok: false,
+    message: "Este pedido ya tiene un envío GLS generado.",
+    barcode: order.shipping_barcode
+  }, { status: 409 });
+}
+
+if (
+  !isTest &&
+  (
+    !order.customer_name ||
+    !order.customer_address ||
+    !order.customer_city ||
+    !order.customer_postal_code
+  )
+) {
+  return NextResponse.json({
+    ok: false,
+    message: "Faltan datos obligatorios del destinatario."
+  }, { status: 400 });
+}
+
+
       destinatarioNombre = `${order.customer_name} ${order.customer_surname || ""}`.trim();
       destinatarioDireccion = order.customer_address;
       destinatarioPoblacion = order.customer_city;
