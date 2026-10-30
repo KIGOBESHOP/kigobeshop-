@@ -415,8 +415,8 @@ export async function POST(request: NextRequest) {
           ? "GLS ha aceptado y procesado el envío correctamente."
           : "GLS no ha confirmado el envío. Revisa los datos de destino u origen.",
       responseExcerpt: resultXml
-resultXml.replace(/<Etiqueta\b[^>]*>[\s\S]*?<\/Etiqueta>/gi, "<Etiqueta>[omitida]</Etiqueta>").slice(0, 3000),
-        : responseXml.slice(0, 1500),
+  ? resultXml.replace(/<Etiqueta\b[^>]*>[\s\S]*?<\/Etiqueta>/gi, "<Etiqueta>[omitida]</Etiqueta>").slice(0, 3000)
+  : responseXml.slice(0, 1500),
     });
   } catch (error) {
     console.error("Error en procesamiento GLS:", error instanceof Error ? error.message : "Error desconocido");
