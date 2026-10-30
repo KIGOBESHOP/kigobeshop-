@@ -24,6 +24,7 @@ function unescapeXml(value: string): string {
     .replace(/&amp;/g, "&");
 }
 
+
 async function authenticateAdmin(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -31,6 +32,7 @@ async function authenticateAdmin(request: NextRequest) {
 
   if (!supabaseUrl || !anonKey || !adminEmail) {
     return {
+      ok: false as const,
       error: NextResponse.json(
         { ok: false, message: "Falta configurar Supabase o ADMIN_EMAIL en Vercel." },
         { status: 503 }
@@ -45,6 +47,7 @@ async function authenticateAdmin(request: NextRequest) {
 
   if (!token) {
     return {
+      ok: false as const,
       error: NextResponse.json(
         { ok: false, message: "Debes iniciar sesión como administradora." },
         { status: 401 }
@@ -60,6 +63,7 @@ async function authenticateAdmin(request: NextRequest) {
 
   if (error || !data.user) {
     return {
+      ok: false as const,
       error: NextResponse.json(
         { ok: false, message: "La sesión no es válida." },
         { status: 401 }
@@ -69,6 +73,7 @@ async function authenticateAdmin(request: NextRequest) {
 
   if (data.user.email?.trim().toLowerCase() !== adminEmail) {
     return {
+      ok: false as const,
       error: NextResponse.json(
         { ok: false, message: "No tienes permiso para ejecutar esta acción." },
         { status: 403 }
@@ -76,7 +81,7 @@ async function authenticateAdmin(request: NextRequest) {
     };
   }
 
-  return { user: data.user };
+  return { ok: true as const, user: data.user };
 }
 
 export async function GET(request: NextRequest) {
@@ -85,7 +90,7 @@ export async function GET(request: NextRequest) {
   // Diagnóstico de pedidos: solo lectura y solo para la administradora.
   if (action === "orders-test") {
     const auth = await authenticateAdmin(request);
-    if ("error" in auth) return auth.error;
+  if (!auth.ok) return auth.error;
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -171,7 +176,7 @@ export async function POST(request: NextRequest) {
   try {
     // Esta versión solo permite una prueba ficticia. No genera envíos de pedidos reales.
     const auth = await authenticateAdmin(request);
-    if ("error" in auth) return auth.error;
+ if (!auth.ok) return auth.error;
 
     const testUid = process.env.GLS_UIDCLIENTE_TEST;
 
