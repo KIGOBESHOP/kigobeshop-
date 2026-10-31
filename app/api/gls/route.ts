@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
     const fecha = `${getPart("day")}/${getPart("month")}/${getPart("year")}`;
     const referencia = `KIGOBE-TEST-${Date.now()}`;
 
-    // Estructura basada en Shipment_Example0_Basic_IN.xml de GLS.
+    // Estructura basada en Shipment_Example0_Basic_IN.xml de GLS, sin solicitar etiqueta en esta primera validación.
     // Los datos del destinatario son ficticios. No se usan pedidos reales.
     // IMPORTANTE: GrabaServicios inserta una expedición en GLS usando el UID indicado.
     const docIn = `<Servicios uidcliente="${escapeXml(testUid)}" xmlns="http://www.asmred.com/">
@@ -249,9 +249,6 @@ export async function POST(request: NextRequest) {
     <Referencias>
       <Referencia tipo="C"><![CDATA[${referencia}]]></Referencia>
     </Referencias>
-    <DevuelveAdicionales>
-      <Etiqueta tipo="JPG"></Etiqueta>
-    </DevuelveAdicionales>
   </Envio>
 </Servicios>`;
 
