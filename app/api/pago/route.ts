@@ -117,26 +117,36 @@ const missing = [
     const customer = body.customer;
     const items = body.items;
 
-    if (
-      !customer ||
-      typeof customer.name !== "string" ||
-      !customer.name.trim() ||
-      typeof customer.email !== "string" ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email.trim()) ||
-      typeof customer.phone !== "string" ||
-      !customer.phone.trim() ||
+    const shippingMethod = customer?.shippingMethod;
+
+const isPickup = shippingMethod === "pickup";
+
+if (
+  !customer ||
+  typeof customer.name !== "string" ||
+  !customer.name.trim() ||
+  typeof customer.email !== "string" ||
+  !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email.trim()) ||
+  typeof customer.phone !== "string" ||
+  !customer.phone.trim() ||
+  !["standard", "premium", "pickup"].includes(shippingMethod) ||
+  (
+    !isPickup &&
+    (
       typeof customer.address !== "string" ||
       !customer.address.trim() ||
       typeof customer.city !== "string" ||
       !customer.city.trim() ||
       typeof customer.postalCode !== "string" ||
       !customer.postalCode.trim()
-    ) {
-      return NextResponse.json(
-        { error: "Los datos del cliente no son válidos." },
-        { status: 400 }
-      );
-    }
+    )
+  )
+) {
+  return NextResponse.json(
+    { error: "Los datos del cliente no son válidos." },
+    { status: 400 }
+  );
+}
 
     if (
       !Array.isArray(items) ||
