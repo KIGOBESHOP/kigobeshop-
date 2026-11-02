@@ -255,7 +255,22 @@ if (
         { status: 400 }
       );
     }
+// Subtotal de productos, sin transporte.
+const subtotalCents = totalCents;
 
+// Calcular el coste del envío en el servidor.
+let shippingCostCents = 0;
+
+if (shippingMethod === "standard") {
+  shippingCostCents = subtotalCents >= 5000 ? 0 : 490;
+} else if (shippingMethod === "premium") {
+  shippingCostCents = 690;
+} else if (shippingMethod === "pickup") {
+  shippingCostCents = 0;
+}
+
+// Total final que recibirá CECA.
+totalCents = subtotalCents + shippingCostCents;
     const amount = String(totalCents);
     
     const operation = Math.floor(100000000000 + Math.random() * 900000000000).toString();
@@ -304,14 +319,15 @@ if (
             : "",
         customer_email: customer.email.trim().slice(0, 254),
         customer_phone: customer.phone.trim().slice(0, 50),
-        customer_address: customer.address.trim().slice(0, 300),
-        customer_city: customer.city.trim().slice(0, 150),
-        customer_postal_code: customer.postalCode.trim().slice(0, 20),
-        shipping_method:
-          typeof customer.shippingMethod === "string"
-            ? customer.shippingMethod.slice(0, 50)
-            : "standard",
-        total_cents: totalCents,
+       customer_address: isPickup
+  ? "Recogida en Kigobe 24h - Calle Granada, Plaza Primero de Mayo 27"
+  : customer.address.trim().slice(0, 300),
+customer_city: isPickup ? "Almería" : customer.city.trim().slice(0, 150),
+customer_postal_code: isPickup ? "04008" : customer.postalCode.trim().slice(0, 20),
+shipping_method: shippingMethod,
+subtotal_cents: subtotalCents,
+shipping_cost_cents: shippingCostCents,
+total_cents: totalCents,
         currency: "EUR",
         payment_status: "pending",
         payment_reference: operation,
@@ -422,14 +438,19 @@ if (
             `Cliente: ${customer.name} ${customer.surname ?? ""}`,
             `Correo: ${customer.email}`,
             `Teléfono: ${customer.phone}`,
-            `Dirección: ${customer.address}`,
-            `Ciudad: ${customer.city}`,
-            `Código postal: ${customer.postalCode}`,
-            "",
-            "Productos:",
-            productSummary,
-            "",
-            `Total: ${(totalCents / 100).toFixed(2)} €`,
+           `Dirección: ${isPickup ? "Recogida en Kigobe 24h" : customer.address}`,
+`Ciudad: ${isPickup ? "Almería" : customer.city}`,
+`Código postal: ${isPickup ? "04008" : customer.postalCode}`,
+`Método de envío: ${
+  shippingMethod === "premium"
+    ? "GLS Premium"
+    : shippingMethod === "standard"
+      ? "GLS Estándar"
+      : "Recogida en Kigobe 24h"
+}`,
+`Subtotal productos: ${(subtotalCents / 100).toFixed(2)} €`,
+`Coste envío: ${(shippingCostCents / 100).toFixed(2)} €`,
+`Total: ${(totalCents / 100).toFixed(2)} €`,
             "Estado del pago: PENDIENTE DE CONFIRMACIÓN",
           ].join("\n"),
         });
