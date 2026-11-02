@@ -226,8 +226,8 @@ export async function POST(request: NextRequest) {
       <Provincia><![CDATA[Almería]]></Provincia>
       <Pais>34</Pais>
       <CP>04008</CP>
-      <Telefono><![CDATA[]]></Telefono>
-      <Movil><![CDATA[]]></Movil>
+     <Telefono><![CDATA[643885699]]></Telefono>
+<Movil><![CDATA[643885699]]></Movil>
       <Email><![CDATA[kigobeshop@gmail.com]]></Email>
       <Observaciones><![CDATA[]]></Observaciones>
     </Remite>
