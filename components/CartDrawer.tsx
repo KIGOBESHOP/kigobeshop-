@@ -38,9 +38,10 @@ export default function CartDrawer({
     0
   );
 
-  const remaining = Math.max(0, 50 - total);
-const progress = Math.min(100, (total / 50) * 100);
-const freeShippingReached = total >= 50;
+   const remaining = Math.max(0, 50 - total);
+  const progress = Math.min(100, (total / 50) * 100);
+  const freeShippingReached = total >= 50;
+
   return (
     <>
       <div
