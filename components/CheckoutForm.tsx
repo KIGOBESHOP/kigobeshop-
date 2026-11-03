@@ -1,3 +1,4 @@
+
 "use client";
 
 type CustomerData = {
@@ -15,6 +16,7 @@ type CustomerData = {
 
 type CheckoutFormProps = {
   data: CustomerData;
+  subtotal?: number;
   onChange: (data: CustomerData) => void;
   onClose: () => void;
   onSubmit: () => void;
@@ -22,6 +24,7 @@ type CheckoutFormProps = {
 
 export default function CheckoutForm({
   data,
+  subtotal = 0,
   onChange,
   onClose,
   onSubmit,
@@ -36,6 +39,9 @@ export default function CheckoutForm({
     });
   };
 
+  const isPickup = data.shippingMethod === "pickup";
+  const isFreeStandard = subtotal >= 50;
+
   return (
     <div className="checkoutOverlay">
       <div className="checkoutModal">
@@ -49,131 +55,138 @@ export default function CheckoutForm({
         </button>
 
         <h2>Finalizar pedido</h2>
-        <p>
-          Completa tus datos para realizar tu compra en KigobeShop.
-        </p>
+        <p>Completa tus datos para realizar tu compra en KigobeShop.</p>
 
         <div className="checkoutForm">
           {/* 01. Datos personales */}
           <div className="checkoutSection">
             <h3>01. Datos personales</h3>
 
-            {/* CORREGIDO: Se elimina por completo el campo "Sexo" para cumplir con la minimización de datos del RGPD */}
-            <div style={{ marginBottom: "15px", display: "flex", flexDirection: "column" }}>
-              <label htmlFor="checkoutName" style={{ fontWeight: "bold", marginBottom: "5px" }}>Nombre</label>
-              <input
-                id="checkoutName"
-                type="text"
-                autoComplete="given-name"
-                placeholder="Tu nombre"
-                value={data.name}
-                onChange={(e) => update("name", e.target.value)}
-                required
-              />
-            </div>
-
-            <div style={{ marginBottom: "15px", display: "flex", flexDirection: "column" }}>
-              <label htmlFor="checkoutSurname" style={{ fontWeight: "bold", marginBottom: "5px" }}>Apellidos</label>
-              <input
-                id="checkoutSurname"
-                type="text"
-                autoComplete="family-name"
-                placeholder="Tus apellidos"
-                value={data.surname}
-                onChange={(e) => update("surname", e.target.value)}
-                required
-              />
-            </div>
-
-            <div style={{ marginBottom: "15px", display: "flex", flexDirection: "column" }}>
-              <label htmlFor="checkoutEmail" style={{ fontWeight: "bold", marginBottom: "5px" }}>Correo electrónico</label>
-              <input
-                id="checkoutEmail"
-                type="email"
-                autoComplete="email"
-                placeholder="tu@email.com"
-                value={data.email}
-                onChange={(e) => update("email", e.target.value)}
-                required
-              />
-            </div>
-
-            <div style={{ marginBottom: "15px", display: "flex", flexDirection: "column" }}>
-              <label htmlFor="checkoutPhone" style={{ fontWeight: "bold", marginBottom: "5px" }}>Teléfono</label>
-              <input
-                id="checkoutPhone"
-                type="tel"
-                autoComplete="tel"
-                placeholder="Tu teléfono"
-                value={data.phone}
-                onChange={(e) => update("phone", e.target.value)}
-                required
-              />
-            </div>
+            {[
+              { id: "checkoutName", field: "name", label: "Nombre", placeholder: "Tu nombre", autoComplete: "given-name", type: "text" },
+              { id: "checkoutSurname", field: "surname", label: "Apellidos", placeholder: "Tus apellidos", autoComplete: "family-name", type: "text" },
+              { id: "checkoutEmail", field: "email", label: "Correo electrónico", placeholder: "tu@email.com", autoComplete: "email", type: "email" },
+              { id: "checkoutPhone", field: "phone", label: "Teléfono", placeholder: "Tu teléfono", autoComplete: "tel", type: "tel" },
+            ].map((item) => (
+              <div key={item.id} style={{ marginBottom: "15px", display: "flex", flexDirection: "column" }}>
+                <label htmlFor={item.id} style={{ fontWeight: "bold", marginBottom: "5px" }}>
+                  {item.label}
+                </label>
+                <input
+                  id={item.id}
+                  type={item.type}
+                  autoComplete={item.autoComplete}
+                  placeholder={item.placeholder}
+                  value={data[item.field as keyof CustomerData] as string}
+                  onChange={(e) => update(item.field as keyof CustomerData, e.target.value)}
+                  required
+                />
+              </div>
+            ))}
           </div>
 
-          {/* 02. Dirección de envío */}
-          <div className="checkoutSection">
-            <h3>02. Dirección de envío</h3>
-
-            <div style={{ marginBottom: "15px", display: "flex", flexDirection: "column" }}>
-              <label htmlFor="checkoutAddress" style={{ fontWeight: "bold", marginBottom: "5px" }}>Dirección completa</label>
-              <input
-                id="checkoutAddress"
-                type="text"
-                autoComplete="street-address"
-                placeholder="Calle, número, piso..."
-                value={data.address}
-                onChange={(e) => update("address", e.target.value)}
-                required
-              />
+          {/* 02. Dirección de envío o recogida */}
+          {isPickup ? (
+            <div className="checkoutSection">
+              <h3>02. Recogida en tienda</h3>
+              <div style={{ padding: "16px", background: "#F5EEFC", borderRadius: "12px", border: "1px solid #E3D4F5" }}>
+                <strong>Recogida gratuita en Kigobe 24h</strong>
+                <p style={{ marginBottom: 0 }}>
+                  Calle Granada, Plaza Primero de Mayo 27, Almería.
+                </p>
+              </div>
             </div>
+          ) : (
+            <div className="checkoutSection">
+              <h3>02. Dirección de envío</h3>
 
-            <div style={{ marginBottom: "15px", display: "flex", flexDirection: "column" }}>
-              <label htmlFor="checkoutCity" style={{ fontWeight: "bold", marginBottom: "5px" }}>Ciudad</label>
-              <input
-                id="checkoutCity"
-                type="text"
-                autoComplete="address-level2"
-                placeholder="Tu ciudad"
-                value={data.city}
-                onChange={(e) => update("city", e.target.value)}
-                required
-              />
+              {[
+                { id: "checkoutAddress", field: "address", label: "Dirección completa", placeholder: "Calle, número, piso...", autoComplete: "street-address" },
+                { id: "checkoutCity", field: "city", label: "Ciudad", placeholder: "Tu ciudad", autoComplete: "address-level2" },
+                { id: "checkoutPostalCode", field: "postalCode", label: "Código postal", placeholder: "Código postal", autoComplete: "postal-code" },
+              ].map((item) => (
+                <div key={item.id} style={{ marginBottom: "15px", display: "flex", flexDirection: "column" }}>
+                  <label htmlFor={item.id} style={{ fontWeight: "bold", marginBottom: "5px" }}>
+                    {item.label}
+                  </label>
+                  <input
+                    id={item.id}
+                    type="text"
+                    autoComplete={item.autoComplete}
+                    placeholder={item.placeholder}
+                    value={data[item.field as keyof CustomerData] as string}
+                    onChange={(e) => update(item.field as keyof CustomerData, e.target.value)}
+                    required
+                  />
+                </div>
+              ))}
             </div>
-
-            <div style={{ marginBottom: "15px", display: "flex", flexDirection: "column" }}>
-              <label htmlFor="checkoutPostalCode" style={{ fontWeight: "bold", marginBottom: "5px" }}>Código postal</label>
-              <input
-                id="checkoutPostalCode"
-                type="text"
-                autoComplete="postal-code"
-                placeholder="Código postal"
-                value={data.postalCode}
-                onChange={(e) => update("postalCode", e.target.value)}
-                required
-              />
-            </div>
-          </div>
+          )}
 
           {/* 03. Método de envío */}
           <div className="checkoutSection">
             <h3>03. Método de envío</h3>
-            <label className="checkoutShippingOption" style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-              <input
-                type="radio"
-                name="shippingMethod"
-                value="standard"
-                checked={data.shippingMethod === "standard"}
-                onChange={(e) => update("shippingMethod", e.target.value)}
-                required
-              />
-              <span>
-                <strong>Envío estándar</strong>
-                <br />
-                <small>El coste y el plazo se mostrarán antes de confirmar el pedido.</small>
-              </span>
-            </label>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <label className="checkoutShippingOption" style={{ display: "flex", gap: "10px", alignItems: "flex-start", padding: "14px", border: data.shippingMethod === "standard" ? "2px solid #8052B8" : "1px solid #ddd", borderRadius: "12px", background: data.shippingMethod === "standard" ? "#F8F3FD" : "white", cursor: "pointer" }}>
+                <input
+                  type="radio"
+                  name="shippingMethod"
+                  value="standard"
+                  checked={data.shippingMethod === "standard"}
+                  onChange={(e) => update("shippingMethod", e.target.value)}
+                />
+                <span>
+                  <strong>GLS Estándar</strong>
+                  <br />
+                  <small>Plazo orientativo: 48/72 h</small>
+                  <br />
+                  <strong style={{ color: "#7545A8" }}>
+                    {isFreeStandard ? "GRATIS" : "4,90 €"}
+                  </strong>
+                  <br />
+                  <small>Gratis en compras desde 50 €</small>
+                </span>
+              </label>
+
+              <label className="checkoutShippingOption" style={{ display: "flex", gap: "10px", alignItems: "flex-start", padding: "14px", border: data.shippingMethod === "premium" ? "2px solid #8052B8" : "1px solid #ddd", borderRadius: "12px", background: data.shippingMethod === "premium" ? "#F8F3FD" : "white", cursor: "pointer" }}>
+                <input
+                  type="radio"
+                  name="shippingMethod"
+                  value="premium"
+                  checked={data.shippingMethod === "premium"}
+                  onChange={(e) => update("shippingMethod", e.target.value)}
+                />
+                <span>
+                  <strong>GLS Premium</strong>
+                  <br />
+                  <small>Plazo orientativo: 24/48 h</small>
+                  <br />
+                  <strong style={{ color: "#7545A8" }}>6,90 €</strong>
+                </span>
+              </label>
+
+              <label className="checkoutShippingOption" style={{ display: "flex", gap: "10px", alignItems: "flex-start", padding: "14px", border: data.shippingMethod === "pickup" ? "2px solid #8052B8" : "1px solid #ddd", borderRadius: "12px", background: data.shippingMethod === "pickup" ? "#F8F3FD" : "white", cursor: "pointer" }}>
+                <input
+                  type="radio"
+                  name="shippingMethod"
+                  value="pickup"
+                  checked={data.shippingMethod === "pickup"}
+                  onChange={(e) => update("shippingMethod", e.target.value)}
+                />
+                <span>
+                  <strong>Recogida en Kigobe 24h</strong>
+                  <br />
+                  <small>Recoge tu pedido en nuestra tienda de Almería.</small>
+                  <br />
+                  <strong style={{ color: "#7545A8" }}>GRATIS</strong>
+                </span>
+              </label>
+            </div>
+
+            <p style={{ fontSize: "12px", color: "#777", marginTop: "12px" }}>
+              Los plazos indicados son orientativos y están pendientes de confirmación con GLS.
+            </p>
           </div>
 
           {/* 04. Pago */}
@@ -189,7 +202,6 @@ export default function CheckoutForm({
           <div className="checkoutSection">
             <h3>05. Condiciones legales</h3>
 
-            {/* CORREGIDO: Alineación perfecta de casillas y actualización de rutas a /legal */}
             <label className="checkoutLegalOption" style={{ display: "flex", gap: "10px", alignItems: "flex-start", marginBottom: "15px", cursor: "pointer" }}>
               <input
                 type="checkbox"
@@ -210,7 +222,6 @@ export default function CheckoutForm({
               </span>
             </label>
 
-            {/* CORREGIDO: Se elimina el <p> que rompía la estructura visual */}
             <label className="checkoutLegalOption" style={{ display: "flex", gap: "10px", alignItems: "flex-start", marginBottom: "25px", cursor: "pointer" }}>
               <input
                 type="checkbox"
