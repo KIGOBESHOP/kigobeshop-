@@ -2189,3 +2189,92 @@ height: 420px;
   font-size: 16px;
   font-weight: 700;
 }
+
+/* --- NUEVA PORTADA (HERO) KIGOBESHOP --- */
+.kigobe-hero {
+    position: relative;
+    width: 100%;
+    min-height: 75vh;
+    background-image: url('/portada-kigobe.jpg'); /* Recuerda meter tu foto en la carpeta 'public' con este nombre */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.kigobe-hero-container {
+    width: 100%;
+    max-width: 1200px;
+    display: flex;
+    justify-content: center;
+}
+
+.kigobe-hero-content {
+    text-align: center;
+    color: #ffffff;
+    max-width: 550px;
+    padding: 20px;
+    background: radial-gradient(circle, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0) 70%);
+}
+
+.kigobe-hero-heart {
+    font-size: 1.8rem;
+    font-weight: 300;
+    margin-bottom: 10px;
+}
+
+.kigobe-hero-title {
+    font-size: 3.2rem;
+    font-weight: 400;
+    letter-spacing: 5px;
+    line-height: 1.2;
+    margin-bottom: 20px;
+}
+
+.kigobe-hero-subtitle {
+    font-size: 1.1rem;
+    font-weight: 300;
+    letter-spacing: 1px;
+    margin-bottom: 30px;
+}
+
+.kigobe-hero-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background-color: #6a1b9a; /* Color morado de tu paleta */
+    color: #ffffff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: 12px 35px;
+    border-radius: 50px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    transition: all 0.3s ease;
+}
+
+.kigobe-hero-btn:hover {
+    background-color: #4a148c;
+    border-color: #ffffff;
+    transform: scale(1.03);
+}
+
+.kigobe-btn-arrow {
+    font-size: 0.8rem;
+    background-color: rgba(255, 255, 255, 0.2);
+    padding: 2px 7px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+@media (max-width: 768px) {
+    .kigobe-hero { min-height: 60vh; }
+    .kigobe-hero-title { font-size: 2.2rem; letter-spacing: 3px; }
+    .kigobe-hero-subtitle { font-size: 0.95rem; }
+    .kigobe-hero-btn { padding: 10px 28px; font-size: 0.8rem; }
+}
