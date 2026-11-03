@@ -122,20 +122,43 @@ const encryptionKey = process.env.CECA_REAL_ENCRYPTION_KEY;
       return cecaResponse(false);
     }
 
-    // Nunca liberar stock si el pedido ya está pagado.
-    if (order.payment_status === "paid") {
-      console.warn("NO OK recibido para un pedido ya pagado:", order.id);
-      return cecaResponse(true);
-    }
+   // Nunca liberar stock si el pedido ya está pagado.
+if (order.payment_status === "paid") {
+  console.warn("NO OK recibido para un pedido ya pagado:", order.id);
+  return cecaResponse(true);
+}
 
-    // La liberación se conectará después de verificar el flujo completo.
-    console.log("CECA NO OK validado:", {
-      orderId: order.id,
-      errorCode: received.errorCode,
-      paymentStatus: order.payment_status,
-    });
+if (order.payment_status !== "pending") {
+  console.error("Estado de pedido no válido:", order.payment_status);
+  return cecaResponse(false);
+}
 
-    return cecaResponse(true);
+// Liberar la reserva de stock.
+const { data: releaseResult, error: releaseError } =
+  await supabase.rpc("release_order_stock", {
+    p_order_id: order.id,
+  });
+
+const result = Array.isArray(releaseResult)
+  ? releaseResult[0]
+  : releaseResult;
+
+if (releaseError) {
+  console.error("Error liberando stock:", releaseError);
+  return cecaResponse(false);
+}
+
+if (
+  result?.ok !== true &&
+  result?.already_released !== true
+) {
+  console.error("No se pudo liberar la reserva:", result);
+  return cecaResponse(false);
+}
+
+console.log("Stock liberado correctamente:", order.id);
+
+return cecaResponse(true);
   } catch (error) {
     console.error("Error procesando CECA NO OK:", error);
     return cecaResponse(false);
