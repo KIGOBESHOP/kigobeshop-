@@ -260,10 +260,7 @@ if (
   showToast("Completa tus datos y acepta las condiciones legales para continuar.");
   return;
 }
-      showToast("Completa todos los datos para continuar.");
-      return;
-    }
-
+    
     if (cart.length === 0) {
       showToast("Tu carrito está vacío.");
       return;
