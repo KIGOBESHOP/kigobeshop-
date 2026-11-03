@@ -38,6 +38,9 @@ export default function CartDrawer({
     0
   );
 
+  const remaining = Math.max(0, 50 - total);
+const progress = Math.min(100, (total / 50) * 100);
+const freeShippingReached = total >= 50;
   return (
     <>
       <div
@@ -163,8 +166,49 @@ export default function CartDrawer({
 
         {items.length > 0 && (
           <div className="cartFooter">
+            <div style={{
+  background: "#F5EEFC",
+  padding: "14px",
+  borderRadius: "12px",
+  marginBottom: "16px"
+}}>
+  <p style={{
+    color: "#593477",
+    fontWeight: 600,
+    fontSize: "13px",
+    margin: "0 0 10px"
+  }}>
+    {freeShippingReached
+      ? "¡Enhorabuena! Tienes envío estándar GRATIS 🎉"
+      : `¡Te faltan ${remaining.toFixed(2)} € para conseguir envío estándar GRATIS!`}
+  </p>
+
+  <div style={{
+    height: "9px",
+    background: "#E1D3EF",
+    borderRadius: "20px",
+    overflow: "hidden"
+  }}>
+    <div style={{
+      width: `${progress}%`,
+      height: "100%",
+      background: "linear-gradient(90deg, #A77AD1, #7542A5)",
+      borderRadius: "20px",
+      transition: "width 0.3s ease"
+    }} />
+  </div>
+
+  <small style={{
+    display: "block",
+    color: "#765C8B",
+    marginTop: "8px",
+    fontSize: "11px"
+  }}>
+    Envío estándar gratis en compras desde 50 €
+  </small>
+</div>
             <div className="cartTotal">
-              <span>Total</span>
+             <span>Subtotal</span>
               <strong>{total.toFixed(2)} €</strong>
             </div>
 
