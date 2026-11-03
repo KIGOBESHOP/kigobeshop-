@@ -243,8 +243,11 @@ export default function Home() {
 
 if (
   !customerData.name.trim() ||
+  !customerData.surname.trim() ||
   !customerData.email.trim() ||
   !customerData.phone.trim() ||
+  !customerData.acceptTerms ||
+  !customerData.acknowledgePrivacy ||
   (
     !isPickup &&
     (
@@ -254,6 +257,9 @@ if (
     )
   )
 ) {
+  showToast("Completa tus datos y acepta las condiciones legales para continuar.");
+  return;
+}
       showToast("Completa todos los datos para continuar.");
       return;
     }
