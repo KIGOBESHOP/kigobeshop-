@@ -258,7 +258,7 @@ export async function POST(request: NextRequest) {
  xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
   <soap12:Body>
     <GrabaServicios xmlns="http://www.asmred.com/">
-      <docIn>${escapeXml(docIn)}</docIn>
+     <docIn>${docIn}</docIn>
     </GrabaServicios>
   </soap12:Body>
 </soap12:Envelope>`;
