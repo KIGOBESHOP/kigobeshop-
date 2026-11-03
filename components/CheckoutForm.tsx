@@ -185,7 +185,7 @@ export default function CheckoutForm({
             </div>
 
             <p style={{ fontSize: "12px", color: "#777", marginTop: "12px" }}>
-              Los plazos indicados son orientativos y están pendientes de confirmación con GLS.
+             Los plazos de entrega son de 24/48 h para Premium y 48/72 h para Estándar.
             </p>
           </div>
 
