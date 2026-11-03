@@ -239,14 +239,21 @@ export default function Home() {
 
   const handleCheckoutSubmit = async () => {
     if (checkoutSubmitting.current) return;
-    if (
-      !customerData.name.trim() ||
-      !customerData.email.trim() ||
-      !customerData.phone.trim() ||
+    const isPickup = customerData.shippingMethod === "pickup";
+
+if (
+  !customerData.name.trim() ||
+  !customerData.email.trim() ||
+  !customerData.phone.trim() ||
+  (
+    !isPickup &&
+    (
       !customerData.address.trim() ||
       !customerData.city.trim() ||
       !customerData.postalCode.trim()
-    ) {
+    )
+  )
+) {
       showToast("Completa todos los datos para continuar.");
       return;
     }
@@ -328,7 +335,10 @@ export default function Home() {
   };
 
   const cartCount = cart.reduce((sum, i) => sum + i.qty, 0);
-
+const cartSubtotal = cart.reduce(
+  (sum, item) => sum + item.product.price * item.qty,
+  0
+);
   const filteredProducts = useMemo(() => {
     let list = [...dbProducts];
 
@@ -584,6 +594,7 @@ export default function Home() {
       {checkoutOpen && (
         <CheckoutForm
           data={customerData}
+          subtotal={cartSubtotal}
           onChange={handleCustomerChange}
           onClose={() => setCheckoutOpen(false)}
           onSubmit={handleCheckoutSubmit}
