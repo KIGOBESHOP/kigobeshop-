@@ -323,7 +323,7 @@ if (
       form.submit();
     } catch {
       checkoutSubmitting.current = false;
-      showToast("No se ha podido conectar con el TPV de pruebas.");
+      showToast("No se ha podido conectar con el TPV.");
     }
   };
 
@@ -489,7 +489,7 @@ const cartSubtotal = cart.reduce(
             </svg>
           </div>
           <h3>Envíos rápidos</h3>
-          <p>Recibe tus pedidos en 24-48h a todo el país.</p>
+         <p>Elige GLS Estándar (48/72 h) o GLS Premium (24/48 h).</p>
         </div>
         <div className="benefitCard">
           <div className="benefitIcon">
