@@ -170,9 +170,20 @@ export async function POST(request: NextRequest) {
     const auth = await authenticateAdmin(request);
     if (!auth.ok) return auth.error;
 
-    const testUid = process.env.GLS_UIDCLIENTE_TEST;
-    if (!testUid) {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const testUid = process.env.GLS_UIDCLIENTE_TEST;
+
+if (!testUid) {
+  return NextResponse.json(
+    {
+      ok: false,
+      message: "Falta GLS_UIDCLIENTE_TEST en Vercel.",
+      shipmentCreationEnabled: false,
+    },
+    { status: 503 }
+  );
+}
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !serviceKey) {
@@ -184,6 +195,13 @@ if (!supabaseUrl || !serviceKey) {
     { status: 503 }
   );
 }
+
+const supabase = createClient(supabaseUrl, serviceKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+  },
+});
 
 const supabase = createClient(supabaseUrl, serviceKey, {
   auth: {
