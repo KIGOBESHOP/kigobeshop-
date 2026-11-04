@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
     <Servicio>96</Servicio>
     <Horario>18</Horario>
     <Bultos>1</Bultos>
-    <Peso>4</Peso>
+    <Peso>1</Peso>
     <Retorno>0</Retorno>
     <Pod>N</Pod>
     <Remite>
@@ -246,9 +246,12 @@ export async function POST(request: NextRequest) {
       <Observaciones><![CDATA[PRUEBA TECNICA KIGOBESHOP]]></Observaciones>
       <ATT><![CDATA[GLS TEST]]></ATT>
     </Destinatario>
-    <Referencias>
+       <Referencias>
       <Referencia tipo="C"><![CDATA[${referencia}]]></Referencia>
     </Referencias>
+    <DevuelveAdicionales>
+      <Etiqueta codificacion="CI28" tipo="PDF" modo="EtixBulto"></Etiqueta>
+    </DevuelveAdicionales>
   </Envio>
 </Servicios>`;
 
