@@ -15,6 +15,70 @@ function escapeXml(value: string): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 }
+function getProvinceFromPostalCode(postalCode: string): string | null {
+  const provinces: Record<string, string> = {
+    "01": "Álava",
+    "02": "Albacete",
+    "03": "Alicante",
+    "04": "Almería",
+    "05": "Ávila",
+    "06": "Badajoz",
+    "07": "Baleares",
+    "08": "Barcelona",
+    "09": "Burgos",
+    "10": "Cáceres",
+    "11": "Cádiz",
+    "12": "Castellón",
+    "13": "Ciudad Real",
+    "14": "Córdoba",
+    "15": "A Coruña",
+    "16": "Cuenca",
+    "17": "Girona",
+    "18": "Granada",
+    "19": "Guadalajara",
+    "20": "Guipúzcoa",
+    "21": "Huelva",
+    "22": "Huesca",
+    "23": "Jaén",
+    "24": "León",
+    "25": "Lleida",
+    "26": "La Rioja",
+    "27": "Lugo",
+    "28": "Madrid",
+    "29": "Málaga",
+    "30": "Murcia",
+    "31": "Navarra",
+    "32": "Ourense",
+    "33": "Asturias",
+    "34": "Palencia",
+    "35": "Las Palmas",
+    "36": "Pontevedra",
+    "37": "Salamanca",
+    "38": "Santa Cruz de Tenerife",
+    "39": "Cantabria",
+    "40": "Segovia",
+    "41": "Sevilla",
+    "42": "Soria",
+    "43": "Tarragona",
+    "44": "Teruel",
+    "45": "Toledo",
+    "46": "Valencia",
+    "47": "Valladolid",
+    "48": "Vizcaya",
+    "49": "Zamora",
+    "50": "Zaragoza",
+    "51": "Ceuta",
+    "52": "Melilla",
+  };
+
+  const postalCodeClean = postalCode.trim();
+
+  if (!/^\d{5}$/.test(postalCodeClean)) {
+    return null;
+  }
+
+  return provinces[postalCodeClean.substring(0, 2)] ?? null;
+}
 
 function unescapeXml(value: string): string {
   return value
@@ -290,7 +354,17 @@ const supabase = createClient(supabaseUrl, serviceKey, {
           { status: 422 }
         );
       }
+const province = getProvinceFromPostalCode(order.customer_postal_code);
 
+if (!province) {
+  return NextResponse.json(
+    {
+      ok: false,
+      message: "No se pudo determinar la provincia a partir del código postal.",
+    },
+    { status: 422 }
+  );
+}
       return NextResponse.json({
         ok: true,
         action: "shipment-order-precheck",
@@ -302,6 +376,7 @@ const supabase = createClient(supabaseUrl, serviceKey, {
           address: order.customer_address,
           city: order.customer_city,
           postalCode: order.customer_postal_code,
+          province,
           phone: order.customer_phone,
           shippingMethod: order.shipping_method,
         },
