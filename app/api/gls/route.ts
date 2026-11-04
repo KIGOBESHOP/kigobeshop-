@@ -173,18 +173,7 @@ export async function POST(request: NextRequest) {
     const auth = await authenticateAdmin(request);
     if (!auth.ok) return auth.error;
 
-const testUid = process.env.GLS_UIDCLIENTE_TEST;
 
-if (!testUid) {
-  return NextResponse.json(
-    {
-      ok: false,
-      message: "Falta GLS_UIDCLIENTE_TEST en Vercel.",
-      shipmentCreationEnabled: false,
-    },
-    { status: 503 }
-  );
-}
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -207,6 +196,32 @@ const supabase = createClient(supabaseUrl, serviceKey, {
 });
 
     const body = await request.json().catch(() => null);
+    if (body?.action === "storage-test") {
+  const testPdf = Buffer.from(
+    "JVBERi0xLjQKJUVPRgo=",
+    "base64"
+  );
+
+  const { error } = await supabase.storage
+    .from("etiquetas-gls")
+    .upload("pruebas/comprobacion.pdf", testPdf, {
+      contentType: "application/pdf",
+      upsert: true,
+    });
+
+  if (error) {
+    return NextResponse.json(
+      { ok: false, message: error.message },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({
+    ok: true,
+    message: "La subida de prueba a Supabase funciona.",
+    path: "pruebas/comprobacion.pdf",
+  });
+}
     if (body?.action !== "shipment-test") {
       return NextResponse.json(
         {
@@ -218,6 +233,18 @@ const supabase = createClient(supabaseUrl, serviceKey, {
       );
     }
 
+    const testUid = process.env.GLS_UIDCLIENTE_TEST;
+
+if (!testUid) {
+  return NextResponse.json(
+    {
+      ok: false,
+      message: "Falta GLS_UIDCLIENTE_TEST en Vercel.",
+      shipmentCreationEnabled: false,
+    },
+    { status: 503 }
+  );
+}
     const dateParts = new Intl.DateTimeFormat("es-ES", {
       timeZone: "Europe/Madrid",
       day: "2-digit",
