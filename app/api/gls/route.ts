@@ -6,7 +6,12 @@ export const dynamic = "force-dynamic";
 
 // Dirección confirmada en el manual específico facilitado por GLS.
 const GLS_URL = "https://ws-customer.gls-spain.es/b2b.asmx";
-
+// Configuración de producción GLS.
+// La creación de expediciones permanece bloqueada hasta confirmar los datos.
+const GLS_PRODUCTION_ENABLED = false;
+function getGLSProductionUid(): string {
+  return process.env.GLS_UIDCLIENTE?.trim() ?? "";
+}
 function escapeXml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -286,7 +291,37 @@ const supabase = createClient(supabaseUrl, serviceKey, {
     path: "pruebas/comprobacion.pdf",
   });
 }
-    
+    if (body?.action === "shipment-production") {
+  if (!GLS_PRODUCTION_ENABLED) {
+    return NextResponse.json(
+      {
+        ok: false,
+        shipmentCreated: false,
+        message: "La creación de envíos GLS de producción todavía está bloqueada.",
+      },
+      { status: 403 }
+    );
+  }
+
+  const productionUid = getGLSProductionUid();
+
+  if (!productionUid) {
+    return NextResponse.json(
+      {
+        ok: false,
+        shipmentCreated: false,
+        message: "Falta GLS_UIDCLIENTE en Vercel.",
+      },
+      { status: 503 }
+    );
+  }
+
+  return NextResponse.json({
+    ok: true,
+    shipmentCreated: false,
+    message: "UID de producción configurado. Falta completar la integración con GLS.",
+  });
+}
     if (body?.action === "shipment-order") {
       const orderId = String(body.orderId ?? "").trim();
 
