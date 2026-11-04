@@ -16,12 +16,11 @@ type Order = {
   customer_phone?: string;
   customer_address?: string;
   customer_city?: string;
-  customer_provincia?: string;
   customer_postal_code?: string;
-  total?: number | string;
+  total_cents?: number | string;
   payment_status?: string;
   gls_status?: string | null;
-  shipping_barcode?: string | null;
+   gls_tracking_number?: string | null;
   shipping_method?: string;
   created_at?: string;
   items?: Array<{
@@ -144,15 +143,59 @@ export default function EnviosPage() {
   const paidOrders = orders.filter(
     (order) => order.payment_status === "paid"
   );
+  async function checkGLSOrder(orderId: string) {
+    setGenerating(orderId);
+    setMessage("");
+    setError("");
 
+    try {
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError || !session) {
+        throw new Error("Tu sesión ha caducado. Vuelve a iniciar sesión.");
+      }
+
+      const response = await fetch("/api/gls", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          action: "shipment-order",
+          orderId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.message || "No se pudo comprobar el pedido.");
+      }
+
+      setMessage(
+        `Pedido #${orderId}: ${data.message} No se ha creado ninguna expedición.`
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Error al comprobar el pedido GLS."
+      );
+    } finally {
+      setGenerating(null);
+    }
+  }
   const pendingOrders = paidOrders.filter(
-    (order) => !order.shipping_barcode && order.gls_status !== "generado"
-  );
+  (order) => !order.gls_tracking_number && order.gls_status !== "generado"
+);
 
-  const generatedOrders = paidOrders.filter(
-    (order) => Boolean(order.shipping_barcode) || order.gls_status === "generado"
-  );
-
+const generatedOrders = paidOrders.filter(
+  (order) => Boolean(order.gls_tracking_number) || order.gls_status === "generado"
+);
   function formatDate(value?: string) {
     if (!value) return "Fecha no disponible";
 
@@ -164,7 +207,7 @@ export default function EnviosPage() {
   }
 
   function formatPrice(value?: number | string) {
-    const amount = Number(value);
+   const amount = Number(value) / 100;
 
     return Number.isFinite(amount)
       ? amount.toLocaleString("es-ES", {
@@ -205,13 +248,16 @@ export default function EnviosPage() {
           <p><strong>Dirección:</strong> {order.customer_address || "No indicada"}</p>
           <p>
             <strong>Localidad:</strong>{" "}
-            {[order.customer_postal_code, order.customer_city, order.customer_provincia]
-              .filter(Boolean)
-              .join(", ") || "No indicada"}
+           {[
+  order.customer_postal_code,
+  order.customer_city
+]
+  .filter(Boolean)
+  .join(", ") || "No indicada"}
           </p>
           <p><strong>Teléfono:</strong> {order.customer_phone || "No indicado"}</p>
           <p><strong>Email:</strong> {order.customer_email || "No indicado"}</p>
-          <p><strong>Total:</strong> {formatPrice(order.total)}</p>
+          <p><strong>Total:</strong> {formatPrice(order.total_cents)}</p>
         </div>
 
         {order.items && order.items.length > 0 && (
@@ -231,11 +277,20 @@ export default function EnviosPage() {
           <div style={styles.barcodeBox}>
             <strong>Código de barras GLS</strong>
             <p style={styles.barcode}>
-              {order.shipping_barcode || "GLS marcado como generado, sin código guardado"}
+             {order.gls_tracking_number || "GLS marcado como generado, sin código guardado"}
             </p>
           </div>
         )}
-
+{!generated && (
+  <button
+    type="button"
+    style={styles.button}
+    onClick={() => checkGLSOrder(id)}
+    disabled={generating === id}
+  >
+    {generating === id ? "Comprobando..." : "Comprobar pedido GLS"}
+  </button>
+)}
       </article>
     );
   }
