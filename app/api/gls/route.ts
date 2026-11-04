@@ -97,10 +97,13 @@ export async function GET(request: NextRequest) {
         { status: 503 }
       );
     }
-
-    const supabase = createClient(supabaseUrl, serviceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+const supabase = createClient(supabaseUrl, serviceKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+  },
+});
+  
     const { data: orders, error } = await supabase
       .from("orders")
       .select(
@@ -203,22 +206,6 @@ const supabase = createClient(supabaseUrl, serviceKey, {
   },
 });
 
-const supabase = createClient(supabaseUrl, serviceKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-  },
-});
-      return NextResponse.json(
-        {
-          ok: false,
-          message: "Falta GLS_UIDCLIENTE_TEST en Vercel.",
-          shipmentCreationEnabled: false,
-        },
-        { status: 503 }
-      );
-    }
-
     const body = await request.json().catch(() => null);
     if (body?.action !== "shipment-test") {
       return NextResponse.json(
@@ -242,7 +229,7 @@ const supabase = createClient(supabaseUrl, serviceKey, {
     const fecha = `${getPart("day")}/${getPart("month")}/${getPart("year")}`;
     const referencia = `KIGOBE-TEST-${Date.now()}`;
 
-    // Estructura basada en Shipment_Example0_Basic_IN.xml de GLS, sin solicitar etiqueta en esta primera validación.
+// Estructura basada en el ejemplo oficial de GLS. Se solicita la etiqueta de la expedición de prueba.
     // Los datos del destinatario son ficticios. No se usan pedidos reales.
     // IMPORTANTE: GrabaServicios inserta una expedición en GLS usando el UID indicado.
     const docIn = `<Servicios uidcliente="${escapeXml(testUid)}" xmlns="http://www.asmred.com/">
@@ -322,9 +309,63 @@ const supabase = createClient(supabaseUrl, serviceKey, {
     const barcode = shipmentMatch?.[1].match(/\bcodbarras="([^"]*)"/i)?.[1] ?? null;
     const uid = shipmentMatch?.[1].match(/\buid="([^"]*)"/i)?.[1] ?? null;
     const returnCode = resultXml.match(/<Resultado\b[^>]*\breturn="([^"]*)"/i)?.[1] ?? null;
-    const labelReturned = /<Etiqueta\b[^>]*>[\s\S]*?<\/Etiqueta>/i.test(resultXml);
-    const soapFault = /<(?:[\w.-]+:)?Fault\b/i.test(responseXml);
-    const success = response.ok && !soapFault && returnCode === "0";
+const labelMatch = resultXml.match(
+  /<Etiqueta\b([^>]*)>([\s\S]*?)<\/Etiqueta>/i
+);
+
+const labelReturned = Boolean(labelMatch);
+
+const soapFault = /<(?:[\w.-]+:)?Fault\b/i.test(responseXml);
+const success = response.ok && !soapFault && returnCode === "0";
+
+let labelSaved = false;
+let labelStoragePath: string | null = null;
+let labelStorageError: string | null = null;
+let labelMimeType: string | null = null;
+
+if (success && labelMatch) {
+  const base64 = labelMatch[2]
+    .replace(/^<!\[CDATA\[([\s\S]*)\]\]>$/, "$1")
+    .replace(/\s/g, "");
+
+  if (!base64 || !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) {
+    labelStorageError = "El contenido de la etiqueta no es Base64 válido.";
+  } else {
+    const labelBuffer = Buffer.from(base64, "base64");
+
+    if (labelBuffer.subarray(0, 5).toString("ascii") === "%PDF-") {
+      labelMimeType = "application/pdf";
+    } else if (
+      labelBuffer[0] === 0xff &&
+      labelBuffer[1] === 0xd8 &&
+      labelBuffer[2] === 0xff
+    ) {
+      labelMimeType = "image/jpeg";
+    } else {
+      labelStorageError = "GLS ha devuelto un formato de etiqueta no reconocido.";
+    }
+
+    if (labelMimeType) {
+      const extension = labelMimeType === "application/pdf" ? "pdf" : "jpg";
+      const storagePath = `pruebas/${referencia}.${extension}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("etiquetas-gls")
+        .upload(storagePath, labelBuffer, {
+          contentType: labelMimeType,
+          upsert: false,
+        });
+
+      if (uploadError) {
+        labelStorageError = uploadError.message;
+      } else {
+        labelSaved = true;
+        labelStoragePath = storagePath;
+      }
+    }
+  }
+}
+
 
     const safeResult = resultXml
       ? resultXml.replace(/<Etiqueta\b[^>]*>[\s\S]*?<\/Etiqueta>/gi, "<Etiqueta>[contenido omitido]</Etiqueta>").slice(0, 3000)
@@ -339,6 +380,10 @@ const supabase = createClient(supabaseUrl, serviceKey, {
       barcode,
       shipmentUid: uid,
       labelReturned,
+      labelSaved,
+labelStoragePath,
+labelStorageError,
+labelMimeType,
       soapFault,
       responseReceived: responseXml.length > 0,
       testUidUsed: true,
