@@ -9,6 +9,13 @@ const GLS_URL = "https://ws-customer.gls-spain.es/b2b.asmx";
 // Configuración de producción GLS.
 // La creación de expediciones permanece bloqueada hasta confirmar los datos.
 const GLS_PRODUCTION_ENABLED = false;
+const GLS_SERVICES = {
+  standard: {
+    serviceCode: "96",
+    scheduleCode: "18",
+    name: "BusinessParcel",
+  },
+} as const;
 function getGLSProductionUid(): string {
   return process.env.GLS_UIDCLIENTE?.trim() ?? "";
 }
@@ -291,37 +298,182 @@ const supabase = createClient(supabaseUrl, serviceKey, {
     path: "pruebas/comprobacion.pdf",
   });
 }
+  
     if (body?.action === "shipment-production") {
-  if (!GLS_PRODUCTION_ENABLED) {
-    return NextResponse.json(
-      {
-        ok: false,
+      const orderId = String(body.orderId ?? "").trim();
+
+      if (!orderId) {
+        return NextResponse.json(
+          { ok: false, message: "Falta el identificador del pedido." },
+          { status: 400 }
+        );
+      }
+
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .select(
+          "id, payment_status, gls_shipment_id, gls_tracking_number, gls_status, customer_name, customer_surname, customer_phone, customer_email, customer_address, customer_city, customer_postal_code, shipping_method"
+        )
+        .eq("id", orderId)
+        .maybeSingle();
+
+      if (orderError || !order) {
+        return NextResponse.json(
+          { ok: false, message: "No se pudo encontrar el pedido." },
+          { status: 404 }
+        );
+      }
+
+      if (order.payment_status !== "paid") {
+        return NextResponse.json(
+          { ok: false, message: "El pedido todavía no está pagado." },
+          { status: 409 }
+        );
+      }
+
+      if (order.shipping_method === "pickup") {
+        return NextResponse.json({
+          ok: true,
+          shipmentCreated: false,
+          message: "El pedido es de recogida en tienda. No necesita GLS.",
+        });
+      }
+
+      if (order.shipping_method !== "standard") {
+        return NextResponse.json(
+          { ok: false, message: "Método de envío no reconocido." },
+          { status: 422 }
+        );
+      }
+
+      if (
+        order.gls_shipment_id ||
+        order.gls_tracking_number ||
+        order.gls_status === "generado"
+      ) {
+        return NextResponse.json(
+          { ok: false, message: "Este pedido ya tiene un envío GLS registrado." },
+          { status: 409 }
+        );
+      }
+
+      const missingFields = [
+        !order.customer_name && "nombre",
+        !order.customer_address && "dirección",
+        !order.customer_city && "localidad",
+        !order.customer_postal_code && "código postal",
+        !order.customer_phone && "teléfono",
+      ].filter(Boolean);
+
+      if (missingFields.length > 0) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message: `Faltan datos del destinatario: ${missingFields.join(", ")}.`,
+          },
+          { status: 422 }
+        );
+      }
+
+      const province = getProvinceFromPostalCode(
+        order.customer_postal_code
+      );
+
+      if (!province) {
+        return NextResponse.json(
+          { ok: false, message: "No se pudo determinar la provincia." },
+          { status: 422 }
+        );
+      }
+
+      const productionUid = getGLSProductionUid();
+
+      if (!productionUid) {
+        return NextResponse.json(
+          { ok: false, message: "Falta GLS_UIDCLIENTE en Vercel." },
+          { status: 503 }
+        );
+      }
+
+      const dateParts = new Intl.DateTimeFormat("es-ES", {
+        timeZone: "Europe/Madrid",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }).formatToParts(new Date());
+
+      const getPart = (type: string) =>
+        dateParts.find((part) => part.type === type)?.value ?? "";
+
+      const fecha = `${getPart("day")}/${getPart("month")}/${getPart("year")}`;
+      const referencia = `K${Date.now().toString().slice(-14)}`;
+
+      const glsService = GLS_SERVICES.standard;
+
+      // XML preparado con los datos del pedido.
+      // Todavía NO se envía a GLS.
+      const docIn = `<Servicios uidcliente="${escapeXml(productionUid)}" xmlns="http://www.asmred.com/">
+  <Envio codbarras="">
+    <Fecha>${fecha}</Fecha>
+    <Portes>P</Portes>
+    <Servicio>${glsService.serviceCode}</Servicio>
+    <Horario>${glsService.scheduleCode}</Horario>
+    <Bultos>1</Bultos>
+    <Peso>1</Peso>
+    <Retorno>0</Retorno>
+    <Pod>N</Pod>
+    <Remite>
+      <Plaza></Plaza>
+      <Nombre>KigobeShop</Nombre>
+      <Direccion>Calle Granada, Plaza Primero de Mayo 27</Direccion>
+      <Poblacion>Almería</Poblacion>
+      <Provincia>Almería</Provincia>
+      <Pais>34</Pais>
+      <CP>04008</CP>
+      <Telefono>643885699</Telefono>
+      <Movil>643885699</Movil>
+      <Email>kigobeshop@gmail.com</Email>
+    </Remite>
+    <Destinatario>
+      <Codigo></Codigo>
+      <Plaza></Plaza>
+      <Nombre>${escapeXml(`${order.customer_name} ${order.customer_surname ?? ""}`.trim())}</Nombre>
+      <Direccion>${escapeXml(order.customer_address)}</Direccion>
+      <Poblacion>${escapeXml(order.customer_city)}</Poblacion>
+      <Provincia>${escapeXml(province)}</Provincia>
+      <Pais>34</Pais>
+      <CP>${escapeXml(order.customer_postal_code)}</CP>
+      <Telefono>${escapeXml(order.customer_phone)}</Telefono>
+      <Movil>${escapeXml(order.customer_phone)}</Movil>
+      <Email>${escapeXml(order.customer_email ?? "")}</Email>
+      <Observaciones></Observaciones>
+      <ATT>${escapeXml(order.customer_name)}</ATT>
+    </Destinatario>
+    <Referencias>
+      <Referencia tipo="C">${referencia}</Referencia>
+    </Referencias>
+    <DevuelveAdicionales>
+      <Etiqueta codificacion="CI28" tipo="PDF" modo="EtixBulto"></Etiqueta>
+    </DevuelveAdicionales>
+  </Envio>
+</Servicios>`;
+
+      return NextResponse.json({
+        ok: true,
         shipmentCreated: false,
-        message: "La creación de envíos GLS de producción todavía está bloqueada.",
-      },
-      { status: 403 }
-    );
-  }
+        xmlPrepared: true,
+        orderId: order.id,
+        reference: referencia,
+        province,
+        service: glsService.name,
+        serviceCode: glsService.serviceCode,
+        scheduleCode: glsService.scheduleCode,
+        weightKg: 1,
+        xmlLength: docIn.length,
+        message: "XML preparado. No se ha enviado ninguna expedición a GLS.",
+      });
+    }
 
-  const productionUid = getGLSProductionUid();
-
-  if (!productionUid) {
-    return NextResponse.json(
-      {
-        ok: false,
-        shipmentCreated: false,
-        message: "Falta GLS_UIDCLIENTE en Vercel.",
-      },
-      { status: 503 }
-    );
-  }
-
-  return NextResponse.json({
-    ok: true,
-    shipmentCreated: false,
-    message: "UID de producción configurado. Falta completar la integración con GLS.",
-  });
-}
     if (body?.action === "shipment-order") {
       const orderId = String(body.orderId ?? "").trim();
 
@@ -360,6 +512,27 @@ const supabase = createClient(supabaseUrl, serviceKey, {
           { status: 409 }
         );
       }
+      if (order.shipping_method === "pickup") {
+  return NextResponse.json({
+    ok: true,
+    action: "pickup",
+    shipmentCreated: false,
+    message: "Este pedido es de recogida en tienda. No necesita envío GLS.",
+  });
+}
+
+if (order.shipping_method !== "standard") {
+  return NextResponse.json(
+    {
+      ok: false,
+      shipmentCreated: false,
+      message: `Método de envío no reconocido: ${order.shipping_method ?? "vacío"}.`,
+    },
+    { status: 422 }
+  );
+}
+
+const glsService = GLS_SERVICES.standard;
 
       if (
         order.gls_shipment_id ||
@@ -414,6 +587,9 @@ if (!province) {
           province,
           phone: order.customer_phone,
           shippingMethod: order.shipping_method,
+          glsService: glsService.name,
+glsServiceCode: glsService.serviceCode,
+glsScheduleCode: glsService.scheduleCode,
         },
         provinceRequired: true,
       });
