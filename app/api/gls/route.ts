@@ -222,11 +222,98 @@ const supabase = createClient(supabaseUrl, serviceKey, {
     path: "pruebas/comprobacion.pdf",
   });
 }
+    
+    if (body?.action === "shipment-order") {
+      const orderId = String(body.orderId ?? "").trim();
+
+      if (!orderId) {
+        return NextResponse.json(
+          { ok: false, message: "Falta el identificador del pedido." },
+          { status: 400 }
+        );
+      }
+
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .select(
+          "id, payment_status, gls_shipment_id, gls_tracking_number, gls_status, customer_name, customer_surname, customer_phone, customer_address, customer_city, customer_postal_code, shipping_method"
+        )
+        .eq("id", orderId)
+        .maybeSingle();
+
+      if (orderError) {
+        return NextResponse.json(
+          { ok: false, message: "No se pudo consultar el pedido." },
+          { status: 500 }
+        );
+      }
+
+      if (!order) {
+        return NextResponse.json(
+          { ok: false, message: "No existe ese pedido." },
+          { status: 404 }
+        );
+      }
+
+      if (order.payment_status !== "paid") {
+        return NextResponse.json(
+          { ok: false, message: "El pedido todavía no está pagado." },
+          { status: 409 }
+        );
+      }
+
+      if (
+        order.gls_shipment_id ||
+        order.gls_tracking_number ||
+        order.gls_status === "generado"
+      ) {
+        return NextResponse.json(
+          { ok: false, message: "Este pedido ya tiene una expedición GLS registrada." },
+          { status: 409 }
+        );
+      }
+
+      const missingFields = [
+        !order.customer_name && "nombre",
+        !order.customer_address && "dirección",
+        !order.customer_city && "localidad",
+        !order.customer_postal_code && "código postal",
+        !order.customer_phone && "teléfono",
+      ].filter(Boolean);
+
+      if (missingFields.length > 0) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message: `Faltan datos del destinatario: ${missingFields.join(", ")}.`,
+          },
+          { status: 422 }
+        );
+      }
+
+      return NextResponse.json({
+        ok: true,
+        action: "shipment-order-precheck",
+        shipmentCreated: false,
+        message: "Pedido pagado y preparado para revisar su expedición GLS.",
+        order: {
+          id: order.id,
+          customerName: `${order.customer_name} ${order.customer_surname ?? ""}`.trim(),
+          address: order.customer_address,
+          city: order.customer_city,
+          postalCode: order.customer_postal_code,
+          phone: order.customer_phone,
+          shippingMethod: order.shipping_method,
+        },
+        provinceRequired: true,
+      });
+    }
+
     if (body?.action !== "shipment-test") {
       return NextResponse.json(
         {
           ok: false,
-          message: 'La única acción permitida ahora es "shipment-test".',
+          message: 'Acción no válida. Usa "storage-test", "shipment-test" o "shipment-order".',
           shipmentCreationEnabled: false,
         },
         { status: 400 }
