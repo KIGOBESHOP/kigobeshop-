@@ -176,9 +176,9 @@ export default function EnviosPage() {
         throw new Error(data.message || "No se pudo comprobar el pedido.");
       }
 
-      setMessage(
-        `Pedido #${orderId}: ${data.message} No se ha creado ninguna expedición.`
-      );
+     setMessage(
+  `Pedido #${orderId}: ${data.message} Provincia: ${data.order?.province || "No indicada"}. No se ha creado ninguna expedición.`
+);
     } catch (err) {
       setError(
         err instanceof Error
