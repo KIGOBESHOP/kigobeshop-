@@ -172,6 +172,25 @@ export async function POST(request: NextRequest) {
 
     const testUid = process.env.GLS_UIDCLIENTE_TEST;
     if (!testUid) {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !serviceKey) {
+  return NextResponse.json(
+    {
+      ok: false,
+      message: "Falta configurar Supabase para guardar la etiqueta GLS.",
+    },
+    { status: 503 }
+  );
+}
+
+const supabase = createClient(supabaseUrl, serviceKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+  },
+});
       return NextResponse.json(
         {
           ok: false,
