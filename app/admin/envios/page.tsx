@@ -189,6 +189,54 @@ export default function EnviosPage() {
       setGenerating(null);
     }
   }
+  
+  async function prepareGLSOrder(orderId: string) {
+    setGenerating(orderId);
+    setMessage("");
+    setError("");
+
+    try {
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError || !session) {
+        throw new Error("Tu sesión ha caducado. Vuelve a iniciar sesión.");
+      }
+
+      const response = await fetch("/api/gls", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          action: "shipment-production",
+          orderId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.ok || !data.xmlPrepared) {
+        throw new Error(data.message || "No se pudo preparar el envío.");
+      }
+
+      setMessage(
+        `Pedido #${orderId}: XML preparado correctamente. Provincia: ${data.province}. Servicio: ${data.service} (${data.serviceCode}). Peso: ${data.weightKg} kg. Referencia: ${data.reference}. No se ha enviado nada a GLS.`
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Error al preparar el envío GLS."
+      );
+    } finally {
+      setGenerating(null);
+    }
+  }
+
   const pendingOrders = paidOrders.filter(
   (order) => !order.gls_tracking_number && order.gls_status !== "generado"
 );
@@ -281,16 +329,32 @@ const generatedOrders = paidOrders.filter(
             </p>
           </div>
         )}
+
 {!generated && (
-  <button
-    type="button"
-    style={styles.button}
-    onClick={() => checkGLSOrder(id)}
-    disabled={generating === id}
-  >
-    {generating === id ? "Comprobando..." : "Comprobar pedido GLS"}
-  </button>
+  <>
+    <button
+      type="button"
+      style={styles.button}
+      onClick={() => checkGLSOrder(id)}
+      disabled={generating === id}
+    >
+      {generating === id ? "Comprobando..." : "Comprobar pedido GLS"}
+    </button>
+
+    <button
+      type="button"
+      style={{
+        ...styles.button,
+        background: "#3d7655",
+      }}
+      onClick={() => prepareGLSOrder(id)}
+      disabled={generating === id}
+    >
+      {generating === id ? "Preparando..." : "Preparar envío GLS"}
+    </button>
+  </>
 )}
+
       </article>
     );
   }
