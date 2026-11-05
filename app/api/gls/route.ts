@@ -299,27 +299,472 @@ const supabase = createClient(supabaseUrl, serviceKey, {
   });
 }
 if (body?.action === "shipment-production") {
+  // BLOQUEO DE SEGURIDAD: no se envía nada a GLS mientras esté desactivado.
   if (!GLS_PRODUCTION_ENABLED) {
     return NextResponse.json(
       {
         ok: false,
         shipmentCreated: false,
         message:
-          "Los envíos GLS de producción están desactivados temporalmente. No se ha creado ninguna expedición.",
+          "Producción GLS desactivada. No se ha creado ninguna expedición.",
       },
       { status: 403 }
     );
   }
 
-  return NextResponse.json(
-    {
-      ok: false,
+  const orderId = String(body.orderId ?? "").trim();
+  const weightKg = Number(body.weightKg);
+
+  if (!orderId) {
+    return NextResponse.json(
+      { ok: false, message: "Falta el identificador del pedido." },
+      { status: 400 }
+    );
+  }
+
+  if (!Number.isFinite(weightKg) || weightKg <= 0 || weightKg > 31.5) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "Introduce un peso real entre 0,1 y 31,5 kg.",
+      },
+      { status: 400 }
+    );
+  }
+
+  const { data: order, error: orderError } = await supabase
+    .from("orders")
+    .select(
+      "id, payment_status, gls_shipment_id, gls_tracking_number, gls_status, customer_name, customer_surname, customer_phone, customer_email, customer_address, customer_city, customer_postal_code, shipping_method"
+    )
+    .eq("id", orderId)
+    .maybeSingle();
+
+  if (orderError || !order) {
+    return NextResponse.json(
+      { ok: false, message: "No se pudo encontrar el pedido." },
+      { status: 404 }
+    );
+  }
+
+  if (order.payment_status !== "paid") {
+    return NextResponse.json(
+      { ok: false, message: "El pedido todavía no está pagado." },
+      { status: 409 }
+    );
+  }
+
+  if (order.shipping_method === "pickup") {
+    return NextResponse.json({
+      ok: true,
       shipmentCreated: false,
-      message:
-        "La creación de expediciones reales está pendiente de completar y verificar.",
-    },
-    { status: 503 }
+      message: "El pedido es de recogida en tienda. No necesita GLS.",
+    });
+  }
+
+  if (order.shipping_method !== "standard") {
+    return NextResponse.json(
+      { ok: false, message: "Método de envío no reconocido." },
+      { status: 422 }
+    );
+  }
+
+  if (
+    order.gls_shipment_id ||
+    order.gls_tracking_number ||
+    order.gls_status !== null
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "El pedido ya tiene un envío GLS o un proceso anterior pendiente de revisión. No se repetirá la operación.",
+      },
+      { status: 409 }
+    );
+  }
+
+  const missingFields = [
+    !order.customer_name && "nombre",
+    !order.customer_address && "dirección",
+    !order.customer_city && "localidad",
+    !order.customer_postal_code && "código postal",
+    !order.customer_phone && "teléfono",
+  ].filter(Boolean);
+
+  if (missingFields.length > 0) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: `Faltan datos del destinatario: ${missingFields.join(", ")}.`,
+      },
+      { status: 422 }
+    );
+  }
+
+  const province = getProvinceFromPostalCode(
+    order.customer_postal_code
   );
+
+  if (!province) {
+    return NextResponse.json(
+      { ok: false, message: "No se pudo determinar la provincia." },
+      { status: 422 }
+    );
+  }
+
+  const productionUid = getGLSProductionUid();
+
+  if (!productionUid) {
+    return NextResponse.json(
+      { ok: false, message: "Falta GLS_UIDCLIENTE en Vercel." },
+      { status: 503 }
+    );
+  }
+
+  // Reserva atómica para impedir dos solicitudes simultáneas.
+  const { data: reservation, error: reservationError } =
+    await supabase
+      .from("orders")
+      .update({ gls_status: "procesando" })
+      .eq("id", orderId)
+      .is("gls_shipment_id", null)
+      .is("gls_tracking_number", null)
+      .is("gls_status", null)
+      .select("id")
+      .maybeSingle();
+
+  if (reservationError || !reservation) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "No se pudo reservar el pedido. Puede que otra solicitud ya lo esté procesando.",
+      },
+      { status: 409 }
+    );
+  }
+
+  const dateParts = new Intl.DateTimeFormat("es-ES", {
+    timeZone: "Europe/Madrid",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).formatToParts(new Date());
+
+  const getPart = (type: string) =>
+    dateParts.find((part) => part.type === type)?.value ?? "";
+
+  const fecha = `${getPart("day")}/${getPart("month")}/${getPart("year")}`;
+  const referencia = `K${Date.now().toString().slice(-14)}`;
+  const glsService = GLS_SERVICES.standard;
+
+  const docIn = `<Servicios uidcliente="${escapeXml(productionUid)}" xmlns="http://www.asmred.com/">
+  <Envio codbarras="">
+    <Fecha>${fecha}</Fecha>
+    <Portes>P</Portes>
+    <Servicio>${glsService.serviceCode}</Servicio>
+    <Horario>${glsService.scheduleCode}</Horario>
+    <Bultos>1</Bultos>
+    <Peso>${weightKg.toFixed(2)}</Peso>
+    <Retorno>0</Retorno>
+    <Pod>N</Pod>
+    <Remite>
+      <Plaza></Plaza>
+      <Nombre>KigobeShop</Nombre>
+      <Direccion>Calle Granada, Plaza Primero de Mayo 27</Direccion>
+      <Poblacion>Almería</Poblacion>
+      <Provincia>Almería</Provincia>
+      <Pais>34</Pais>
+      <CP>04008</CP>
+      <Telefono>643885699</Telefono>
+      <Movil>643885699</Movil>
+      <Email>kigobeshop@gmail.com</Email>
+    </Remite>
+    <Destinatario>
+      <Codigo></Codigo>
+      <Plaza></Plaza>
+      <Nombre>${escapeXml(`${order.customer_name} ${order.customer_surname ?? ""}`.trim())}</Nombre>
+      <Direccion>${escapeXml(order.customer_address)}</Direccion>
+      <Poblacion>${escapeXml(order.customer_city)}</Poblacion>
+      <Provincia>${escapeXml(province)}</Provincia>
+      <Pais>34</Pais>
+      <CP>${escapeXml(order.customer_postal_code)}</CP>
+      <Telefono>${escapeXml(order.customer_phone)}</Telefono>
+      <Movil>${escapeXml(order.customer_phone)}</Movil>
+      <Email>${escapeXml(order.customer_email ?? "")}</Email>
+      <Observaciones></Observaciones>
+      <ATT>${escapeXml(order.customer_name)}</ATT>
+    </Destinatario>
+    <Referencias>
+      <Referencia tipo="C">${referencia}</Referencia>
+    </Referencias>
+    <DevuelveAdicionales>
+      <Etiqueta codificacion="CI28" tipo="PDF" modo="EtixBulto"></Etiqueta>
+    </DevuelveAdicionales>
+  </Envio>
+</Servicios>`;
+
+  const envelope = `<?xml version="1.0" encoding="utf-8"?>
+<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+ xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
+  <soap12:Body>
+    <GrabaServicios xmlns="http://www.asmred.com/">
+      <docIn>${docIn}</docIn>
+    </GrabaServicios>
+  </soap12:Body>
+</soap12:Envelope>`;
+
+  let response: Response;
+
+  try {
+    response = await fetch(GLS_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type":
+          'application/soap+xml; charset=utf-8; action="http://www.asmred.com/GrabaServicios"',
+      },
+      body: envelope,
+      cache: "no-store",
+      signal: AbortSignal.timeout(25000),
+    });
+  } catch (error) {
+    console.error(
+      "Respuesta incierta de GLS:",
+      error instanceof Error ? error.message : "Error desconocido"
+    );
+
+    await supabase
+      .from("orders")
+      .update({ gls_status: "respuesta_incierta" })
+      .eq("id", orderId)
+      .eq("gls_status", "procesando");
+
+    return NextResponse.json(
+      {
+        ok: false,
+        shipmentCreated: false,
+        status: "respuesta_incierta",
+        message:
+          "No se pudo confirmar la respuesta de GLS. El pedido queda bloqueado para revisión manual. No repitas la operación.",
+      },
+      { status: 502 }
+    );
+  }
+
+  const responseXml = await response.text();
+
+  const match = responseXml.match(
+    /<(?:[\w.-]+:)?GrabaServiciosResult\b[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?GrabaServiciosResult>/i
+  );
+
+  const resultXml = match ? unescapeXml(match[1]) : "";
+  const shipmentMatch = resultXml.match(/<Envio\b([^>]*)>/i);
+
+  const barcode =
+    shipmentMatch?.[1].match(/\bcodbarras="([^"]*)"/i)?.[1] ?? null;
+
+  const uid =
+    shipmentMatch?.[1].match(/\buid="([^"]*)"/i)?.[1] ?? null;
+
+  const returnCode =
+    resultXml.match(/<Resultado\b[^>]*\breturn="([^"]*)"/i)?.[1] ??
+    null;
+
+  const labelMatch = resultXml.match(
+    /<Etiqueta\b([^>]*)>([\s\S]*?)<\/Etiqueta>/i
+  );
+
+  const soapFault = /<(?:[\w.-]+:)?Fault\b/i.test(responseXml);
+  const success = response.ok && !soapFault && returnCode === "0";
+
+  if (!success || !barcode) {
+    await supabase
+      .from("orders")
+      .update({ gls_status: "error_gls" })
+      .eq("id", orderId)
+      .eq("gls_status", "procesando");
+
+    return NextResponse.json(
+      {
+        ok: false,
+        shipmentCreated: false,
+        status: "error_gls",
+        httpStatus: response.status,
+        glsReturnCode: returnCode,
+        soapFault,
+        message:
+          "GLS no ha confirmado correctamente la expedición. El pedido queda bloqueado para revisión antes de repetir la operación.",
+      },
+      { status: 502 }
+    );
+  }
+
+  // GLS ha aceptado la expedición. Guardamos primero sus identificadores
+  // para evitar que un fallo posterior de la etiqueta provoque duplicados.
+  const shipmentId = uid || barcode;
+
+  const { error: shipmentUpdateError } = await supabase
+    .from("orders")
+    .update({
+      gls_shipment_id: shipmentId,
+      gls_tracking_number: barcode,
+      gls_status: "etiqueta_pendiente",
+    })
+    .eq("id", orderId)
+    .eq("gls_status", "procesando");
+
+  if (shipmentUpdateError) {
+    console.error(
+      "GLS aceptó la expedición, pero no se pudieron guardar sus identificadores:",
+      shipmentUpdateError.message
+    );
+
+    return NextResponse.json(
+      {
+        ok: false,
+        shipmentCreated: true,
+        barcode,
+        message:
+          "GLS ha aceptado el envío, pero no se pudieron guardar sus datos en Supabase. No repitas la operación; requiere revisión manual.",
+      },
+      { status: 500 }
+    );
+  }
+
+  if (!labelMatch) {
+    return NextResponse.json(
+      {
+        ok: false,
+        shipmentCreated: true,
+        barcode,
+        shipmentUid: shipmentId,
+        status: "etiqueta_pendiente",
+        message:
+          "GLS ha creado la expedición, pero no ha devuelto la etiqueta. El seguimiento está guardado. Requiere revisión manual.",
+      },
+      { status: 502 }
+    );
+  }
+
+  const base64 = labelMatch[2]
+    .replace(/^<!\[CDATA\[([\s\S]*)\]\]>$/, "$1")
+    .replace(/\s/g, "");
+
+  if (!base64 || !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        shipmentCreated: true,
+        barcode,
+        status: "etiqueta_pendiente",
+        message:
+          "La expedición está creada, pero la etiqueta recibida no tiene un Base64 válido. Requiere revisión manual.",
+      },
+      { status: 502 }
+    );
+  }
+
+  const labelBuffer = Buffer.from(base64, "base64");
+
+  let labelMimeType: string | null = null;
+
+  if (labelBuffer.subarray(0, 5).toString("ascii") === "%PDF-") {
+    labelMimeType = "application/pdf";
+  } else if (
+    labelBuffer[0] === 0xff &&
+    labelBuffer[1] === 0xd8 &&
+    labelBuffer[2] === 0xff
+  ) {
+    labelMimeType = "image/jpeg";
+  }
+
+  if (!labelMimeType) {
+    return NextResponse.json(
+      {
+        ok: false,
+        shipmentCreated: true,
+        barcode,
+        status: "etiqueta_pendiente",
+        message:
+          "La expedición está creada, pero GLS ha devuelto un formato de etiqueta no reconocido.",
+      },
+      { status: 502 }
+    );
+  }
+
+  const extension = labelMimeType === "application/pdf" ? "pdf" : "jpg";
+  const storagePath = `produccion/${orderId}/${referencia}.${extension}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("etiquetas-gls")
+    .upload(storagePath, labelBuffer, {
+      contentType: labelMimeType,
+      upsert: false,
+    });
+
+  if (uploadError) {
+    console.error("Error guardando etiqueta GLS:", uploadError.message);
+
+    return NextResponse.json(
+      {
+        ok: false,
+        shipmentCreated: true,
+        barcode,
+        status: "etiqueta_pendiente",
+        message:
+          "La expedición está creada y el seguimiento guardado, pero no se pudo subir la etiqueta. No repitas el envío.",
+      },
+      { status: 502 }
+    );
+  }
+
+  const { error: finalUpdateError } = await supabase
+    .from("orders")
+    .update({
+      gls_label_url: storagePath,
+      gls_status: "generado",
+    })
+    .eq("id", orderId)
+    .eq("gls_status", "etiqueta_pendiente");
+
+  if (finalUpdateError) {
+    console.error(
+      "Etiqueta guardada, pero no se pudo actualizar el pedido:",
+      finalUpdateError.message
+    );
+
+    return NextResponse.json(
+      {
+        ok: false,
+        shipmentCreated: true,
+        barcode,
+        labelSaved: true,
+        labelStoragePath: storagePath,
+        message:
+          "El envío y la etiqueta están guardados, pero el estado del pedido necesita revisión manual.",
+      },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({
+    ok: true,
+    shipmentCreated: true,
+    orderId,
+    reference: referencia,
+    service: glsService.name,
+    weightKg,
+    barcode,
+    shipmentUid: shipmentId,
+    labelSaved: true,
+    labelStoragePath: storagePath,
+    labelMimeType,
+    status: "generado",
+    message:
+      "GLS ha aceptado la expedición. El seguimiento y la etiqueta se han guardado en Supabase.",
+  });
 }
 if (body?.action === "shipment-order") {
   const orderId = String(body.orderId ?? "").trim();
