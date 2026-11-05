@@ -579,27 +579,47 @@ if (body?.action === "shipment-production") {
   const soapFault = /<(?:[\w.-]+:)?Fault\b/i.test(responseXml);
   const success = response.ok && !soapFault && returnCode === "0";
 
-  if (!success || !barcode) {
-    await supabase
-      .from("orders")
-      .update({ gls_status: "error_gls" })
-      .eq("id", orderId)
-      .eq("gls_status", "procesando");
+ if (!success) {
+  await supabase
+    .from("orders")
+    .update({ gls_status: "error_gls" })
+    .eq("id", orderId)
+    .eq("gls_status", "procesando");
 
-    return NextResponse.json(
-      {
-        ok: false,
-        shipmentCreated: false,
-        status: "error_gls",
-        httpStatus: response.status,
-        glsReturnCode: returnCode,
-        soapFault,
-        message:
-          "GLS no ha confirmado correctamente la expedición. El pedido queda bloqueado para revisión antes de repetir la operación.",
-      },
-      { status: 502 }
-    );
-  }
+  return NextResponse.json(
+    {
+      ok: false,
+      shipmentCreated: false,
+      status: "error_gls",
+      httpStatus: response.status,
+      glsReturnCode: returnCode,
+      soapFault,
+      message:
+        "GLS no ha confirmado la expedición. El pedido queda bloqueado para revisión manual.",
+    },
+    { status: 502 }
+  );
+}
+
+if (!barcode) {
+  await supabase
+    .from("orders")
+    .update({ gls_status: "respuesta_incompleta" })
+    .eq("id", orderId)
+    .eq("gls_status", "procesando");
+
+  return NextResponse.json(
+    {
+      ok: false,
+      shipmentCreated: true,
+      status: "respuesta_incompleta",
+      glsReturnCode: returnCode,
+      message:
+        "GLS ha aceptado la solicitud, pero no hemos podido identificar el código de barras. No repitas el envío: requiere revisión manual.",
+    },
+    { status: 502 }
+  );
+}
 
   // GLS ha aceptado la expedición. Guardamos primero sus identificadores
   // para evitar que un fallo posterior de la etiqueta provoque duplicados.
