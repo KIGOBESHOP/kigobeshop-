@@ -216,7 +216,9 @@ body: JSON.stringify({
   orderId,
   weightKg: Number(packageWeights[orderId]),
 }),
-      const data = await response.json();
+});
+
+const data = await response.json();
 
       if (!response.ok || !data.ok || !data.xmlPrepared) {
         throw new Error(data.message || "No se pudo preparar el envío.");
