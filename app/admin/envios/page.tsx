@@ -220,9 +220,12 @@ body: JSON.stringify({
 
 const data = await response.json();
 
-      if (!response.ok || !data.ok || !data.xmlPrepared) {
-        throw new Error(data.message || "No se pudo preparar el envío.");
-      }
+     if (!response.ok || !data.ok || !data.xmlPrepared) {
+  throw new Error(
+    data.message ||
+      "La producción GLS está desactivada. No se ha creado ningún envío."
+  );
+}
 
       setMessage(
         `Pedido #${orderId}: XML preparado correctamente. Provincia: ${data.province}. Servicio: ${data.service} (${data.serviceCode}). Peso: ${data.weightKg} kg. Referencia: ${data.reference}. No se ha enviado nada a GLS.`
