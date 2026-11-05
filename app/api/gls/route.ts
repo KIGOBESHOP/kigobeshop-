@@ -541,17 +541,17 @@ if (body?.action === "shipment-production") {
       .eq("id", orderId)
       .eq("gls_status", "procesando");
 
-    return NextResponse.json(
-      {
-        ok: false,
-        shipmentCreated: false,
-        status: "respuesta_incierta",
-        message:
-          "No se pudo confirmar la respuesta de GLS. El pedido queda bloqueado para revisión manual. No repitas la operación.",
-      },
-      { status: 502 }
-    );
-  }
+   return NextResponse.json(
+  {
+    ok: false,
+    shipmentCreated: null,
+    shipmentMayHaveBeenCreated: true,
+    status: "respuesta_incierta",
+    message:
+      "No se pudo confirmar la respuesta de GLS. La expedición podría haberse creado. El pedido queda bloqueado para revisión manual. No repitas la operación.",
+  },
+  { status: 502 }
+);
 
   const responseXml = await response.text();
 
