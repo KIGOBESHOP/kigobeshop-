@@ -321,7 +321,8 @@ if (body?.action === "shipment-production") {
     { status: 503 }
   );
 }
-
+if (body?.action === "shipment-order") {
+  const orderId = String(body.orderId ?? "").trim();
       if (!orderId) {
         return NextResponse.json(
           { ok: false, message: "Falta el identificador del pedido." },
