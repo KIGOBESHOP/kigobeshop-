@@ -241,12 +241,29 @@ const data = await response.json();
     }
   }
 
-  const pendingOrders = paidOrders.filter(
-  (order) => !order.gls_tracking_number && order.gls_status !== "generado"
+ const generatedOrders = paidOrders.filter(
+  (order) =>
+    Boolean(order.gls_tracking_number) || order.gls_status === "generado"
 );
 
-const generatedOrders = paidOrders.filter(
-  (order) => Boolean(order.gls_tracking_number) || order.gls_status === "generado"
+const reviewStatuses = [
+  "error_gls",
+  "respuesta_incierta",
+  "respuesta_incompleta",
+  "etiqueta_pendiente",
+  "procesando",
+];
+
+const reviewOrders = paidOrders.filter(
+  (order) =>
+    !order.gls_tracking_number &&
+    reviewStatuses.includes(order.gls_status ?? "")
+);
+
+const pendingOrders = paidOrders.filter(
+  (order) =>
+    !order.gls_tracking_number &&
+    !order.gls_status
 );
   function formatDate(value?: string) {
     if (!value) return "Fecha no disponible";
@@ -273,13 +290,15 @@ const generatedOrders = paidOrders.filter(
     return `${order.customer_name || ""} ${order.customer_surname || ""}`.trim() || "Cliente";
   }
 
-  function OrderCard({
-    order,
-    generated,
-  }: {
-    order: Order;
-    generated: boolean;
-  }) {
+ function OrderCard({
+  order,
+  generated,
+  review = false,
+}: {
+  order: Order;
+  generated: boolean;
+  review?: boolean;
+}) {
     const id = String(order.id);
 
     return (
@@ -289,9 +308,25 @@ const generatedOrders = paidOrders.filter(
             <h3 style={styles.customer}>{customerName(order)}</h3>
             <p style={styles.muted}>Pedido #{id}</p>
           </div>
-          <span style={generated ? styles.generatedBadge : styles.pendingBadge}>
-            {generated ? "Envío generado" : "Pendiente de envío"}
-          </span>
+         <span
+  style={
+    generated
+      ? styles.generatedBadge
+      : review
+      ? {
+          ...styles.pendingBadge,
+          background: "#fff0f0",
+          color: "#a12b2b",
+        }
+      : styles.pendingBadge
+  }
+>
+  {generated
+    ? "Envío generado"
+    : review
+    ? "Revisión manual"
+    : "Pendiente de envío"}
+</span>
         </div>
 
         <p style={styles.date}>Realizado: {formatDate(order.created_at)}</p>
@@ -361,7 +396,7 @@ const generatedOrders = paidOrders.filter(
           </div>
         )}
 
-{!generated && (
+{!generated && !review && (
   <>
     <button
       type="button"
@@ -453,8 +488,29 @@ const generatedOrders = paidOrders.filter(
             )}
           </section>
 
-          <section style={styles.section}>
-            <h2 style={styles.sectionTitle}>Envíos generados</h2>
+<section style={styles.section}>
+  <h2 style={styles.sectionTitle}>Revisión manual</h2>
+
+  {reviewOrders.length === 0 ? (
+    <p style={styles.empty}>
+      No hay pedidos pendientes de revisión.
+    </p>
+  ) : (
+    <div style={styles.grid}>
+      {reviewOrders.map((order) => (
+        <OrderCard
+          key={String(order.id)}
+          order={order}
+          generated={false}
+          review={true}
+        />
+      ))}
+    </div>
+  )}
+</section>
+
+<section style={styles.section}>
+  <h2 style={styles.sectionTitle}>Envíos generados</h2>
             {generatedOrders.length === 0 ? (
               <p style={styles.empty}>Todavía no hay envíos GLS generados.</p>
             ) : (
