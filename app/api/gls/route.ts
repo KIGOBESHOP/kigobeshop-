@@ -301,6 +301,17 @@ const supabase = createClient(supabaseUrl, serviceKey, {
   
     if (body?.action === "shipment-production") {
       const orderId = String(body.orderId ?? "").trim();
+      const weightKg = Number(body.weightKg);
+
+if (!Number.isFinite(weightKg) || weightKg <= 0) {
+  return NextResponse.json(
+    {
+      ok: false,
+      message: "Introduce un peso real del paquete, en kg, superior a cero.",
+    },
+    { status: 400 }
+  );
+}
 
       if (!orderId) {
         return NextResponse.json(
@@ -419,7 +430,7 @@ const supabase = createClient(supabaseUrl, serviceKey, {
     <Servicio>${glsService.serviceCode}</Servicio>
     <Horario>${glsService.scheduleCode}</Horario>
     <Bultos>1</Bultos>
-    <Peso>1</Peso>
+    <Peso>${weightKg.toFixed(2)}</Peso>
     <Retorno>0</Retorno>
     <Pod>N</Pod>
     <Remite>
@@ -468,7 +479,7 @@ const supabase = createClient(supabaseUrl, serviceKey, {
         service: glsService.name,
         serviceCode: glsService.serviceCode,
         scheduleCode: glsService.scheduleCode,
-        weightKg: 1,
+       weightKg,
         xmlLength: docIn.length,
         message: "XML preparado. No se ha enviado ninguna expedición a GLS.",
       });
