@@ -40,7 +40,7 @@ export default function EnviosPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [glsTesting, setGlsTesting] = useState(false);
-
+const [packageWeights, setPackageWeights] = useState<Record<string, string>>({});
   const loadOrders = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -211,12 +211,11 @@ export default function EnviosPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({
-          action: "shipment-production",
-          orderId,
-        }),
-      });
-
+body: JSON.stringify({
+  action: "shipment-production",
+  orderId,
+  weightKg: Number(packageWeights[orderId]),
+}),
       const data = await response.json();
 
       if (!response.ok || !data.ok || !data.xmlPrepared) {
@@ -307,7 +306,34 @@ const generatedOrders = paidOrders.filter(
           <p><strong>Email:</strong> {order.customer_email || "No indicado"}</p>
           <p><strong>Total:</strong> {formatPrice(order.total_cents)}</p>
         </div>
-
+<div style={{ marginTop: 14 }}>
+  <label style={{ fontWeight: 700, fontSize: 13 }}>
+    Peso del paquete (kg)
+  </label>
+  <input
+    type="number"
+    min="0.1"
+    max="31.5"
+    step="0.1"
+    placeholder="Ej. 1.5"
+    value={packageWeights[id] || ""}
+    onChange={(e) =>
+      setPackageWeights((prev) => ({
+        ...prev,
+        [id]: e.target.value,
+      }))
+    }
+    style={{
+      display: "block",
+      width: "100%",
+      padding: 12,
+      marginTop: 8,
+      border: "1px solid #ded7e8",
+      borderRadius: 10,
+      boxSizing: "border-box",
+    }}
+  />
+</div>
         {order.items && order.items.length > 0 && (
           <div style={styles.items}>
             <strong>Productos:</strong>
