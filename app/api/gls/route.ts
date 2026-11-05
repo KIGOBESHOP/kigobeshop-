@@ -552,7 +552,7 @@ if (body?.action === "shipment-production") {
   },
   { status: 502 }
 );
-
+  }
   const responseXml = await response.text();
 
   const match = responseXml.match(
