@@ -13,13 +13,48 @@ type Product = {
   price: number;
   category: string;
   collection: string;
+    subcategory?: string;
   description?: string;
   image?: string;
   variants?: { color: string; images?: string[] }[];
   sizes?: string[];
   tag?: string | null;
 };
-
+const subcategoriesByCollection: Record<string, string[]> = {
+  Mujer: [
+    "Vaqueros",
+    "Camisas",
+    "Camisetas y tops",
+    "Pantalones",
+    "Vestidos",
+    "Conjuntos",
+    "Jerséis y chalecos",
+    "Chaquetas y abrigos",
+  ],
+  Hombre: [
+    "Vaqueros",
+    "Camisas",
+    "Camisetas",
+    "Sudaderas",
+    "Pantalones",
+    "Conjuntos",
+    "Chaquetas",
+  ],
+  "Tallas grandes": [
+    "Vaqueros",
+    "Camisas",
+    "Camisetas y tops",
+    "Pantalones",
+    "Vestidos",
+    "Conjuntos",
+  ],
+  Bolsos: [
+    "Bolsos de mano",
+    "Bolsos bandolera",
+    "Mochilas",
+    "Carteras",
+  ],
+};
 const fieldStyle = {
   display: "block",
   width: "100%",
@@ -306,7 +341,27 @@ export default function ProductosPage() {
       setBusy(false);
     }
   }
+async function updateSubcategory(product: Product, subcategory: string) {
+  setBusy(true);
+  setMessage("");
 
+  try {
+    const { error } = await supabase
+      .from("products")
+      .update({ subcategory })
+      .eq("id", product.id);
+
+    if (error) throw error;
+
+    setMessage(`Subcategoría de ${product.name} actualizada.`);
+    await loadProducts();
+  } catch (error) {
+    console.error(error);
+    setMessage("No se ha podido actualizar la subcategoría.");
+  } finally {
+    setBusy(false);
+  }
+}
   async function changeProductImage(product: Product, selectedFile: File) {
     setBusy(true);
     setMessage("");
@@ -476,6 +531,24 @@ export default function ProductosPage() {
           <h3>{product.name}</h3>
           <p>Precio: {Number(product.price).toFixed(2)} €</p>
           <p>Categoría: {product.category} · Colección: {product.collection}</p>
+          <p>Subcategoría:</p>
+<select
+  value={product.subcategory || ""}
+  disabled={busy}
+  onChange={(e) =>
+    void updateSubcategory(product, e.target.value)
+  }
+  style={fieldStyle}
+>
+  <option value="">Sin asignar</option>
+  {(subcategoriesByCollection[product.collection] || []).map(
+    (item) => (
+      <option key={item} value={item}>
+        {item}
+      </option>
+    )
+  )}
+</select>
           <p>Tallas: {product.sizes?.length ? product.sizes.join(", ") : "Sin tallas"}</p>
           <p>Etiqueta: {product.tag || "Sin etiqueta"}</p>
           <p>{product.description}</p>
