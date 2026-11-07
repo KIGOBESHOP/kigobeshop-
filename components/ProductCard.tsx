@@ -34,11 +34,7 @@ const productSizes = product.sizes ?? [];
   const selectedVariant = variants.find(
     (variant) => variant.color === selectedColor
   );
-  const stockByColor = (
-  product as Product & {
-    stock?: Record<string, Record<string, number>>;
-  }
-).stock;
+ const stockByColor = product.stock;
 
 const stockForSelectedColor =
   stockByColor?.[selectedColor || "Único"];
@@ -47,12 +43,14 @@ const baseSizes = selectedVariant?.sizes?.length
   ? selectedVariant.sizes
   : productSizes;
 
-const availableSizes = stockForSelectedColor
-  ? Object.entries(stockForSelectedColor)
+const hasStockData =
+  !!stockByColor && Object.keys(stockByColor).length > 0;
+
+const availableSizes = hasStockData
+  ? Object.entries(stockForSelectedColor ?? {})
       .filter(([, quantity]) => Number(quantity) > 0)
       .map(([size]) => size)
   : baseSizes;
-
   const galleryImages = Array.from(
     new Map(
       [
