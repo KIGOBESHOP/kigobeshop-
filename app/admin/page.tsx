@@ -570,10 +570,14 @@ async function saveProduct(event: React.FormEvent<HTMLFormElement>) {
         images.push(await uploadImage(variantFile));
       }
 
-      savedVariants.push({
-        color: variant.color.trim(),
-        images,
-      });
+     savedVariants.push({
+  color: variant.color.trim(),
+  images,
+  sizes: variant.sizes
+    .split(",")
+    .map((size) => size.trim())
+    .filter(Boolean),
+});
     }
 let mainImage: string;
 
