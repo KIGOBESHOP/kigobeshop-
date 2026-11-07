@@ -3,6 +3,7 @@
 export type ProductVariant = {
   color: string;
   images: string[];
+  sizes?: string[];
 };
 
 export type Product = {
