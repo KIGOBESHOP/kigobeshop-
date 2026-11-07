@@ -11,6 +11,7 @@ export type Product = {
   name: string;
   category: "Ropa" | "Bolsos";
   collection: "Mujer" | "Hombre" | "Tallas grandes" | "Bolsos";
+  subcategory?: string;
   price: number;
   oldPrice?: number;
   image: string;
