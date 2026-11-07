@@ -3,8 +3,43 @@
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
-
+const subcategoriesByCollection: Record<string, string[]> = {
+  Mujer: [
+    "Vaqueros",
+    "Camisas",
+    "Camisetas y tops",
+    "Pantalones",
+    "Vestidos",
+    "Conjuntos",
+    "Jerséis y chalecos",
+    "Chaquetas y abrigos",
+  ],
+  Hombre: [
+    "Vaqueros",
+    "Camisas",
+    "Camisetas",
+    "Sudaderas",
+    "Pantalones",
+    "Conjuntos",
+    "Chaquetas",
+  ],
+  "Tallas grandes": [
+    "Vaqueros",
+    "Camisas",
+    "Camisetas y tops",
+    "Pantalones",
+    "Vestidos",
+    "Conjuntos",
+  ],
+  Bolsos: [
+    "Bolsos de mano",
+    "Bolsos bandolera",
+    "Mochilas",
+    "Carteras",
+  ],
+};
 export default function AdminPage() {
+  
   const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(true);
   const [email, setEmail] = useState("");
@@ -13,6 +48,7 @@ export default function AdminPage() {
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("Ropa");
   const [collection, setCollection] = useState("Mujer");
+  const [subcategory, setSubcategory] = useState("");
   const [description, setDescription] = useState("");
   const [tag, setTag] = useState("");
   const [sizes, setSizes] = useState("");
