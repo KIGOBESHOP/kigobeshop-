@@ -139,8 +139,9 @@ export default function Home() {
           image: p.image,
           description: p.description ?? "",
           ...(p.tag === "NUEVO" || p.tag === "OFERTA" || p.tag === "TRENDING" ? { tag: p.tag } : {}),
-          sizes: Array.isArray(p.sizes) ? p.sizes : [],
-          variants: Array.isArray(p.variants) ? p.variants : [],
+         sizes: Array.isArray(p.sizes) ? p.sizes : [],
+variants: Array.isArray(p.variants) ? p.variants : [],
+stock: p.stock && typeof p.stock === "object" ? p.stock : {},
         }));
 
         if (!cancelled) {
