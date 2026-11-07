@@ -18,8 +18,8 @@ export default function AdminPage() {
   const [sizes, setSizes] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [mainImageSource, setMainImageSource] = useState("upload");
-  const [variants, setVariants] = useState<
-  { color: string; files: File[] }[]
+ const [variants, setVariants] = useState<
+  { color: string; files: File[]; sizes: string }[]
 >([]);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -361,9 +361,11 @@ async function changeProductImage(product: any, file: File) {
   }
 }
 function addVariant() {
-  setVariants((prev) => [...prev, { color: "", files: [] }]);
+  setVariants((prev) => [
+    ...prev,
+    { color: "", files: [], sizes: "" },
+  ]);
 }
-
 function updateVariantColor(index: number, color: string) {
   setVariants((prev) =>
     prev.map((variant, i) =>
