@@ -20,7 +20,8 @@ type Order = {
   total_cents?: number | string;
   payment_status?: string;
   gls_status?: string | null;
-   gls_tracking_number?: string | null;
+  gls_label_url?: string | null;
+  gls_tracking_number?: string | null;
   shipping_method?: string;
   created_at?: string;
   items?: Array<{
@@ -40,7 +41,8 @@ export default function EnviosPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [glsTesting, setGlsTesting] = useState(false);
-const [packageWeights, setPackageWeights] = useState<Record<string, string>>({});
+  const [downloadingLabel, setDownloadingLabel] = useState<string | null>(null);
+  const [packageWeights, setPackageWeights] = useState<Record<string, string>>({});
   const loadOrders = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -241,6 +243,52 @@ const data = await response.json();
     }
   }
 
+  async function downloadGLSLabel(orderId: string) {
+    setDownloadingLabel(orderId);
+    setMessage("");
+    setError("");
+
+    try {
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError || !session) {
+        throw new Error("Tu sesión ha caducado. Vuelve a iniciar sesión.");
+      }
+
+      const response = await fetch(
+        `/api/gls?action=download-label&orderId=${encodeURIComponent(orderId)}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          cache: "no-store",
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.ok || !data.downloadUrl) {
+        throw new Error(
+          data.message || "No se pudo descargar la etiqueta GLS."
+        );
+      }
+
+      window.location.href = data.downloadUrl;
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Error al descargar la etiqueta GLS."
+      );
+    } finally {
+      setDownloadingLabel(null);
+    }
+  }
+
  const generatedOrders = paidOrders.filter(
   (order) =>
     Boolean(order.gls_tracking_number) || order.gls_status === "generado"
@@ -394,6 +442,22 @@ const pendingOrders = paidOrders.filter(
              {order.gls_tracking_number || "GLS marcado como generado, sin código guardado"}
             </p>
           </div>
+        )}
+
+        {generated && order.gls_label_url && (
+          <button
+            type="button"
+            style={{
+              ...styles.button,
+              background: "#3d7655",
+            }}
+            onClick={() => downloadGLSLabel(id)}
+            disabled={downloadingLabel === id}
+          >
+            {downloadingLabel === id
+              ? "Preparando etiqueta..."
+              : "Descargar etiqueta GLS"}
+          </button>
         )}
 
 {!generated && !review && (
