@@ -101,6 +101,22 @@ function unescapeXml(value: string): string {
     .replace(/&amp;/g, "&");
 }
 
+function isStorePickupOrder(order: {
+  shipping_method?: string | null;
+  customer_address?: string | null;
+}): boolean {
+  const method = (order.shipping_method ?? "").trim().toLowerCase();
+  const address = (order.customer_address ?? "").trim().toLowerCase();
+
+  return (
+    method === "pickup" ||
+    method.includes("recogida") ||
+    method.includes("tienda") ||
+    method.includes("pickup") ||
+    address.includes("recogida en kigobe")
+  );
+}
+
 async function authenticateAdmin(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -429,7 +445,7 @@ if (body?.action === "shipment-production") {
     );
   }
 
-  if (order.shipping_method === "pickup") {
+  if (isStorePickupOrder(order)) {
     return NextResponse.json({
       ok: true,
       shipmentCreated: false,
@@ -898,7 +914,7 @@ if (body?.action === "shipment-order") {
           { status: 409 }
         );
       }
-      if (order.shipping_method === "pickup") {
+      if (isStorePickupOrder(order)) {
   return NextResponse.json({
     ok: true,
     action: "pickup",
