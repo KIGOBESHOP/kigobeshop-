@@ -393,23 +393,32 @@ function removeVariant(index: number) {
   setVariants((prev) => prev.filter((_, i) => i !== index));
 }
 async function manageStock(product: any) {
-  const colors = Array.isArray(product.variants)
-    ? product.variants.map((v: any) => v.color).filter(Boolean)
+  const variants = Array.isArray(product.variants)
+    ? product.variants
     : [];
 
-  const sizes = Array.isArray(product.sizes) && product.sizes.length
-    ? product.sizes
-    : ["Única"];
+  const productColors = variants.length
+    ? variants.map((v: any) => v.color).filter(Boolean)
+    : ["Único"];
 
   const stock: Record<string, Record<string, number>> =
     product.stock && typeof product.stock === "object"
       ? { ...product.stock }
       : {};
 
-  const productColors = colors.length ? colors : ["Único"];
-
   for (const color of productColors) {
     stock[color] = { ...(stock[color] || {}) };
+
+    const variant = variants.find(
+      (v: any) => v.color === color
+    );
+
+    const sizes =
+      variant?.sizes?.length > 0
+        ? variant.sizes
+        : product.sizes?.length > 0
+          ? product.sizes
+          : ["Única"];
 
     for (const size of sizes) {
       const current = stock[color][size] ?? 0;
@@ -427,6 +436,31 @@ async function manageStock(product: any) {
         alert("Introduce un número entero igual o superior a cero.");
         return;
       }
+
+      stock[color][size] = quantity;
+    }
+  }
+
+  setBusy(true);
+  setMessage("");
+
+  try {
+    const { error } = await supabase
+      .from("products")
+      .update({ stock })
+      .eq("id", product.id);
+
+    if (error) throw error;
+
+    setMessage("Stock actualizado correctamente.");
+    await loadProducts();
+  } catch (error) {
+    console.error(error);
+    setMessage("No se ha podido actualizar el stock.");
+  } finally {
+    setBusy(false);
+  }
+}
 
       stock[color][size] = quantity;
     }
