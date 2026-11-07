@@ -437,18 +437,6 @@ async function manageStock(product: any) {
         return;
       }
 
-    if (error) throw error;
-
-    setMessage("Stock actualizado correctamente.");
-    await loadProducts();
-  } catch (error) {
-    console.error(error);
-    setMessage("No se ha podido actualizar el stock.");
-  } finally {
-    setBusy(false);
-  }
-}
-
       stock[color][size] = quantity;
     }
   }
@@ -472,7 +460,7 @@ async function manageStock(product: any) {
   } finally {
     setBusy(false);
   }
-}  
+} 
 async function deleteProduct(id: string) {
   const confirmed = window.confirm(
     "¿Seguro que quieres eliminar este producto?"
