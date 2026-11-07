@@ -373,6 +373,13 @@ function updateVariantColor(index: number, color: string) {
     )
   );
 }
+ function updateVariantSizes(index: number, sizes: string) {
+  setVariants((prev) =>
+    prev.map((variant, i) =>
+      i === index ? { ...variant, sizes } : variant
+    )
+  );
+} 
 
 function updateVariantFiles(index: number, files: File[]) {
   setVariants((prev) =>
@@ -856,7 +863,13 @@ image: mainImage,
         placeholder="Ej. Negro, Beige, Rosa"
         style={fieldStyle}
       />
-
+<label>Tallas disponibles para este color</label>
+<input
+  value={variant.sizes}
+  onChange={(e) => updateVariantSizes(index, e.target.value)}
+  placeholder="Ej. M/L, XL/XXL"
+  style={fieldStyle}
+/>
       <label>Fotos de este color</label>
       <input
         type="file"
