@@ -437,19 +437,6 @@ async function manageStock(product: any) {
         return;
       }
 
-      stock[color][size] = quantity;
-    }
-  }
-
-  setBusy(true);
-  setMessage("");
-
-  try {
-    const { error } = await supabase
-      .from("products")
-      .update({ stock })
-      .eq("id", product.id);
-
     if (error) throw error;
 
     setMessage("Stock actualizado correctamente.");
