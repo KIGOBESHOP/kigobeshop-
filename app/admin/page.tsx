@@ -329,7 +329,19 @@ if (
 
     newCollection = collectionValue.trim();
   }
+const validSubcategories = subcategoriesByCollection[newCollection] || [];
 
+const newSubcategory = window.prompt(
+  `Subcategoría:\n${validSubcategories.join(", ")}`,
+  product.subcategory || ""
+);
+
+if (newSubcategory === null) return;
+
+if (!validSubcategories.includes(newSubcategory.trim())) {
+  setMessage("La subcategoría no es válida.");
+  return;
+}
   setBusy(true);
   setMessage("");
 
@@ -346,6 +358,7 @@ if (
       .filter(Boolean),
     category: categoryValue,
     collection: newCollection,
+    subcategory: newSubcategory.trim(),
     tag: tagValue || null,
   })
   .eq("id", product.id);
@@ -651,6 +664,7 @@ if (mainImageSource === "upload") {
         price: Number(price),
         category,
         collection,
+         subcategory,
         tag: tag || null,
         description: description.trim(),
 sizes: sizes
@@ -681,6 +695,7 @@ image: mainImage,
     form?.reset();
     setCategory("Ropa");
     setCollection("Mujer");
+    setSubcategory("");
   } catch (error) {
     console.error(error);
 
@@ -870,6 +885,20 @@ image: mainImage,
             <option value="Bolsos">Bolsos</option>
           )}
         </select>
+        <label>Subcategoría</label>
+<select
+  value={subcategory}
+  onChange={(e) => setSubcategory(e.target.value)}
+  style={fieldStyle}
+  required
+>
+  <option value="">Selecciona una subcategoría</option>
+  {(subcategoriesByCollection[collection] || []).map((item) => (
+    <option key={item} value={item}>
+      {item}
+    </option>
+  ))}
+</select>
 <label>Tallas disponibles</label>
 <input
   value={sizes}
