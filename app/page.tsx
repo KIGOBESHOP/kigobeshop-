@@ -467,7 +467,38 @@ const cartSubtotal = cart.reduce(
         </div>
       </section>
      
-      <section className="promotion" id="ofertas">
+                {/* SECCIÓN DE OFERTAS */}
+      <section className="section" id="ofertas">
+        <div className="sectionHeader">
+          <h2>Ofertas</h2>
+          <p>¡Tus prendas favoritas a precios especiales!</p>
+        </div>
+
+        <div className="productGrid">
+          {dbProducts.filter((product) => product.tag === "OFERTA").length > 0 ? (
+            dbProducts
+              .filter((product) => product.tag === "OFERTA")
+              .map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  isFavorite={favorites.includes(product.id)}
+                  onAddToCart={(variant, size) =>
+                    addToCart(product, variant, size)
+                  }
+                  onToggleFavorite={() => toggleFavorite(product.id)}
+                />
+              ))
+          ) : (
+            <div className="noResults">
+              Próximamente encontrarás aquí nuestras ofertas.
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* BANNER DE BIENVENIDA */}
+      <section className="promotion" id="bienvenida">
         <div className="promoContent">
           <p className="promoLabel">BIENVENIDA A KIGOBESHOP</p>
           <h2>Tu estilo, tus reglas.</h2>
