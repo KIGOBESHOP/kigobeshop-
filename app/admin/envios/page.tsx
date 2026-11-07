@@ -289,9 +289,24 @@ const data = await response.json();
     }
   }
 
- const generatedOrders = paidOrders.filter(
-  (order) =>
-    Boolean(order.gls_tracking_number) || order.gls_status === "generado"
+  function isStorePickup(order: Order) {
+    const method = (order.shipping_method || "").toLowerCase();
+    const address = (order.customer_address || "").toLowerCase();
+
+    return (
+      method.includes("recogida") ||
+      method.includes("tienda") ||
+      method.includes("pickup") ||
+      address.includes("recogida en kigobe")
+    );
+  }
+
+  const pickupOrders = paidOrders.filter(isStorePickup);
+
+  const generatedOrders = paidOrders.filter(
+    (order) =>
+      !isStorePickup(order) &&
+      (Boolean(order.gls_tracking_number) || order.gls_status === "generado")
 );
 
 const reviewStatuses = [
@@ -304,12 +319,14 @@ const reviewStatuses = [
 
 const reviewOrders = paidOrders.filter(
   (order) =>
+    !isStorePickup(order) &&
     !order.gls_tracking_number &&
     reviewStatuses.includes(order.gls_status ?? "")
 );
 
 const pendingOrders = paidOrders.filter(
   (order) =>
+    !isStorePickup(order) &&
     !order.gls_tracking_number &&
     !order.gls_status
 );
@@ -342,10 +359,12 @@ const pendingOrders = paidOrders.filter(
   order,
   generated,
   review = false,
+  pickup = false,
 }: {
   order: Order;
   generated: boolean;
   review?: boolean;
+  pickup?: boolean;
 }) {
     const id = String(order.id);
 
@@ -358,7 +377,9 @@ const pendingOrders = paidOrders.filter(
           </div>
          <span
   style={
-    generated
+    pickup
+      ? { ...styles.generatedBadge, background: "#f0e8fa", color: "#7138a5" }
+      : generated
       ? styles.generatedBadge
       : review
       ? {
@@ -369,7 +390,9 @@ const pendingOrders = paidOrders.filter(
       : styles.pendingBadge
   }
 >
-  {generated
+  {pickup
+    ? "Recogida en tienda"
+    : generated
     ? "Envío generado"
     : review
     ? "Revisión manual"
@@ -394,7 +417,7 @@ const pendingOrders = paidOrders.filter(
           <p><strong>Email:</strong> {order.customer_email || "No indicado"}</p>
           <p><strong>Total:</strong> {formatPrice(order.total_cents)}</p>
         </div>
-<div style={{ marginTop: 14 }}>
+{!pickup && <div style={{ marginTop: 14 }}>
   <label style={{ fontWeight: 700, fontSize: 13 }}>
     Peso del paquete (kg)
   </label>
@@ -421,7 +444,7 @@ const pendingOrders = paidOrders.filter(
       boxSizing: "border-box",
     }}
   />
-</div>
+</div>}
         {order.items && order.items.length > 0 && (
           <div style={styles.items}>
             <strong>Productos:</strong>
@@ -435,7 +458,7 @@ const pendingOrders = paidOrders.filter(
           </div>
         )}
 
-        {generated && (
+        {generated && !pickup && (
           <div style={styles.barcodeBox}>
             <strong>Código de barras GLS</strong>
             <p style={styles.barcode}>
@@ -444,7 +467,7 @@ const pendingOrders = paidOrders.filter(
           </div>
         )}
 
-        {generated && order.gls_label_url && (
+        {generated && !pickup && order.gls_label_url && (
           <button
             type="button"
             style={{
@@ -460,7 +483,7 @@ const pendingOrders = paidOrders.filter(
           </button>
         )}
 
-{!generated && !review && (
+{!generated && !review && !pickup && (
   <>
     <button
       type="button"
@@ -539,6 +562,24 @@ const pendingOrders = paidOrders.filter(
         <p style={styles.empty}>Cargando pedidos...</p>
       ) : (
         <>
+          <section style={styles.section}>
+            <h2 style={styles.sectionTitle}>Recogida en tienda</h2>
+            {pickupOrders.length === 0 ? (
+              <p style={styles.empty}>No hay pedidos de recogida en tienda.</p>
+            ) : (
+              <div style={styles.grid}>
+                {pickupOrders.map((order) => (
+                  <OrderCard
+                    key={String(order.id)}
+                    order={order}
+                    generated={false}
+                    pickup={true}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
           <section style={styles.section}>
             <h2 style={styles.sectionTitle}>Pendientes de envío</h2>
             {pendingOrders.length === 0 ? (
