@@ -213,6 +213,81 @@ const supabase = createClient(supabaseUrl, serviceKey, {
     });
   }
 
+   // Descarga segura de etiquetas GLS: solo administradora.
+  if (action === "download-label") {
+    const auth = await authenticateAdmin(request);
+    if (!auth.ok) return auth.error;
+
+    const orderId = request.nextUrl.searchParams.get("orderId")?.trim();
+
+    if (!orderId) {
+      return NextResponse.json(
+        { ok: false, message: "Falta el identificador del pedido." },
+        { status: 400 }
+      );
+    }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !serviceKey) {
+      return NextResponse.json(
+        { ok: false, message: "Falta configurar Supabase." },
+        { status: 503 }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, serviceKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+
+    const { data: order, error } = await supabase
+      .from("orders")
+      .select("id, payment_status, gls_status, gls_label_url")
+      .eq("id", orderId)
+      .maybeSingle();
+
+    if (error || !order) {
+      return NextResponse.json(
+        { ok: false, message: "No se encontró el pedido." },
+        { status: 404 }
+      );
+    }
+
+    const storagePath = order.gls_label_url;
+
+    if (
+      order.payment_status !== "paid" ||
+      order.gls_status !== "generado" ||
+      !storagePath ||
+      !storagePath.startsWith(`produccion/${orderId}/`)
+    ) {
+      return NextResponse.json(
+        { ok: false, message: "Este pedido no tiene una etiqueta GLS disponible." },
+        { status: 409 }
+      );
+    }
+
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from("etiquetas-gls")
+      .createSignedUrl(storagePath, 60);
+
+    if (signedError || !signedData?.signedUrl) {
+      return NextResponse.json(
+        { ok: false, message: "No se pudo preparar la descarga de la etiqueta." },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      ok: true,
+      downloadUrl: signedData.signedUrl,
+    });
+  }
+
   // Esta comprobación GET solo consulta la disponibilidad HTTP del servicio.
   try {
     const response = await fetch(GLS_URL, {
