@@ -41,11 +41,49 @@ const titles: Record<Product["collection"], string> = {
   "Tallas grandes": "Colección Tallas grandes",
   Bolsos: "Colección Bolsos",
 };
-
+const subcategoriesByCollection: Record<
+  string,
+  { name: string; image: string }[]
+> = {
+  Mujer: [
+    { name: "Vaqueros", image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=600" },
+    { name: "Camisas", image: "https://images.unsplash.com/photo-1598554747436-c9293d6a588f?w=600" },
+    { name: "Camisetas y tops", image: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=600" },
+    { name: "Pantalones", image: "https://images.unsplash.com/photo-1506629905607-d9b1e7e3b8a5?w=600" },
+    { name: "Vestidos", image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600" },
+    { name: "Conjuntos", image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600" },
+    { name: "Jerséis y chalecos", image: "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600" },
+    { name: "Chaquetas y abrigos", image: "https://images.unsplash.com/photo-1548126032-079a0fb0099d?w=600" },
+  ],
+  Hombre: [
+    { name: "Vaqueros", image: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=600" },
+    { name: "Camisas", image: "https://images.unsplash.com/photo-1603252109303-2751441dd157?w=600" },
+    { name: "Camisetas", image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600" },
+    { name: "Sudaderas", image: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=600" },
+    { name: "Pantalones", image: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=600" },
+    { name: "Conjuntos", image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600" },
+    { name: "Chaquetas", image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600" },
+  ],
+  "Tallas grandes": [
+    { name: "Vaqueros", image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=600" },
+    { name: "Camisas", image: "https://images.unsplash.com/photo-1598554747436-c9293d6a588f?w=600" },
+    { name: "Camisetas y tops", image: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=600" },
+    { name: "Pantalones", image: "https://images.unsplash.com/photo-1506629905607-d9b1e7e3b8a5?w=600" },
+    { name: "Vestidos", image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600" },
+    { name: "Conjuntos", image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600" },
+  ],
+  Bolsos: [
+    { name: "Bolsos de mano", image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600" },
+    { name: "Bolsos bandolera", image: "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600" },
+    { name: "Mochilas", image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600" },
+    { name: "Carteras", image: "https://images.unsplash.com/photo-1627123424574-724758594e93?w=600" },
+  ],
+};
 export default function CollectionPage({ collection }: Props) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [dbProducts, setDbProducts] = useState<Product[]>([]);
   const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<number[]>([]);
   const [storageLoaded, setStorageLoaded] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -84,6 +122,7 @@ export default function CollectionPage({ collection }: Props) {
           name: p.name,
           category: p.category,
           collection: p.collection,
+          subcategory: p.subcategory ?? "",
           price: Number(p.price),
           ...(p.old_price != null ? { oldPrice: Number(p.old_price) } : {}),
           image: p.image,
@@ -193,7 +232,11 @@ export default function CollectionPage({ collection }: Props) {
   const removeFromCart = (cartKey: string) =>
     setCart((prev) => prev.filter((item) => item.cartKey !== cartKey));
 
-  const collectionProducts = dbProducts.filter((product) => product.collection === collection);
+  const collectionProducts = dbProducts.filter(
+  (product) =>
+    product.collection === collection &&
+    (!selectedSubcategory || product.subcategory === selectedSubcategory)
+);
   const favoriteProducts = products.filter((product) => favorites.includes(product.id));
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
 
@@ -304,21 +347,80 @@ export default function CollectionPage({ collection }: Props) {
           <p>Descubre tus prendas favoritas.</p>
         </div>
 
-        {collectionProducts.length ? (
-          <div className="productGrid">
-            {collectionProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                isFavorite={favorites.includes(product.id)}
-                onAddToCart={(variant, size) => addToCart(product, variant, size)}
-                onToggleFavorite={() => toggleFavorite(product.id)}
-              />
-            ))}
-          </div>
-        ) : (
-          <p>Estamos preparando esta colección. ¡Muy pronto habrá novedades!</p>
-        )}
+       {!selectedSubcategory ? (
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+      gap: 22,
+    }}
+  >
+    {(subcategoriesByCollection[collection] || []).map((item) => (
+      <button
+        key={item.name}
+        onClick={() => setSelectedSubcategory(item.name)}
+        style={{
+          border: "none",
+          padding: 0,
+          background: "white",
+          cursor: "pointer",
+          textAlign: "center",
+        }}
+      >
+        <img
+          src={item.image}
+          alt={item.name}
+          style={{
+            width: "100%",
+            height: 260,
+            objectFit: "cover",
+            borderRadius: 14,
+          }}
+        />
+        <h3 style={{ marginTop: 12, color: "#30213c" }}>
+          {item.name}
+        </h3>
+      </button>
+    ))}
+  </div>
+) : (
+  <>
+    <button
+      onClick={() => setSelectedSubcategory(null)}
+      style={{
+        marginBottom: 24,
+        padding: "10px 18px",
+        borderRadius: 20,
+        border: "1px solid #d8b4fe",
+        background: "#f3e8ff",
+        color: "#6b21a8",
+        cursor: "pointer",
+      }}
+    >
+      ← Volver a las categorías
+    </button>
+
+    <h2>{selectedSubcategory}</h2>
+
+    {collectionProducts.length ? (
+      <div className="productGrid">
+        {collectionProducts.map((product) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            isFavorite={favorites.includes(product.id)}
+            onAddToCart={(variant, size) =>
+              addToCart(product, variant, size)
+            }
+            onToggleFavorite={() => toggleFavorite(product.id)}
+          />
+        ))}
+      </div>
+    ) : (
+      <p>Próximamente añadiremos productos a esta sección 💜</p>
+    )}
+  </>
+)}
       </section>
 
       <Footer />
