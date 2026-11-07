@@ -26,7 +26,7 @@ export default function ProductCard({
   onToggleFavorite,
 }: Props) {
   const variants = product.variants ?? [];
-    const sizes = product.sizes ?? [];
+const productSizes = product.sizes ?? [];
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState(
     variants[0]?.color ?? ""
@@ -34,7 +34,10 @@ export default function ProductCard({
   const selectedVariant = variants.find(
     (variant) => variant.color === selectedColor
   );
-   
+   const availableSizes =
+  selectedVariant?.sizes?.length
+    ? selectedVariant.sizes
+    : productSizes;
 
   const galleryImages = Array.from(
     new Map(
@@ -83,18 +86,18 @@ export default function ProductCard({
 
   const [imageOpen, setImageOpen] = useState(false);
 
-  function changeColor(color: string) {
-    setSelectedColor(color);
+ function changeColor(color: string) {
+  setSelectedColor(color);
+  setSelectedSize("");
 
-    const index = galleryImages.findIndex(
-      (item) => item.color === color
-    );
+  const index = galleryImages.findIndex(
+    (item) => item.color === color
+  );
 
-    if (index >= 0) {
-      setImageIndex(index);
-    }
+  if (index >= 0) {
+    setImageIndex(index);
   }
-
+}
   return (
     <>
       <article className="productCard fadeInUp">
@@ -273,7 +276,7 @@ export default function ProductCard({
           <h3 className="productName">{product.name}</h3>
           <p className="productDesc">{product.description}</p>
 
-{sizes.length > 0 && (
+{availableSizes.length > 0 && (
   <div style={{ margin: "12px 0" }}>
     <span
       style={{
@@ -293,7 +296,7 @@ export default function ProductCard({
         flexWrap: "wrap",
       }}
     >
-      {sizes.map((size) => (
+     {availableSizes.map((size) => (
         <button
           key={size}
           type="button"
