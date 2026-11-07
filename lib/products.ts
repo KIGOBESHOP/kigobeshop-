@@ -18,7 +18,7 @@ export type Product = {
     description: string;
   sizes?: string[];
   variants?: ProductVariant[];
-
+    stock?: Record<string, Record<string, number>>;
 };
 
 export const products: Product[] = [
