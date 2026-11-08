@@ -30,6 +30,10 @@ const subcategoriesByCollection: Record<string, string[]> = {
     "Conjuntos",
     "Jerséis y chalecos",
     "Chaquetas y abrigos",
+     "Jerséis",
+    "Gabardinas",
+    "Chalecos",
+    "Chalecos de piel",
   ],
   Hombre: [
     "Vaqueros",
@@ -47,6 +51,10 @@ const subcategoriesByCollection: Record<string, string[]> = {
     "Pantalones",
     "Vestidos",
     "Conjuntos",
+     "Jerséis",
+    "Gabardinas",
+    "Chalecos",
+    "Chalecos de piel",
   ],
   Bolsos: [
     "Bolsos de mano",
