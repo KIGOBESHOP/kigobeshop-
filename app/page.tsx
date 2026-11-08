@@ -456,9 +456,9 @@ const cartSubtotal = cart.reduce(
             Ropa, bolsos y accesorios para mujer, tallas grandes y hombre.
             Encuentra tu estilo y vístete a tu manera.
           </p>
-          <a href="#productos" className="btnPrimary">
-            DESCUBRIR LA TIENDA
-          </a>
+         <a href="#categorias" className="btnPrimary">
+  DESCUBRIR LA TIENDA
+</a>
         </div>
       </section>
 
