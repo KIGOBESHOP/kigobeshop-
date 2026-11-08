@@ -2319,3 +2319,37 @@ height: 420px;
     padding: 14px !important;
   }
 }
+/* CORREGIR CASILLAS DE CONDICIONES LEGALES EN MÓVIL */
+.checkoutLegalOption {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 10px !important;
+  width: 100%;
+}
+
+.checkoutLegalOption input[type="checkbox"] {
+  width: 18px !important;
+  min-width: 18px !important;
+  max-width: 18px !important;
+  height: 18px;
+  flex: 0 0 18px !important;
+  padding: 0 !important;
+  margin: 4px 0 0 !important;
+}
+
+.checkoutLegalOption span {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 600px) {
+  .checkoutLegalOption {
+    gap: 10px !important;
+  }
+
+  .checkoutSection {
+    padding: 14px;
+  }
+}
