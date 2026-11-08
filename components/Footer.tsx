@@ -122,8 +122,9 @@ export default function Footer() {
 
   <p style={{ margin: 0 }}>
     © 2026 KIGOBESHOP. Todos los derechos reservados.
-  </p>
+   </p>
 </div>
 
+    </footer>
   );
 }
