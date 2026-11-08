@@ -21,19 +21,21 @@ type Product = {
   tag?: string | null;
 };
 const subcategoriesByCollection: Record<string, string[]> = {
-  Mujer: [
+ Mujer: [
     "Vaqueros",
     "Camisas",
     "Camisetas y tops",
     "Pantalones",
+    "Pantalones de licra",
     "Vestidos",
     "Conjuntos",
     "Jerséis y chalecos",
     "Chaquetas y abrigos",
-     "Jerséis",
+    "Jerséis",
     "Gabardinas",
     "Chalecos",
     "Chalecos de piel",
+    
   ],
   Hombre: [
     "Vaqueros",
@@ -49,9 +51,10 @@ const subcategoriesByCollection: Record<string, string[]> = {
     "Camisas",
     "Camisetas y tops",
     "Pantalones",
+    "Pantalones de licra",
     "Vestidos",
     "Conjuntos",
-     "Jerséis",
+    "Jerséis",
     "Gabardinas",
     "Chalecos",
     "Chalecos de piel",
