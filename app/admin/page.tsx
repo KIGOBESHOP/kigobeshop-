@@ -30,11 +30,12 @@ const subcategoriesByCollection: Record<string, string[]> = {
     "Pantalones",
     "Vestidos",
     "Conjuntos",
+     "Jerséis",
+    "Gabardinas",
   ],
   Bolsos: [
     "Bolsos de mano",
     "Bolsos bandolera",
-    "Mochilas",
     "Carteras",
   ],
 };
