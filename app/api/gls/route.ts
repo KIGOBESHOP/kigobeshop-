@@ -17,7 +17,7 @@ const GLS_SERVICES = {
   },
 } as const;
 function getGLSProductionUid(): string {
-  return process.env.GLS_UIDCLIENTE?.trim() ?? "";
+  return process.env.GLS_UIDCLIENTE_PROD?.trim() ?? "";
 }
 function escapeXml(value: string): string {
   return value
