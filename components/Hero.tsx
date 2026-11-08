@@ -12,7 +12,7 @@ export default function Hero() {
           <p className="kigobe-hero-subtitle">
             Moda para mujer, hombre y tallas grandes.
           </p>
-          <a href="#productos" className="kigobe-hero-btn">
+         <a href="#novedades" className="kigobe-hero-btn">
             VER NOVEDADES <span className="kigobe-btn-arrow">&gt;</span>
           </a>
         </div>
