@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 const GLS_URL = "https://ws-customer.gls-spain.es/b2b.asmx";
 // Configuración de producción GLS.
 // La creación de expediciones permanece bloqueada hasta confirmar los datos.
-const GLS_PRODUCTION_ENABLED = false;
+const GLS_PRODUCTION_ENABLED = true;
 const GLS_SERVICES = {
   standard: {
     serviceCode: "96",
