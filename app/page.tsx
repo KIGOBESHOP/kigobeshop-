@@ -548,8 +548,8 @@ const cartSubtotal = cart.reduce(
               <p>Aún no tienes prendas favoritas. ¡Explora la tienda y guarda las que te gusten!</p>
             ) : (
               <div className="productGrid">
-                {products
-                  .filter((product) => favorites.includes(product.id))
+               {[...products, ...dbProducts]
+  .filter((product) => favorites.includes(product.id))
                   .map((product) => (
                     <ProductCard
                       key={product.id}
