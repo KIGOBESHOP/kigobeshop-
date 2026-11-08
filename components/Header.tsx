@@ -28,7 +28,7 @@ export default function Header({
 
   return (
     <header className={`header ${scrolled ? "scrolled" : ""}`}>
-      <a href="#inicio" className="logo" onClick={closeMenu}>
+     <a href="/" className="logo" onClick={closeMenu}>
         <span className="logoIcon" aria-hidden="true">
           <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M10 17h28l3 25H7l3-25Z" />
@@ -43,7 +43,7 @@ export default function Header({
 
       
 <nav className={`nav ${menuOpen ? "open" : ""}`}>
-  <a href="/#inicio" onClick={closeMenu}>Inicio</a>
+<a href="/" onClick={closeMenu}>Inicio</a>
   <a href="/#categorias" onClick={closeMenu}>Categorías</a>
   <a href="/#novedades" onClick={closeMenu}>Novedades</a>
   <a href="/#ofertas" onClick={closeMenu}>Ofertas</a>
