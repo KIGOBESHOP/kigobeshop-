@@ -389,10 +389,10 @@ const cartSubtotal = cart.reduce(
       <Categories />
 
       <section className="section" id="productos" style={{ paddingTop: 0 }}>
-        <div className="sectionHeader">
-          <h2>Productos destacados</h2>
-          <p>Descubre nuestras últimas novedades y ofertas</p>
-        </div>
+       <div className="sectionHeader">
+  <h2>Explora nuestra tienda</h2>
+  <p>Encuentra tus prendas favoritas y descubre tu próximo look.</p>
+</div>
 
         <div className="productsToolbar">
           <div className="filterChips">
