@@ -388,57 +388,6 @@ const cartSubtotal = cart.reduce(
       <Hero />
       <Categories />
 
-      <section className="section" id="productos" style={{ paddingTop: 0 }}>
-       <div className="sectionHeader">
-  <h2>Explora nuestra tienda</h2>
-  <p>Encuentra tus prendas favoritas y descubre tu próximo look.</p>
-</div>
-
-        <div className="productsToolbar">
-          <div className="filterChips">
-            {categories.map((cat) => (
-              <button
-                key={cat.name}
-                className={`chip ${activeFilter === cat.name ? "active" : ""}`}
-                onClick={() => {
-                  setCategoryGender("");
-                  setActiveFilter(cat.name);
-                }}
-              >
-                {cat.name}
-              </button>
-            ))}
-          </div>
-          <select
-            className="sortSelect"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-          >
-            <option value="destacados">Destacados</option>
-            <option value="precio-asc">Precio: menor a mayor</option>
-            <option value="precio-desc">Precio: mayor a menor</option>
-            <option value="ofertas">Mejores ofertas</option>
-          </select>
-        </div>
-
-        <div className="productGrid">
-          {filteredProducts.length > 0 ? (
-            filteredProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                isFavorite={favorites.includes(product.id)}
-                onAddToCart={(variant, size) => addToCart(product, variant, size)}
-                onToggleFavorite={() => toggleFavorite(product.id)}
-              />
-            ))
-          ) : (
-            <div className="noResults">
-              No se encontraron productos en esta categoría.
-            </div>
-          )}
-        </div>
-      </section>
 
       <section className="section" id="novedades">
         <div className="sectionHeader">
