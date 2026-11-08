@@ -114,10 +114,18 @@ export default function Home() {
     } catch (error) {
       console.error("Error al cargar los datos guardados", error);
     }
-    setStorageLoaded(true);
+        setStorageLoaded(true);
   }, []);
 
-  
+  useEffect(() => {
+    if (!storageLoaded) return;
+
+    localStorage.setItem(
+      "kigobeshop-favorites",
+      JSON.stringify(favorites)
+    );
+  }, [favorites, storageLoaded]);
+
   useEffect(() => {
     let cancelled = false;
 
