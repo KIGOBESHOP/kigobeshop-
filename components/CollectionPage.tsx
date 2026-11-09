@@ -64,13 +64,12 @@ const subcategoriesByCollection: Record<
     { name: "Conjuntos", image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600" },
     { name: "Chaquetas", image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600" },
   ],
-  "Tallas grandes": [
+ "Tallas grandes": [
   { name: "Vaqueros", image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=600" },
   { name: "Camisas", image: "https://images.unsplash.com/photo-1598554747436-c9293d6a588f?w=600" },
   { name: "Camisetas y tops", image: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=600" },
   { name: "Pantalones", image: "https://images.unsplash.com/photo-1506629905607-d9b1e7e3b8a5?w=600" },
   { name: "Pantalones de licra", image: "https://images.unsplash.com/photo-1506629905607-d9b1e7e3b8a5?w=600" },
-  { name: "Vestidos", image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600" },
   { name: "Conjuntos", image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600" },
 ],
   Bolsos: [
