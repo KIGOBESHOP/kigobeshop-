@@ -27,7 +27,6 @@ const subcategoriesByCollection: Record<string, string[]> = {
     "Camisetas y tops",
    "Camisetas de satén",
     "Pantalones",
-    "Pantalones de licra",
     "Conjuntos",
     "Jerséis y chalecos",
     "Chaquetas y abrigos",
