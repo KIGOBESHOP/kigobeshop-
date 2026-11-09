@@ -9,6 +9,7 @@ const subcategoriesByCollection: Record<string, string[]> = {
     "Camisas",
     "Camisetas y tops",
     "Pantalones",
+     "Pantalones de licra",
     "Conjuntos",
     "Jerséis y chalecos",
     "Jerséis",
