@@ -46,11 +46,34 @@ const baseSizes = selectedVariant?.sizes?.length
 const hasStockData =
   !!stockByColor && Object.keys(stockByColor).length > 0;
 
-const availableSizes = hasStockData
-  ? Object.entries(stockForSelectedColor ?? {})
-      .filter(([, quantity]) => Number(quantity) > 0)
-      .map(([size]) => size)
-  : baseSizes;
+const SIZE_ORDER = [
+  "XXS",
+  "XS",
+  "S",
+  "M",
+  "L",
+  "XL",
+  "XXL",
+  "XXXL",
+  "XXXXL",
+];
+
+const availableSizes = (
+  hasStockData
+    ? Object.entries(stockForSelectedColor ?? {})
+        .filter(([, quantity]) => Number(quantity) > 0)
+        .map(([size]) => size)
+    : baseSizes
+).sort((a, b) => {
+  const indexA = SIZE_ORDER.indexOf(a.trim().toUpperCase());
+  const indexB = SIZE_ORDER.indexOf(b.trim().toUpperCase());
+
+  if (indexA === -1 && indexB === -1) return 0;
+  if (indexA === -1) return 1;
+  if (indexB === -1) return -1;
+
+  return indexA - indexB;
+});
   const galleryImages = Array.from(
     new Map(
       [
