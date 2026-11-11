@@ -92,6 +92,7 @@ export default function ProductosPage() {
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("Ropa");
   const [collection, setCollection] = useState("Mujer");
+  const [subcategory, setSubcategory] = useState("");
   const [description, setDescription] = useState("");
   const [tag, setTag] = useState("");
   const [sizes, setSizes] = useState("");
@@ -208,6 +209,7 @@ export default function ProductosPage() {
         price: parsedPrice,
         category,
         collection,
+        subcategory,
         description: description.trim(),
         tag: tag || null,
         sizes: sizes.split(",").map((s) => s.trim()).filter(Boolean),
@@ -222,6 +224,7 @@ export default function ProductosPage() {
       setPrice("");
       setCategory("Ropa");
       setCollection("Mujer");
+      setSubcategory("");
       setDescription("");
       setTag("");
       setSizes("");
@@ -466,13 +469,17 @@ async function updateSubcategory(product: Product, subcategory: string) {
         <select value={category} onChange={(e) => {
           setCategory(e.target.value);
           setCollection(e.target.value === "Bolsos" ? "Bolsos" : "Mujer");
+          setSubcategory("");
         }} style={fieldStyle}>
           <option value="Ropa">Ropa</option>
           <option value="Bolsos">Bolsos</option>
         </select>
 
         <label>Colección</label>
-        <select value={collection} onChange={(e) => setCollection(e.target.value)} style={fieldStyle}>
+        <select value={collection} onChange={(e) => {
+          setCollection(e.target.value);
+          setSubcategory("");
+        }} style={fieldStyle}>
           {category === "Ropa" ? (
             <>
               <option value="Mujer">Mujer</option>
@@ -480,6 +487,21 @@ async function updateSubcategory(product: Product, subcategory: string) {
               <option value="Tallas grandes">Tallas grandes</option>
             </>
           ) : <option value="Bolsos">Bolsos</option>}
+        </select>
+
+        <label>Subcategoría</label>
+        <select
+          required
+          value={subcategory}
+          onChange={(e) => setSubcategory(e.target.value)}
+          style={fieldStyle}
+        >
+          <option value="">Selecciona una subcategoría</option>
+          {(subcategoriesByCollection[collection] || []).map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
         </select>
 
         <label>Tallas disponibles</label>
