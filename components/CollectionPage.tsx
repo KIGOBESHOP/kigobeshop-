@@ -84,6 +84,7 @@ export default function CollectionPage({ collection }: Props) {
   const [dbProducts, setDbProducts] = useState<Product[]>([]);
   const [dbProductsLoaded, setDbProductsLoaded] = useState(false);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<number[]>([]);
   const [storageLoaded, setStorageLoaded] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -149,7 +150,33 @@ export default function CollectionPage({ collection }: Props) {
       cancelled = true;
     };
   }, []);
+useEffect(() => {
+  if (!dbProductsLoaded || dbProducts.length === 0) return;
 
+  const productId = new URLSearchParams(window.location.search).get("producto");
+  if (!productId) return;
+
+  const targetProduct = dbProducts.find(
+    (product) => product.id === 1000000 + Number(productId)
+  );
+
+  if (!targetProduct) return;
+
+  setSelectedSubcategory(targetProduct.subcategory);
+  setSelectedProductId(String(targetProduct.id));
+}, [dbProductsLoaded, dbProducts]);
+
+useEffect(() => {
+  if (!selectedProductId || !selectedSubcategory) return;
+
+  const timer = window.setTimeout(() => {
+    document
+      .getElementById(`product-${selectedProductId}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, 400);
+
+  return () => window.clearTimeout(timer);
+}, [selectedProductId, selectedSubcategory]);
   useEffect(() => {
     try {
       const savedCart = localStorage.getItem("kigobeshop-cart");
@@ -404,67 +431,30 @@ export default function CollectionPage({ collection }: Props) {
 
     {collectionProducts.length ? (
       <div className="productGrid">
-        {collectionProducts.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            isFavorite={favorites.includes(product.id)}
-            onAddToCart={(variant, size) =>
-              addToCart(product, variant, size)
-            }
-            onToggleFavorite={() => toggleFavorite(product.id)}
-          />
-        ))}
-      </div>
-    ) : (
-      <p>Próximamente añadiremos productos a esta sección 💜</p>
-    )}
-  </>
-)}
-      </section>
-
-      <Footer />
-
-      {favoritesOpen && (
-        <div
-          onClick={() => setFavoritesOpen(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 2000,
-            background: "rgba(20,10,30,.55)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: 16,
-            }}
-        >
-          <div
-            onClick={(event) => event.stopPropagation()}
-            style={{
-              background: "#fff",
-              borderRadius: 20,
-              padding: 24,
-              width: "100%",
-              maxWidth: 900,
-              maxHeight: "85vh",
-              overflowY: "auto",
-              color: "#30213c",
-            }}
-          >
-            <button onClick={() => setFavoritesOpen(false)}>Cerrar ×</button>
-            <h2>♡ Mis favoritos</h2>
-            {favoriteProducts.length ? (
-              <div className="productGrid">
-                {favoriteProducts.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    isFavorite
-                    onAddToCart={(variant, size) => addToCart(product, variant, size)}
-                    onToggleFavorite={() => toggleFavorite(product.id)}
-                  />
-                ))}
+      {collectionProducts.map((product) => (
+  <div
+    key={product.id}
+    id={`product-${product.id}`}
+    style={{
+      scrollMarginTop: 120,
+      outline:
+        selectedProductId === String(product.id)
+          ? "2px solid #7620a5"
+          : "none",
+      borderRadius: 16,
+      padding: selectedProductId === String(product.id) ? 8 : 0,
+    }}
+  >
+    <ProductCard
+      product={product}
+      isFavorite={favorites.includes(product.id)}
+      onAddToCart={(variant, size) =>
+        addToCart(product, variant, size)
+      }
+      onToggleFavorite={() => toggleFavorite(product.id)}
+    />
+  </div>
+))}
               </div>
             ) : (
               <p>Aún no tienes prendas favoritas.</p>
