@@ -215,7 +215,7 @@ export default function Header({
                 searchResults.map((product) => (
                   <a
                     key={product.id}
-                    href={collectionLinks[product.collection ?? ""] ?? "/#categorias"}
+                   href={`${collectionLinks[product.collection ?? ""] ?? "/#categorias"}?producto=${encodeURIComponent(String(product.id))}`}
                     onClick={() => setSearchOpen(false)}
                     style={{
                       display: "flex",
