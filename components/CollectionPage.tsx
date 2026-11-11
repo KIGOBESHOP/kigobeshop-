@@ -164,7 +164,7 @@ export default function CollectionPage({ collection }: Props) {
 
     if (!targetProduct) return;
 
-    setSelectedSubcategory(targetProduct.subcategory);
+  setSelectedSubcategory(targetProduct.subcategory ?? "");
     setSelectedProductId(String(targetProduct.id));
   }, [dbProductsLoaded, dbProducts]);
 
