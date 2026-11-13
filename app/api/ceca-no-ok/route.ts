@@ -133,30 +133,13 @@ if (order.payment_status !== "pending") {
   return cecaResponse(false);
 }
 
-// Liberar la reserva de stock.
-const { data: releaseResult, error: releaseError } =
-  await supabase.rpc("release_order_stock", {
-    p_order_id: order.id,
-  });
+// Marcar el pedido como fallido/cancelado sin tocar el stock
+await supabase
+  .from("orders")
+  .update({ payment_status: "failed" })
+  .eq("id", order.id);
 
-const result = Array.isArray(releaseResult)
-  ? releaseResult[0]
-  : releaseResult;
-
-if (releaseError) {
-  console.error("Error liberando stock:", releaseError);
-  return cecaResponse(false);
-}
-
-if (
-  result?.ok !== true &&
-  result?.already_released !== true
-) {
-  console.error("No se pudo liberar la reserva:", result);
-  return cecaResponse(false);
-}
-
-console.log("Stock liberado correctamente:", order.id);
+console.log("Pago fallido registrado sin tocar stock:", order.id);
 
 return cecaResponse(true);
   } catch (error) {
