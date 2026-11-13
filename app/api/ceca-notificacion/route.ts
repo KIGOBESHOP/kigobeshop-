@@ -257,7 +257,28 @@ export async function POST(request: Request) {
       console.error("El pedido no está pendiente de pago.");
       return cecaResponse(false);
     }
+// Descontar/reservar el stock ahora que CECA ha confirmado el pago
+    const { data: reservation, error: reservationError } =
+      await supabase.rpc("reserve_order_stock", {
+        p_order_id: order.id,
+      });
 
+    if (reservationError || reservation?.ok !== true) {
+      await saveCecaDiagnostic(
+        "reserva_stock_fallida_tras_pago",
+        received.operation || null,
+        {
+          error: reservationError?.message ?? null,
+          respuestaRPC: reservation ?? null,
+        }
+      );
+
+      console.error(
+        "No se pudo descontar el stock tras confirmar el pago:",
+        reservationError ?? reservation
+      );
+      return cecaResponse(false);
+    }
     const { data: confirmation, error: confirmationError } =
       await supabase.rpc("confirm_order_paid", {
         p_order_id: order.id,
