@@ -374,41 +374,6 @@ total_cents: totalCents,
       );
     }
 
-    // Reservar el stock por color y talla antes de enviar a CECA.
-    const { data: reservation, error: reservationError } =
-      await supabase.rpc("reserve_order_stock", {
-        p_order_id: order.id,
-      });
-
-    if (reservationError) {
-      console.error("No se pudo confirmar la reserva de stock:", reservationError);
-
-      // No borramos el pedido: el resultado de la reserva podría ser incierto.
-      return NextResponse.json(
-        {
-          error:
-            "No se ha podido verificar la reserva de stock. No continúes al pago; contacta con la tienda.",
-        },
-        { status: 503 }
-      );
-    }
-
-    if (reservation?.ok !== true) {
-      console.error("Reserva de stock rechazada:", reservation);
-
-      await supabase.from("orders").delete().eq("id", order.id);
-
-      return NextResponse.json(
-        {
-          error:
-            reservation?.error === "insufficient_stock"
-              ? "Ya no hay suficientes unidades de este producto, color o talla."
-              : "No se ha podido reservar el stock del pedido.",
-        },
-        { status: 409 }
-      );
-    }
-
     // Aviso por correo: pedido pendiente de confirmación del pago.
     const resendApiKey = process.env.RESEND_API_KEY;
 
