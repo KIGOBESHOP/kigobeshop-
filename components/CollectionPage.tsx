@@ -128,8 +128,9 @@ export default function CollectionPage({ collection }: Props) {
           ...(p.old_price != null ? { oldPrice: Number(p.old_price) } : {}),
           image: p.image,
           description: p.description ?? "",
-          sizes: Array.isArray(p.sizes) ? p.sizes : [],
-          variants: Array.isArray(p.variants) ? p.variants : [],
+         sizes: Array.isArray(p.sizes) ? p.sizes : [],
+variants: Array.isArray(p.variants) ? p.variants : [],
+stock: p.stock ?? {},
         }));
 
         if (!cancelled) {
