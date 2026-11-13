@@ -63,8 +63,9 @@ export default function AdminPage() {
   const [busy, setBusy] = useState(false);
 
 
-  const [products, setProducts] = useState<any[]>([]);
+ const [products, setProducts] = useState<any[]>([]);
 const [loadingProducts, setLoadingProducts] = useState(false);
+const [searchTerm, setSearchTerm] = useState("");
   const [orders, setOrders] = useState<any[]>([]);
 const [loadingOrders, setLoadingOrders] = useState(false);
 
@@ -719,7 +720,21 @@ image: mainImage,
   }
 }
 
+const filteredProducts = products.filter((product) => {
+  const search = searchTerm.trim().toLowerCase();
 
+  if (!search) return true;
+
+  return [
+    product.name,
+    product.category,
+    product.collection,
+    product.subcategory,
+    product.tag,
+  ].some((value) =>
+    String(value || "").toLowerCase().includes(search)
+  );
+});
   const fieldStyle = {
     display: "block",
     width: "100%",
@@ -1021,7 +1036,36 @@ image: mainImage,
       </form>
       
       <h2>Mis productos</h2>
+<div style={{ position: "relative", marginBottom: 16 }}>
+  <input
+    type="search"
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+    placeholder="🔍 Buscar producto, bolso, categoría..."
+    style={{
+      ...fieldStyle,
+      border: "2px solid #a855f7",
+      borderRadius: 12,
+      padding: 15,
+      fontSize: 16,
+      marginTop: 10,
+    }}
+  />
 
+  {searchTerm && (
+    <button
+      type="button"
+      onClick={() => setSearchTerm("")}
+      style={{ ...buttonStyle, marginBottom: 12 }}
+    >
+      Limpiar búsqueda
+    </button>
+  )}
+
+  <p>
+    Mostrando {filteredProducts.length} de {products.length} productos
+  </p>
+</div>
       <button
         type="button"
         style={buttonStyle}
@@ -1031,7 +1075,7 @@ image: mainImage,
         {loadingProducts ? "Cargando..." : "Ver mis productos"}
       </button>
 
-      {products.map((product) => (
+     {filteredProducts.map((product) => (
         <div
           key={product.id}
           style={{
@@ -1117,7 +1161,11 @@ image: mainImage,
         </div>
      
       ))}
-
+{filteredProducts.length === 0 && (
+  <p style={{ textAlign: "center", padding: 20 }}>
+    No se encontraron productos.
+  </p>
+)}
     </main>
   );
 }
