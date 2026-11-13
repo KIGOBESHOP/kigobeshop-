@@ -81,39 +81,57 @@ export default function StockPage() {
             </tr>
           </thead>
           <tbody>
-            {products.map((product) => {
-              const colors = Array.isArray(product.variants)
-                ? product.variants.map((variant: any) => variant.color).filter(Boolean)
-                : [];
-              const productColors = colors.length ? colors : ["Único"];
-              const sizes =
-                Array.isArray(product.sizes) && product.sizes.length
-                  ? product.sizes
-                  : ["Única"];
+           
+{products.map((product) => {
+  const variants = Array.isArray(product.variants)
+    ? product.variants.filter((variant: any) => variant.color)
+    : [];
 
-              return productColors.flatMap((color: string) =>
-                sizes.map((size: string) => {
-                  const quantity = product.stock?.[color]?.[size] ?? 0;
+  const rows = variants.length
+    ? variants.flatMap((variant: any) => {
+        const sizes =
+          Array.isArray(variant.sizes) && variant.sizes.length > 0
+            ? variant.sizes
+            : Array.isArray(product.sizes) && product.sizes.length > 0
+              ? product.sizes
+              : ["Única"];
 
-                  return (
-                    <tr key={`${product.id}-${color}-${size}`}>
-                      <td style={cellStyle}>{product.name}</td>
-                      <td style={cellStyle}>{color}</td>
-                      <td style={cellStyle}>{size}</td>
-                      <td
-                        style={{
-                          ...cellStyle,
-                          color: quantity === 0 ? "#dc2626" : "#166534",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        {quantity}
-                      </td>
-                    </tr>
-                  );
-                })
-              );
-            })}
+        return sizes.map((size: string) => ({
+          color: variant.color,
+          size,
+        }));
+      })
+    : (
+        Array.isArray(product.sizes) && product.sizes.length > 0
+          ? product.sizes
+          : ["Única"]
+      ).map((size: string) => ({
+        color: "Único",
+        size,
+      }));
+
+  return rows.map(({ color, size }) => {
+    const quantity = product.stock?.[color]?.[size] ?? 0;
+
+    return (
+      <tr key={`${product.id}-${color}-${size}`}>
+        <td style={cellStyle}>{product.name}</td>
+        <td style={cellStyle}>{color}</td>
+        <td style={cellStyle}>{size}</td>
+        <td
+          style={{
+            ...cellStyle,
+            color: quantity === 0 ? "#dc2626" : "#166534",
+            fontWeight: "bold",
+          }}
+        >
+          {quantity}
+        </td>
+      </tr>
+    );
+  });
+})}
+
           </tbody>
         </table>
       </div>
