@@ -110,7 +110,7 @@ export default function StockPage() {
         size,
       }));
 
-  return rows.map(({ color, size }) => {
+ return rows.map(({ color, size }: { color: string; size: string }) => {
     const quantity = product.stock?.[color]?.[size] ?? 0;
 
     return (
