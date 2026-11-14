@@ -174,13 +174,23 @@ export default function CheckoutForm({
                   checked={data.shippingMethod === "pickup"}
                   onChange={(e) => update("shippingMethod", e.target.value)}
                 />
-                <span>
-                  <strong>Recogida en Kigobe 24h</strong>
-                  <br />
-                  <small>Recoge tu pedido en nuestra tienda de Almería.</small>
-                  <br />
-                  <strong style={{ color: "#7545A8" }}>GRATIS</strong>
-                </span>
+               
+<div>
+  <strong>Recogida local gratuita 💜</strong>
+  <br />
+  <strong style={{ color: "#7545A8" }}>GRATIS</strong>
+  <p style={{
+    margin: "8px 0 0",
+    fontSize: "13px",
+    lineHeight: "1.5",
+    color: "#666"
+  }}>
+    Tu pedido no estará listo de inmediato.
+    Recibirás un mensaje de confirmación en cuanto
+    esté preparado para que puedas pasar a recogerlo.
+  </p>
+</div>
+
               </label>
             </div>
 
