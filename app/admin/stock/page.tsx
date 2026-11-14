@@ -79,8 +79,8 @@ export default function StockPage() {
           size,
         }));
 
-    return rows.map(({ color, size }: { color: string; size: string }) => ({
-      id: `${product.id}-${color}-${size}`,
+    return rows.map(({ color, size }: { color: string; size: string }, rowIndex: number) => ({
+  id: `${product.id}-${rowIndex}-${color}-${size}`,
       name: product.name,
       image: product.image,
       color,
