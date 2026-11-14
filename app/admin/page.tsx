@@ -818,6 +818,7 @@ const filteredProducts = products.filter((product) => {
     { title: "📦 Stock", url: "/admin/stock" },
     { title: "🛍️ Pedidos", url: "/admin/pedidos" },
   { title: "🚚 Envíos GLS", url: "/admin/envios" },
+  { title: "📊 Estadísticas", url: "/admin/estadisticas" },
   ].map((item) => (
     <button
       key={item.url}
