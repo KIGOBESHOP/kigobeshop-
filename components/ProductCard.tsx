@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef } from "react";
@@ -12,12 +11,41 @@ type SelectedVariant = {
 type Props = {
   product: Product;
   isFavorite: boolean;
-  onAddToCart: (
-    variant?: SelectedVariant,
-    size?: string
-  ) => void;
+  onAddToCart: (variant?: SelectedVariant, size?: string) => void;
   onToggleFavorite: () => void;
 };
+
+const COLOR_MAP: Record<string, string> = {
+  negro: "#18181b",
+  blanco: "#ffffff",
+  gris: "#9ca3af",
+  verde: "#2e5a44",
+  "verde agua": "#6ee7b7",
+  "verde militar": "#4b5320",
+  mostaza: "#d4a017",
+  amarillo: "#facc15",
+  burdeos: "#6d1a36",
+  rojo: "#dc2626",
+  rosa: "#f472b6",
+  fucsia: "#c026d3",
+  morado: "#6b21a8",
+  lila: "#c084fc",
+  azul: "#2563eb",
+  "azul marino": "#1e3a8a",
+  celeste: "#7dd3fc",
+  beige: "#e7d8c9",
+  crema: "#f5f5dc",
+  camel: "#c19a6b",
+  marron: "#5c4033",
+  "marrón": "#5c4033",
+  naranja: "#ea580c",
+  dorado: "#d4af37",
+  plateado: "#cbd5e1",
+};
+
+function getColorHex(colorName: string): string | null {
+  return COLOR_MAP[colorName.trim().toLowerCase()] ?? null;
+}
 
 export default function ProductCard({
   product,
@@ -26,69 +54,43 @@ export default function ProductCard({
   onToggleFavorite,
 }: Props) {
   const variants = product.variants ?? [];
-const productSizes = product.sizes ?? [];
+  const productSizes = product.sizes ?? [];
   const [selectedSize, setSelectedSize] = useState("");
-  const [selectedColor, setSelectedColor] = useState(
-    variants[0]?.color ?? ""
-  );
-  const selectedVariant = variants.find(
-    (variant) => variant.color === selectedColor
-  );
- const stockByColor = product.stock;
+  const [selectedColor, setSelectedColor] = useState(variants[0]?.color ?? "");
+  const [isHovered, setIsHovered] = useState(false);
 
-const stockForSelectedColor =
-  stockByColor?.[selectedColor || "Único"];
+  const selectedVariant = variants.find((v) => v.color === selectedColor);
+  const stockByColor = product.stock;
+  const stockForSelectedColor = stockByColor?.[selectedColor || "Único"];
+  const baseSizes = selectedVariant?.sizes?.length ? selectedVariant.sizes : productSizes;
+  const hasStockData = !!stockByColor && Object.keys(stockByColor).length > 0;
 
-const baseSizes = selectedVariant?.sizes?.length
-  ? selectedVariant.sizes
-  : productSizes;
+  const SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL", "XXXXL"];
 
-const hasStockData =
-  !!stockByColor && Object.keys(stockByColor).length > 0;
+  const availableSizes = (
+    hasStockData
+      ? Object.entries(stockForSelectedColor ?? {})
+          .filter(([, quantity]) => Number(quantity) > 0)
+          .map(([size]) => size)
+      : baseSizes
+  ).sort((a, b) => {
+    const indexA = SIZE_ORDER.indexOf(a.trim().toUpperCase());
+    const indexB = SIZE_ORDER.indexOf(b.trim().toUpperCase());
+    if (indexA === -1 && indexB === -1) return 0;
+    if (indexA === -1) return 1;
+    if (indexB === -1) return -1;
+    return indexA - indexB;
+  });
 
-const SIZE_ORDER = [
-  "XXS",
-  "XS",
-  "S",
-  "M",
-  "L",
-  "XL",
-  "XXL",
-  "XXXL",
-  "XXXXL",
-];
-
-const availableSizes = (
-  hasStockData
-    ? Object.entries(stockForSelectedColor ?? {})
-        .filter(([, quantity]) => Number(quantity) > 0)
-        .map(([size]) => size)
-    : baseSizes
-).sort((a, b) => {
-  const indexA = SIZE_ORDER.indexOf(a.trim().toUpperCase());
-  const indexB = SIZE_ORDER.indexOf(b.trim().toUpperCase());
-
-  if (indexA === -1 && indexB === -1) return 0;
-  if (indexA === -1) return 1;
-  if (indexB === -1) return -1;
-
-  return indexA - indexB;
-});
   const galleryImages = Array.from(
     new Map(
       [
         {
           image: product.image,
-          color:
-            variants.find((variant) =>
-              variant.images?.includes(product.image)
-            )?.color ?? null,
+          color: variants.find((v) => v.images?.includes(product.image))?.color ?? null,
         },
-        ...variants.flatMap((variant) =>
-          (variant.images ?? []).map((image) => ({
-            image,
-            color: variant.color,
-          }))
+        ...variants.flatMap((v) =>
+          (v.images ?? []).map((image) => ({ image, color: v.color }))
         ),
       ]
         .filter((item) => Boolean(item.image))
@@ -97,7 +99,6 @@ const availableSizes = (
   );
 
   const images = galleryImages.map((item) => item.image);
-
   const [imageIndex, setImageIndex] = useState(0);
   const safeImageIndex = Math.min(imageIndex, images.length - 1);
   const currentImage = images[safeImageIndex] ?? product.image;
@@ -107,354 +108,369 @@ const availableSizes = (
     setImageIndex((current) => {
       const total = images.length;
       if (total === 0) return 0;
-
       const nextIndex = (current + direction + total) % total;
       const nextColor = galleryImages[nextIndex]?.color;
-
-      if (nextColor) {
-        setSelectedColor(nextColor);
-      }
-
+      if (nextColor) setSelectedColor(nextColor);
       return nextIndex;
     });
   }
 
   const [imageOpen, setImageOpen] = useState(false);
 
- function changeColor(color: string) {
-  setSelectedColor(color);
-  setSelectedSize("");
-
-  const index = galleryImages.findIndex(
-    (item) => item.color === color
-  );
-
-  if (index >= 0) {
-    setImageIndex(index);
+  function changeColor(color: string) {
+    setSelectedColor(color);
+    setSelectedSize("");
+    const index = galleryImages.findIndex((item) => item.color === color);
+    if (index >= 0) setImageIndex(index);
   }
-}
+
+  const needsSizeSelection = availableSizes.length > 0 && !selectedSize;
   return (
     <>
-      <article className="productCard fadeInUp">
-        {product.tag && (
-          <span className={`productTag ${product.tag}`}>
-            {product.tag}
-          </span>
-        )}
-
-        <button
-          className={`favoriteButton ${isFavorite ? "active" : ""}`}
-          onClick={onToggleFavorite}
-          aria-label="Favorito"
+      <article
+        className="productCard fadeInUp"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          background: "#ffffff",
+          borderRadius: 12,
+          overflow: "hidden",
+        }}
+      >
+        <div
+          className="productImageWrap"
+          onTouchStart={(e) => {
+            touchStartX.current = e.touches.clientX;
+          }}
+          onTouchEnd={(e) => {
+            const diff = e.changedTouches.clientX - touchStartX.current;
+            if (Math.abs(diff) > 40 && images.length > 1) {
+              changeImage(diff < 0 ? 1 : -1);
+            }
+          }}
+          style={{
+            position: "relative",
+            width: "100%",
+            aspectRatio: "3 / 4",
+            backgroundColor: "#f4f4f5",
+            overflow: "hidden",
+            borderRadius: 10,
+            touchAction: "pan-y",
+          }}
         >
-          <svg
-            viewBox="0 0 24 24"
-            fill={isFavorite ? "currentColor" : "none"}
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-          </svg>
-        </button>
+          {product.tag && (
+            <span
+              style={{
+                position: "absolute",
+                top: 10,
+                left: 10,
+                zIndex: 10,
+                background: "rgba(255, 255, 255, 0.92)",
+                color: "#18181b",
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "1.2px",
+                padding: "4px 9px",
+                borderRadius: 4,
+                textTransform: "uppercase",
+              }}
+            >
+              {product.tag}
+            </span>
+          )}
 
-       <div
-  className="productImageWrap"
-  onTouchStart={(event) => {
-    touchStartX.current = event.touches[0].clientX;
-  }}
-  onTouchEnd={(event) => {
-    const difference =
-      event.changedTouches[0].clientX - touchStartX.current;
-
-    if (Math.abs(difference) > 40 && images.length > 1) {
-      changeImage(difference < 0 ? 1 : -1);
-    }
-   }}
-  style={{ position: "relative", touchAction: "pan-y" }}
->   
-  <button
-    type="button"
-    onClick={() => setImageOpen(true)}
-    aria-label={`Ampliar foto de ${product.name}`}
-    style={{
-      display: "block",
-      width: "100%",
-      height: "100%",
-      padding: 0,
-      border: 0,
-      background: "transparent",
-      cursor: "zoom-in",
-    }}
-  >
-    <img
-      src={currentImage}
-      alt={`${product.name}${selectedColor ? ` - ${selectedColor}` : ""}`}
-      loading="lazy"
-      style={{
-        width: "100%",
-        height: "100%",
-        objectFit: "cover",
-      }}
-    />
-  </button>
-
-  {images.length > 1 && (
-    <>
-      <button
-        type="button"
-        onClick={(event) => {
-          event.stopPropagation();
-          changeImage(-1);
-        }}
-        aria-label="Foto anterior"
-        style={{
-          position: "absolute",
-          left: 8,
-          top: "50%",
-          transform: "translateY(-50%)",
-          border: 0,
-          borderRadius: "50%",
-          width: 34,
-          height: 34,
-          background: "rgba(255,255,255,0.9)",
-          color: "#581c87",
-          fontSize: 22,
-          cursor: "pointer",
-        }}
-      >
-        ‹
-      </button>
-
-      <button
-        type="button"
-        onClick={(event) => {
-          event.stopPropagation();
-          changeImage(1);
-        }}
-        aria-label="Foto siguiente"
-        style={{
-          position: "absolute",
-          right: 8,
-          top: "50%",
-          transform: "translateY(-50%)",
-          border: 0,
-          borderRadius: "50%",
-          width: 34,
-          height: 34,
-          background: "rgba(255,255,255,0.9)",
-          color: "#581c87",
-          fontSize: 22,
-          cursor: "pointer",
-        }}
-      >
-        ›
-      </button>
-    </>
-  )}
-</div>
-
-        {images.length > 1 && (
-          <div
+          <button
+            type="button"
+            onClick={onToggleFavorite}
+            aria-label="Favorito"
             style={{
+              position: "absolute",
+              top: 10,
+              right: 10,
+              zIndex: 10,
+              width: 34,
+              height: 34,
+              borderRadius: "50%",
+              border: "none",
+              background: "rgba(255, 255, 255, 0.88)",
+              color: isFavorite ? "#9333ea" : "#3f3f46",
               display: "flex",
-              gap: 6,
+              alignItems: "center",
               justifyContent: "center",
-              flexWrap: "wrap",
-              padding: "8px 10px",
+              cursor: "pointer",
             }}
           >
-            {images.map((image, index) => (
-              <button
-                key={`${image}-${index}`}
-                type="button"
-                onClick={() => {
-  setImageIndex(index);
+            <svg
+              width="17"
+              height="17"
+              viewBox="0 0 24 24"
+              fill={isFavorite ? "currentColor" : "none"}
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+          </button>
 
-  const color = galleryImages[index]?.color;
-  if (color) {
-    setSelectedColor(color);
-  }
-}}
-                aria-label={`Ver foto ${index + 1}`}
+          <button
+            type="button"
+            onClick={() => setImageOpen(true)}
+            aria-label={`Ampliar foto de ${product.name}`}
+            style={{
+              display: "block",
+              width: "100%",
+              height: "100%",
+              padding: 0,
+              border: 0,
+              background: "transparent",
+              cursor: "zoom-in",
+            }}
+          >
+            <img
+              src={currentImage}
+              alt={`${product.name}${selectedColor ? ` - ${selectedColor}` : ""}`}
+              loading="lazy"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                transform: isHovered ? "scale(1.05)" : "scale(1)",
+                transition: "transform 0.5s ease",
+              }}
+            />
+          </button>
+          {images.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  changeImage(-1);
+                }}
+                aria-label="Foto anterior"
                 style={{
-                  width: 42,
-                  height: 42,
-                  padding: 2,
-                  borderRadius: 6,
-                  overflow: "hidden",
-                  border:
-                    imageIndex === index
-                      ? "2px solid #7e22ce"
-                      : "1px solid #ddd",
-                  background: "white",
+                  position: "absolute",
+                  left: 8,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  border: 0,
+                  borderRadius: "50%",
+                  width: 30,
+                  height: 30,
+                  background: "rgba(255,255,255,0.85)",
+                  color: "#18181b",
+                  fontSize: 16,
+                  fontWeight: 700,
                   cursor: "pointer",
                 }}
               >
-                <img
-                  src={image}
-                  alt=""
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  }}
-                />
+                {"<"}
               </button>
-            ))}
-          </div>
-        )}
 
-        <div className="productInfo">
-          <span className="productCategory">{product.category}</span>
-          <h3 className="productName">{product.name}</h3>
-          <p className="productDesc">{product.description}</p>
-
-{availableSizes.length > 0 && (
-  <div style={{ margin: "12px 0" }}>
-    <span
-      style={{
-        display: "block",
-        fontSize: 13,
-        marginBottom: 7,
-        fontWeight: 600,
-      }}
-    >
-      Elige tu talla: {selectedSize && ` ${selectedSize}`}
-    </span>
-
-    <div
-      style={{
-        display: "flex",
-        gap: 8,
-        flexWrap: "wrap",
-      }}
-    >
-     {availableSizes.map((size) => (
-        <button
-          key={size}
-          type="button"
-          onClick={() => setSelectedSize(size)}
-          aria-pressed={selectedSize === size}
-          style={{
-            padding: "8px 13px",
-            borderRadius: 8,
-            border:
-              selectedSize === size
-                ? "2px solid #7e22ce"
-                : "1px solid #ddd",
-            background:
-              selectedSize === size ? "#f3e8ff" : "white",
-            color: "#30213c",
-            fontWeight: selectedSize === size ? 700 : 400,
-            cursor: "pointer",
-          }}
-        >
-          {size}
-        </button>
-      ))}
-    </div>
-  </div>
-)}
-
-          {variants.length > 0 && (
-            <div style={{ margin: "12px 0" }}>
-              <label
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  changeImage(1);
+                }}
+                aria-label="Foto siguiente"
                 style={{
-                  display: "block",
-                  fontSize: 13,
-                  marginBottom: 7,
-                  fontWeight: 600,
+                  position: "absolute",
+                  right: 8,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  border: 0,
+                  borderRadius: "50%",
+                  width: 30,
+                  height: 30,
+                  background: "rgba(255,255,255,0.85)",
+                  color: "#18181b",
+                  fontSize: 16,
+                  fontWeight: 700,
+                  cursor: "pointer",
                 }}
               >
-                Color: {selectedColor}
-              </label>
+                {">"}
+              </button>
 
               <div
                 style={{
+                  position: "absolute",
+                  bottom: 10,
+                  left: "50%",
+                  transform: "translateX(-50%)",
                   display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
+                  gap: 5,
+                  background: "rgba(0,0,0,0.25)",
+                  padding: "4px 8px",
+                  borderRadius: 12,
                 }}
               >
-                {variants.map((variant) => (
+                {images.map((_, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setImageIndex(index);
+                      const color = galleryImages[index]?.color;
+                      if (color) setSelectedColor(color);
+                    }}
+                    aria-label={`Imagen ${index + 1}`}
+                    style={{
+                      width: imageIndex === index ? 14 : 6,
+                      height: 6,
+                      borderRadius: 4,
+                      border: "none",
+                      padding: 0,
+                      background: imageIndex === index ? "#ffffff" : "rgba(255,255,255,0.5)",
+                      cursor: "pointer",
+                    }}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div
+          style={{
+            padding: "12px 4px 4px 4px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            flex: 1,
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 500, color: "#18181b", margin: 0 }}>
+              {product.name}
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: "#18181b" }}>
+                {product.price.toFixed(2)} €
+              </span>
+              {product.oldPrice && (
+                <span style={{ fontSize: 12, color: "#a1a1aa", textDecoration: "line-through" }}>
+                  {product.oldPrice.toFixed(2)} €
+                </span>
+              )}
+            </div>
+          </div>
+          {variants.length > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+              {variants.map((variant) => {
+                const hex = getColorHex(variant.color);
+                const isSelected = selectedColor === variant.color;
+                if (hex) {
+                  return (
+                    <button
+                      key={variant.color}
+                      type="button"
+                      onClick={() => changeColor(variant.color)}
+                      title={variant.color}
+                      aria-label={`Color ${variant.color}`}
+                      style={{
+                        width: 18,
+                        height: 18,
+                        borderRadius: "50%",
+                        backgroundColor: hex,
+                        border: hex === "#ffffff" ? "1px solid #d4d4d8" : "1px solid rgba(0,0,0,0.15)",
+                        outline: isSelected ? "1.5px solid #6b21a8" : "none",
+                        outlineOffset: 2,
+                        cursor: "pointer",
+                        padding: 0,
+                      }}
+                    />
+                  );
+                }
+                return (
                   <button
                     key={variant.color}
                     type="button"
                     onClick={() => changeColor(variant.color)}
-                    aria-pressed={selectedColor === variant.color}
                     style={{
-                      padding: "7px 12px",
-                      borderRadius: 20,
-                      border:
-                        selectedColor === variant.color
-                          ? "2px solid #7e22ce"
-                          : "1px solid #ddd",
-                      background:
-                        selectedColor === variant.color
-                          ? "#f3e8ff"
-                          : "white",
-                      color: "#30213c",
+                      fontSize: 11,
+                      padding: "2px 8px",
+                      borderRadius: 12,
+                      border: isSelected ? "1.5px solid #6b21a8" : "1px solid #e4e4e7",
+                      background: isSelected ? "#f3e8ff" : "#fafafa",
+                      color: "#27272a",
                       cursor: "pointer",
                     }}
                   >
                     {variant.color}
                   </button>
-                ))}
-              </div>
+                );
+              })}
+              {selectedColor && (
+                <span style={{ fontSize: 11, color: "#71717a" }}>{selectedColor}</span>
+              )}
             </div>
           )}
 
-          <div className="productFooter">
-            <div className="priceWrap">
-              {product.oldPrice && (
-                <span className="priceOld">
-                  {product.oldPrice.toFixed(2)} €
-                </span>
-              )}
-              <span className="price">
-                {product.price.toFixed(2)} €
-              </span>
+          {availableSizes.length > 0 && (
+            <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+              {availableSizes.map((size) => {
+                const isSelected = selectedSize === size;
+                return (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() => setSelectedSize(size)}
+                    style={{
+                      minWidth: 30,
+                      height: 28,
+                      padding: "0 7px",
+                      fontSize: 11,
+                      fontWeight: isSelected ? 700 : 500,
+                      borderRadius: 6,
+                      border: isSelected ? "1.5px solid #6b21a8" : "1px solid #e4e4e7",
+                      background: isSelected ? "#6b21a8" : "#ffffff",
+                      color: isSelected ? "#ffffff" : "#3f3f46",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {size}
+                  </button>
+                );
+              })}
             </div>
+          )}
 
-            <button
-              className="cartButton"
-              onClick={() =>
-  onAddToCart(
-    selectedVariant
-      ? {
-          color: selectedVariant.color,
-          image: currentImage,
-        }
-      : undefined,
-    selectedSize || undefined
-  )
-}
-              aria-label={`Añadir ${product.name} al carrito`}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() =>
+              onAddToCart(
+                selectedVariant ? { color: selectedVariant.color, image: currentImage } : undefined,
+                selectedSize || undefined
+              )
+            }
+            style={{
+              marginTop: "auto",
+              width: "100%",
+              padding: "10px 14px",
+              borderRadius: 8,
+              border: needsSizeSelection ? "1px solid #d4d4d8" : "1px solid #6b21a8",
+              background: needsSizeSelection ? "#fafafa" : "#6b21a8",
+              color: needsSizeSelection ? "#52525b" : "#ffffff",
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: "0.5px",
+              textTransform: "uppercase",
+              cursor: "pointer",
+            }}
+          >
+            {needsSizeSelection ? "Elige una talla" : "+ Añadir al carrito"}
+          </button>
         </div>
       </article>
 
       {imageOpen && (
         <div
           onClick={() => setImageOpen(false)}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") setImageOpen(false);
-          }}
           style={{
             position: "fixed",
             inset: 0,
@@ -466,14 +482,10 @@ const availableSizes = (
             padding: 20,
             cursor: "zoom-out",
           }}
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Foto ampliada de ${product.name}`}
         >
           <button
             type="button"
             onClick={() => setImageOpen(false)}
-            aria-label="Cerrar foto ampliada"
             style={{
               position: "absolute",
               top: 18,
@@ -484,76 +496,69 @@ const availableSizes = (
               border: "none",
               background: "white",
               color: "#581c87",
-              fontSize: 30,
+              fontSize: 24,
               cursor: "pointer",
             }}
           >
-            ×
+            X
           </button>
-{images.length > 1 && (
-  <>
-    <button
-      type="button"
-      onClick={(event) => {
-        event.stopPropagation();
-        changeImage(-1);
-      }}
-      aria-label="Foto anterior"
-      style={{
-        position: "absolute",
-        left: 20,
-        top: "50%",
-        border: 0,
-        borderRadius: "50%",
-        width: 44,
-        height: 44,
-        background: "white",
-        color: "#581c87",
-        fontSize: 28,
-        cursor: "pointer",
-      }}
-    >
-      ‹
-    </button>
-
-    <button
-      type="button"
-      onClick={(event) => {
-        event.stopPropagation();
-        changeImage(1);
-      }}
-      aria-label="Foto siguiente"
-      style={{
-        position: "absolute",
-        right: 20,
-        top: "50%",
-        border: 0,
-        borderRadius: "50%",
-        width: 44,
-        height: 44,
-        background: "white",
-        color: "#581c87",
-        fontSize: 28,
-        cursor: "pointer",
-      }}
-    >
-      ›
-    </button>
-  </>
-)}
+          {images.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  changeImage(-1);
+                }}
+                style={{
+                  position: "absolute",
+                  left: 20,
+                  top: "50%",
+                  border: 0,
+                  borderRadius: "50%",
+                  width: 44,
+                  height: 44,
+                  background: "white",
+                  color: "#581c87",
+                  fontSize: 22,
+                  cursor: "pointer",
+                }}
+              >
+                {"<"}
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  changeImage(1);
+                }}
+                style={{
+                  position: "absolute",
+                  right: 20,
+                  top: "50%",
+                  border: 0,
+                  borderRadius: "50%",
+                  width: 44,
+                  height: 44,
+                  background: "white",
+                  color: "#581c87",
+                  fontSize: 22,
+                  cursor: "pointer",
+                }}
+              >
+                {">"}
+              </button>
+            </>
+          )}
           <img
             src={currentImage}
-            alt={`${product.name}${selectedColor ? ` - ${selectedColor}` : ""}`}
-            onClick={(event) => event.stopPropagation()}
+            alt={product.name}
+            onClick={(e) => e.stopPropagation()}
             style={{
-              display: "block",
               maxWidth: "95vw",
               maxHeight: "88vh",
-              width: "auto",
-              height: "auto",
               objectFit: "contain",
               borderRadius: 10,
-              cursor: "default",
             }}
           />
         </div>
