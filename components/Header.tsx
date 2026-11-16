@@ -100,6 +100,27 @@ export default function Header({
 
   return (
     <header className={`header ${scrolled ? "scrolled" : ""}`}>
+           <button
+        type="button"
+        onClick={() => setMenuOpen(true)}
+        aria-label="Abrir menú"
+        aria-expanded={menuOpen}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 44,
+          height: 44,
+          border: "none",
+          background: "transparent",
+          color: "#54206f",
+          fontSize: 28,
+          cursor: "pointer",
+          flexShrink: 0,
+        }}
+      >
+        ☰
+      </button>
       <a href="/" className="logo" onClick={closeMenu}>
         <span className="logoIcon" aria-hidden="true">
           <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -113,12 +134,85 @@ export default function Header({
         </span>
       </a>
 
-      <nav className={`nav ${menuOpen ? "open" : ""}`}>
-        <a href="/" onClick={closeMenu}>Inicio</a>
-        <a href="/#categorias" onClick={closeMenu}>Categorías</a>
-        <a href="/#novedades" onClick={closeMenu}>Novedades</a>
-        <a href="/#ofertas" onClick={closeMenu}>Ofertas</a>
-      </nav>
+      {menuOpen && (
+        <div
+          onClick={closeMenu}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 2000,
+            background: "rgba(20, 10, 25, 0.45)",
+          }}
+        >
+          <aside
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "min(320px, 85vw)",
+              height: "100%",
+              background: "#ffffff",
+              padding: "30px 24px",
+              boxShadow: "8px 0 30px rgba(0,0,0,0.12)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 24,
+              color: "#321b3d",
+            }}
+          >
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              paddingBottom: 20,
+              borderBottom: "1px solid #eadff0",
+            }}>
+              <strong style={{ fontSize: 19, letterSpacing: 1 }}>
+                KIGOBESHOP
+              </strong>
+              <button
+                onClick={closeMenu}
+                aria-label="Cerrar menú"
+                style={{
+                  border: 0,
+                  background: "transparent",
+                  fontSize: 30,
+                  color: "#54206f",
+                  cursor: "pointer",
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {[
+              { label: "Inicio", href: "/" },
+              { label: "Categorías", href: "/#categorias" },
+              { label: "Novedades", href: "/#novedades" },
+              { label: "Ofertas", href: "/#ofertas" },
+            ].map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                onClick={closeMenu}
+                style={{
+                  textDecoration: "none",
+                  color: "#321b3d",
+                  fontSize: 17,
+                  fontWeight: 600,
+                  padding: "10px 0",
+                  borderBottom: "1px solid #f0eaf3",
+                }}
+              >
+                {item.label}
+              </a>
+            ))}
+          </aside>
+        </div>
+      )}
+
+ 
 
       <div className="headerActions">
         <button
