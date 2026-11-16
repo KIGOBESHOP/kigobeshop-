@@ -144,23 +144,26 @@ export default function Header({
             background: "rgba(20, 10, 25, 0.45)",
           }}
         >
-          <aside
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "min(320px, 85vw)",
-              height: "100%",
-              background: "#ffffff",
-              padding: "30px 24px",
-              boxShadow: "8px 0 30px rgba(0,0,0,0.12)",
-              display: "flex",
-              flexDirection: "column",
-              gap: 24,
-              color: "#321b3d",
-            }}
-          >
+         <aside
+  onClick={(e) => e.stopPropagation()}
+  style={{
+    position: "fixed",
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: "min(320px, 85vw)",
+    height: "100vh",
+    minHeight: "100dvh",
+    background: "#ffffff",
+    padding: "30px 24px",
+    boxShadow: "8px 0 30px rgba(0,0,0,0.12)",
+    display: "flex",
+    flexDirection: "column",
+    gap: 24,
+    color: "#321b3d",
+    zIndex: 2001,
+  }}
+>
             <div style={{
               display: "flex",
               justifyContent: "space-between",
