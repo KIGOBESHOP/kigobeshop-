@@ -141,11 +141,17 @@ export default function ProductCard({
       >
         <div
           className="productImageWrap"
-          onTouchStart={(e) => {
-            touchStartX.current = e.touches.clientX;
-          }}
-          onTouchEnd={(e) => {
-            const diff = e.changedTouches.clientX - touchStartX.current;
+         
+onTouchStart={(e) => {
+  touchStartX.current = e.touches[0].clientX;
+}}
+onTouchEnd={(e) => {
+  const diff = e.changedTouches[0].clientX - touchStartX.current;
+  if (Math.abs(diff) > 40 && images.length > 1) {
+    changeImage(diff < 0 ? 1 : -1);
+  }
+}}
+
             if (Math.abs(diff) > 40 && images.length > 1) {
               changeImage(diff < 0 ? 1 : -1);
             }
