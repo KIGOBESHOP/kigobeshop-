@@ -102,6 +102,19 @@ export default function ProductCard({
   const [imageIndex, setImageIndex] = useState(0);
   const safeImageIndex = Math.min(imageIndex, images.length - 1);
   const currentImage = images[safeImageIndex] ?? product.image;
+  const normalizedColor = selectedColor
+  .trim()
+  .toLowerCase()
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "");
+
+const isOsloBrown =
+  product.name.trim().toLowerCase() === "jersey oslo" &&
+  normalizedColor === "marron";
+
+const displayedImage = isOsloBrown
+  ? "https://kvsiaacfsmdbkzaysekw.supabase.co/storage/v1/object/public/productos/poncho-marron-360%20(1).webp"
+  : currentImage;
   const touchStartX = useRef(0);
 
   function changeImage(direction: number) {
@@ -232,13 +245,13 @@ export default function ProductCard({
             }}
           >
             <img
-              src={currentImage}
+             src={displayedImage}
               alt={`${product.name}${selectedColor ? ` - ${selectedColor}` : ""}`}
               loading="lazy"
               style={{
                 width: "100%",
                 height: "100%",
-                objectFit: "cover",
+               objectFit: isOsloBrown ? "contain" : "cover",
                 transform: isHovered ? "scale(1.05)" : "scale(1)",
                 transition: "transform 0.5s ease",
               }}
@@ -554,7 +567,7 @@ export default function ProductCard({
             </>
           )}
           <img
-            src={currentImage}
+          src={displayedImage}
             alt={product.name}
             onClick={(e) => e.stopPropagation()}
             style={{
