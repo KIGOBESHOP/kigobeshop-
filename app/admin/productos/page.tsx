@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
-type Variant = { color: string; files: File[]; frontFile?: File | null; backFile?: File | null; spinFile?: File | null; spinUrl?: string };
+type Variant = { color: string; files: File[]; spinFile?: File | null; spinUrl?: string };
 type Product = {
   id: string;
   name: string;
@@ -153,73 +153,6 @@ export default function ProductosPage() {
 
     return supabase.storage.from("productos").getPublicUrl(path)
       .data.publicUrl;
-  }
-
-  async function generate360ForNewVariant(index: number) {
-    const variant = variants[index];
-    if (!variant?.frontFile || !variant?.backFile) {
-      setMessage("Selecciona la foto delantera y la trasera de este color.");
-      return;
-    }
-
-    setBusy(true);
-    setMessage("Subiendo las fotos para preparar el giro 360°...");
-    try {
-      const frontUrl = await uploadImage(variant.frontFile);
-      const backUrl = await uploadImage(variant.backFile);
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
-      if (!accessToken) throw new Error("Tu sesión ha caducado. Vuelve a entrar en Admin.");
-
-      const startResponse = await fetch("/api/generar-360", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ frontUrl, backUrl }),
-      });
-      const startData = await startResponse.json();
-      if (!startResponse.ok) throw new Error(startData.error || "No se pudo iniciar la generación.");
-      if (!startData.taskId) throw new Error("Runway no devolvió un identificador de generación.");
-
-      let outputUrl = "";
-      for (let attempt = 0; attempt < 60; attempt++) {
-        setMessage(`Generando animación 360°... (${attempt + 1}/60)`);
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-        const statusResponse = await fetch(
-          `/api/generar-360?taskId=${encodeURIComponent(startData.taskId)}`,
-          {
-            headers: { Authorization: `Bearer ${accessToken}` },
-            cache: "no-store",
-          },
-        );
-        const statusData = await statusResponse.json();
-        if (!statusResponse.ok) throw new Error(statusData.error || "No se pudo consultar la generación.");
-        if (statusData.status === "SUCCEEDED" && typeof statusData.output === "string") {
-          outputUrl = statusData.output;
-          break;
-        }
-        if (statusData.status === "FAILED" || statusData.status === "CANCELLED") {
-          throw new Error(statusData.failure || "La IA no ha podido generar este vídeo.");
-        }
-      }
-      if (!outputUrl) throw new Error("La generación está tardando más de lo esperado. Prueba de nuevo más tarde.");
-
-      setMessage("Guardando el vídeo generado en Supabase...");
-      const videoResponse = await fetch(outputUrl);
-      if (!videoResponse.ok) throw new Error("No se pudo descargar el vídeo generado.");
-      const videoBlob = await videoResponse.blob();
-      const videoFile = new File([videoBlob], `giro-360-${Date.now()}.mp4`, { type: "video/mp4" });
-      const spinUrl = await uploadImage(videoFile);
-      setVariants((prev) => prev.map((item, i) => i === index ? { ...item, spinUrl } : item));
-      setMessage("¡Animación 360° generada y lista! Se guardará al guardar el producto.");
-    } catch (error) {
-      console.error(error);
-      setMessage(error instanceof Error ? error.message : "No se pudo generar la animación 360°.");
-    } finally {
-      setBusy(false);
-    }
   }
 
   async function saveProduct(event: React.FormEvent<HTMLFormElement>) {
@@ -704,30 +637,6 @@ async function updateSubcategory(product: Product, subcategory: string) {
               <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(e) => setVariants((prev) => prev.map((v, i) => i === index ? { ...v, files: Array.from(e.target.files ?? []) } : v))} style={fieldStyle} />
 
               <p>{variant.files.length} foto(s) seleccionada(s)</p>
-
-              <label>Foto delantera para generar el giro 360°</label>
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={(e) => setVariants((prev) => prev.map((v, i) => i === index ? { ...v, frontFile: e.target.files?.[0] ?? null } : v))}
-                style={fieldStyle}
-              />
-              <label>Foto trasera para generar el giro 360°</label>
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={(e) => setVariants((prev) => prev.map((v, i) => i === index ? { ...v, backFile: e.target.files?.[0] ?? null } : v))}
-                style={fieldStyle}
-              />
-              <button
-                type="button"
-                disabled={busy || !variant.frontFile || !variant.backFile}
-                style={{ ...buttonStyle, opacity: busy || !variant.frontFile || !variant.backFile ? 0.6 : 1 }}
-                onClick={() => void generate360ForNewVariant(index)}
-              >
-                {busy ? "Generando..." : "✨ Generar giro 360° con IA"}
-              </button>
-              {variant.spinUrl && <p style={{ color: "#15803d", fontWeight: "bold" }}>✓ Animación generada. Se guardará al guardar el producto.</p>}
 
               <label>Animación 360 de este color (opcional, si ya tienes un archivo)</label>
               <input
