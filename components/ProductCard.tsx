@@ -112,9 +112,19 @@ const isOsloBrown =
   product.name.trim().toLowerCase() === "jersey oslo" &&
   normalizedColor === "marron";
 
-const displayedImage = isOsloBrown
-  ? "https://kvsiaacfsmdbkzaysekw.supabase.co/storage/v1/object/public/productos/poncho-marron-360%20(1).webp"
-  : currentImage;
+// La animación 360 se guarda dentro de la variante como spinUrl.
+  // Si el color tiene GIF, se muestra; si no, se conserva la galería normal.
+  const selectedVariantSpinUrl = (
+    selectedVariant as { spinUrl?: string } | undefined
+  )?.spinUrl;
+
+  const isShowingSpin = Boolean(selectedVariantSpinUrl);
+
+  const displayedImage = selectedVariantSpinUrl
+    ? selectedVariantSpinUrl
+    : isOsloBrown
+      ? "https://kvsiaacfsmdbkzaysekw.supabase.co/storage/v1/object/public/productos/poncho-marron-360%20(1).webp"
+      : currentImage;
   const touchStartX = useRef(0);
 
   function changeImage(direction: number) {
@@ -230,6 +240,27 @@ const displayedImage = isOsloBrown
             </svg>
           </button>
 
+          {isShowingSpin && (
+            <span
+              style={{
+                position: "absolute",
+                left: 10,
+                bottom: 10,
+                zIndex: 8,
+                padding: "5px 9px",
+                borderRadius: 20,
+                background: "rgba(24, 24, 27, 0.72)",
+                color: "#ffffff",
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "0.5px",
+                pointerEvents: "none",
+              }}
+            >
+              360°
+            </span>
+          )}
+
           <button
             type="button"
             onClick={() => setImageOpen(true)}
@@ -257,7 +288,7 @@ const displayedImage = isOsloBrown
               }}
             />
           </button>
-          {images.length > 1 && (
+          {!isShowingSpin && images.length > 1 && (
             <>
               <button
                 type="button"
@@ -518,7 +549,7 @@ const displayedImage = isOsloBrown
           >
             X
           </button>
-          {images.length > 1 && (
+          {!isShowingSpin && images.length > 1 && (
             <>
               <button
                 type="button"
