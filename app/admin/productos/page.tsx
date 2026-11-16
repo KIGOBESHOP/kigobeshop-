@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
-type Variant = { color: string; files: File[] };
+type Variant = { color: string; files: File[]; spinFile?: File | null; spinUrl?: string };
 type Product = {
   id: string;
   name: string;
@@ -16,17 +16,19 @@ type Product = {
     subcategory?: string;
   description?: string;
   image?: string;
-  variants?: { color: string; images?: string[] }[];
+  variants?: { color: string; images?: string[]; spinUrl?: string }[];
   sizes?: string[];
   tag?: string | null;
 };
 const subcategoriesByCollection: Record<string, string[]> = {
- Mujer: [
+  Mujer: [
     "Vaqueros",
     "Camisas",
     "Camisetas y tops",
-   "Camisetas de satén",
+    "Camisetas de satén",
     "Pantalones",
+    "Pantalones de licra",
+    "Vestidos",
     "Conjuntos",
     "Jerséis y chalecos",
     "Chaquetas y abrigos",
@@ -34,19 +36,24 @@ const subcategoriesByCollection: Record<string, string[]> = {
     "Gabardinas",
     "Chalecos",
     "Chalecos de piel",
-    
   ],
   Hombre: [
+    "Vaqueros",
+    "Camisas",
     "Camisetas",
     "Sudaderas",
     "Pantalones",
+    "Conjuntos",
+    "Chaquetas",
   ],
   "Tallas grandes": [
     "Vaqueros",
     "Camisas",
+    "Camisetas y tops",
     "Camisetas de satén",
     "Pantalones",
     "Pantalones de licra",
+    "Vestidos",
     "Conjuntos",
     "Jerséis",
     "Gabardinas",
@@ -56,7 +63,6 @@ const subcategoriesByCollection: Record<string, string[]> = {
   Bolsos: [
     "Bolsos de mano",
     "Bolsos bandolera",
-    "Mochilas",
     "Carteras",
   ],
 };
@@ -172,6 +178,11 @@ export default function ProductosPage() {
       return;
     }
 
+    if (!subcategory || !(subcategoriesByCollection[collection] || []).includes(subcategory)) {
+      setMessage("Selecciona una subcategoría válida para esta colección.");
+      return;
+    }
+
     setBusy(true);
     setMessage("");
     const uploadedPaths: string[] = [];
@@ -194,14 +205,26 @@ export default function ProductosPage() {
       };
 
       const mainImage = await uploadTracked(file);
-      const savedVariants: { color: string; images: string[] }[] = [];
+      const savedVariants: { color: string; images: string[]; spinUrl?: string }[] = [];
 
       for (const variant of variants) {
         const images: string[] = [];
         for (const variantFile of variant.files) {
           images.push(await uploadTracked(variantFile));
         }
-        savedVariants.push({ color: variant.color.trim(), images });
+        const enteredSpinUrl = (variant.spinUrl || "").trim();
+        if (enteredSpinUrl && !/^https?:\/\//i.test(enteredSpinUrl)) {
+          throw new Error("La URL de la animación 360 debe empezar por https:// o http://");
+        }
+        const spinUrl = variant.spinFile
+          ? await uploadTracked(variant.spinFile)
+          : enteredSpinUrl || undefined;
+
+        savedVariants.push({
+          color: variant.color.trim(),
+          images,
+          ...(spinUrl ? { spinUrl } : {}),
+        });
       }
 
       const { error } = await supabase.from("products").insert({
@@ -322,6 +345,17 @@ export default function ProductosPage() {
       newCollection = collectionValue.trim();
     }
 
+    const validSubcategories = subcategoriesByCollection[newCollection] || [];
+    const newSubcategory = window.prompt(
+      `Subcategoría disponible:\n${validSubcategories.join(", ")}`,
+      validSubcategories.includes(product.subcategory || "") ? product.subcategory || "" : ""
+    );
+    if (newSubcategory === null) return;
+    if (!validSubcategories.includes(newSubcategory.trim())) {
+      setMessage("La subcategoría no es válida para esa colección.");
+      return;
+    }
+
     setBusy(true);
     setMessage("");
 
@@ -335,6 +369,7 @@ export default function ProductosPage() {
           sizes: newSizes.split(",").map((s) => s.trim()).filter(Boolean),
           category: categoryValue,
           collection: newCollection,
+          subcategory: newSubcategory.trim(),
           tag: tagValue || null,
         })
         .eq("id", product.id);
@@ -387,6 +422,84 @@ async function updateSubcategory(product: Product, subcategory: string) {
     } catch (error) {
       console.error(error);
       setMessage("No se ha podido cambiar la foto.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function changeVariantSpin(
+    product: Product,
+    variantIndex: number,
+    selectedFile: File | null
+  ) {
+    setBusy(true);
+    setMessage("");
+
+    try {
+      const updatedVariants = [...(product.variants || [])];
+      const currentVariant = updatedVariants[variantIndex];
+      if (!currentVariant) throw new Error("No se ha encontrado ese color.");
+
+      if (selectedFile) {
+        const spinUrl = await uploadImage(selectedFile);
+        updatedVariants[variantIndex] = { ...currentVariant, spinUrl };
+      } else {
+        const { spinUrl: _removed, ...variantWithoutSpin } = currentVariant;
+        updatedVariants[variantIndex] = variantWithoutSpin;
+      }
+
+      const { error } = await supabase
+        .from("products")
+        .update({ variants: updatedVariants })
+        .eq("id", product.id);
+
+      if (error) throw error;
+      setMessage("Animación 360 actualizada correctamente.");
+      await loadProducts();
+    } catch (error) {
+      console.error(error);
+      setMessage("No se ha podido guardar la animación 360.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveVariantSpinUrl(
+    product: Product,
+    variantIndex: number,
+    enteredUrl: string
+  ) {
+    const cleanUrl = enteredUrl.trim();
+    if (cleanUrl && !/^https?:\/\//i.test(cleanUrl)) {
+      setMessage("La URL debe empezar por https:// o http://");
+      return;
+    }
+
+    setBusy(true);
+    setMessage("");
+    try {
+      const updatedVariants = [...(product.variants || [])];
+      const currentVariant = updatedVariants[variantIndex];
+      if (!currentVariant) throw new Error("No se ha encontrado ese color.");
+
+      if (cleanUrl) {
+        updatedVariants[variantIndex] = { ...currentVariant, spinUrl: cleanUrl };
+      } else {
+        const { spinUrl: _removed, ...variantWithoutSpin } = currentVariant;
+        updatedVariants[variantIndex] = variantWithoutSpin;
+      }
+
+      const { error } = await supabase
+        .from("products")
+        .update({ variants: updatedVariants })
+        .eq("id", product.id);
+      if (error) throw error;
+
+      setMessage("URL de animación 360 guardada correctamente.");
+      await loadProducts();
+    } catch (error) {
+      console.error(error);
+      setMessage("No se ha podido guardar la URL de la animación 360.");
     } finally {
       setBusy(false);
     }
@@ -468,7 +581,8 @@ async function updateSubcategory(product: Product, subcategory: string) {
         <label>Categoría</label>
         <select value={category} onChange={(e) => {
           setCategory(e.target.value);
-          setCollection(e.target.value === "Bolsos" ? "Bolsos" : "Mujer");
+          const nextCollection = e.target.value === "Bolsos" ? "Bolsos" : "Mujer";
+          setCollection(nextCollection);
           setSubcategory("");
         }} style={fieldStyle}>
           <option value="Ropa">Ropa</option>
@@ -490,17 +604,10 @@ async function updateSubcategory(product: Product, subcategory: string) {
         </select>
 
         <label>Subcategoría</label>
-        <select
-          required
-          value={subcategory}
-          onChange={(e) => setSubcategory(e.target.value)}
-          style={fieldStyle}
-        >
+        <select required value={subcategory} onChange={(e) => setSubcategory(e.target.value)} style={fieldStyle}>
           <option value="">Selecciona una subcategoría</option>
           {(subcategoriesByCollection[collection] || []).map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
+            <option key={item} value={item}>{item}</option>
           ))}
         </select>
 
@@ -530,6 +637,31 @@ async function updateSubcategory(product: Product, subcategory: string) {
               <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(e) => setVariants((prev) => prev.map((v, i) => i === index ? { ...v, files: Array.from(e.target.files ?? []) } : v))} style={fieldStyle} />
 
               <p>{variant.files.length} foto(s) seleccionada(s)</p>
+
+              <label>Animación 360 de este color (opcional)</label>
+              <input
+                type="file"
+                accept="image/webp,image/gif,video/mp4"
+                onChange={(e) =>
+                  setVariants((prev) => prev.map((v, i) =>
+                    i === index ? { ...v, spinFile: e.target.files?.[0] ?? null } : v
+                  ))
+                }
+                style={fieldStyle}
+              />
+              <label>O pega la URL de la animación 360</label>
+              <input
+                type="url"
+                value={variant.spinUrl || ""}
+                onChange={(e) => setVariants((prev) => prev.map((v, i) =>
+                  i === index ? { ...v, spinUrl: e.target.value } : v
+                ))}
+                placeholder="https://..."
+                style={fieldStyle}
+              />
+              <p style={{ fontSize: 13, color: "#666" }}>
+                Puedes subir un WebP/GIF animado o MP4, o pegar una URL. Si usas ambos, se guardará el archivo.
+              </p>
               <button type="button" style={buttonStyle} onClick={() => setVariants((prev) => prev.filter((_, i) => i !== index))}>Eliminar este color</button>
             </div>
           ))}
@@ -568,6 +700,9 @@ async function updateSubcategory(product: Product, subcategory: string) {
   style={fieldStyle}
 >
   <option value="">Sin asignar</option>
+  {product.subcategory && !(subcategoriesByCollection[product.collection] || []).includes(product.subcategory) && (
+    <option value={product.subcategory}>{product.subcategory} (actual)</option>
+  )}
   {(subcategoriesByCollection[product.collection] || []).map(
     (item) => (
       <option key={item} value={item}>
@@ -580,6 +715,54 @@ async function updateSubcategory(product: Product, subcategory: string) {
           <p>Etiqueta: {product.tag || "Sin etiqueta"}</p>
           <p>{product.description}</p>
           <p>Colores: {product.variants?.length ? product.variants.map((v) => v.color).join(", ") : "Sin variantes"}</p>
+
+          {product.variants?.map((variant, variantIndex) => (
+            <div
+              key={`${product.id}-${variant.color}-${variantIndex}`}
+              style={{ border: "1px solid #e9d5ff", borderRadius: 8, padding: 12, marginTop: 10 }}
+            >
+              <strong>Animación 360 · {variant.color}</strong>
+              <p style={{ fontSize: 13, color: "#666" }}>
+                {variant.spinUrl ? "Ya tiene una animación guardada." : "Todavía no tiene animación."}
+              </p>
+              <label>URL de la animación (opcional)</label>
+              <input
+                type="url"
+                defaultValue={variant.spinUrl || ""}
+                placeholder="https://..."
+                disabled={busy}
+                style={fieldStyle}
+                onBlur={(event) => {
+                  const nextUrl = event.currentTarget.value.trim();
+                  if (nextUrl !== (variant.spinUrl || "")) {
+                    void saveVariantSpinUrl(product, variantIndex, nextUrl);
+                  }
+                }}
+              />
+              <label>O subir WebP/GIF animado o MP4</label>
+              <input
+                type="file"
+                accept="image/webp,image/gif,video/mp4"
+                disabled={busy}
+                style={fieldStyle}
+                onChange={(event) => {
+                  const selectedFile = event.target.files?.[0] ?? null;
+                  if (selectedFile) void changeVariantSpin(product, variantIndex, selectedFile);
+                  event.target.value = "";
+                }}
+              />
+              {variant.spinUrl && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  style={{ ...buttonStyle, background: "#6b7280" }}
+                  onClick={() => void changeVariantSpin(product, variantIndex, null)}
+                >
+                  Quitar animación
+                </button>
+              )}
+            </div>
+          ))}
 
           <label style={{ display: "block", margin: "12px 0", color: "#7e22ce", fontWeight: "bold" }}>
             Cambiar foto principal
