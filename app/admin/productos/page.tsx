@@ -186,9 +186,11 @@ export default function ProductosPage() {
     setBusy(true);
     setMessage("");
     const uploadedPaths: string[] = [];
+    let currentStep = "preparar el producto";
 
     try {
       const uploadTracked = async (selectedFile: File) => {
+        currentStep = `subir el archivo "${selectedFile.name}" (${selectedFile.type || "tipo desconocido"})`;
         const extension =
           selectedFile.name.split(".").pop()?.toLowerCase() || "jpg";
         const path = `${Date.now()}-${crypto.randomUUID()}.${extension}`;
@@ -204,6 +206,7 @@ export default function ProductosPage() {
           .data.publicUrl;
       };
 
+      currentStep = "subir la foto principal";
       const mainImage = await uploadTracked(file);
       const savedVariants: { color: string; images: string[]; spinUrl?: string }[] = [];
 
@@ -212,6 +215,7 @@ export default function ProductosPage() {
         for (const variantFile of variant.files) {
           images.push(await uploadTracked(variantFile));
         }
+        currentStep = `preparar la animación 360 del color "${variant.color}"`;
         const enteredSpinUrl = (variant.spinUrl || "").trim();
         if (enteredSpinUrl && !/^https?:\/\//i.test(enteredSpinUrl)) {
           throw new Error("La URL de la animación 360 debe empezar por https:// o http://");
@@ -227,6 +231,7 @@ export default function ProductosPage() {
         });
       }
 
+      currentStep = "guardar los datos del producto en la tabla products";
       const { error } = await supabase.from("products").insert({
         name: name.trim(),
         price: parsedPrice,
@@ -256,7 +261,14 @@ export default function ProductosPage() {
       (document.getElementById("product-form") as HTMLFormElement)?.reset();
       await loadProducts();
     } catch (error) {
-      console.error(error);
+      console.error("Error detallado al guardar el producto:", error);
+
+      const errorDetails =
+        error instanceof Error
+          ? error.message
+          : typeof error === "object" && error !== null && "message" in error
+            ? String((error as { message?: unknown }).message || JSON.stringify(error))
+            : String(error);
 
       if (uploadedPaths.length > 0) {
         const { error: cleanupError } = await supabase.storage
@@ -266,7 +278,7 @@ export default function ProductosPage() {
       }
 
       setMessage(
-        "No se ha podido guardar el producto. Revisa los campos y los permisos de Supabase."
+        `No se ha podido guardar el producto al ${currentStep}. Supabase dice: ${errorDetails}`
       );
     } finally {
       setBusy(false);
