@@ -139,33 +139,30 @@ export default function ProductCard({
           overflow: "hidden",
         }}
       >
-        <div
-          className="productImageWrap"
-         
-onTouchStart={(e) => {
-  touchStartX.current = e.touches[0].clientX;
-}}
-onTouchEnd={(e) => {
-  const diff = e.changedTouches[0].clientX - touchStartX.current;
-  if (Math.abs(diff) > 40 && images.length > 1) {
-    changeImage(diff < 0 ? 1 : -1);
-  }
-}}
 
-            if (Math.abs(diff) > 40 && images.length > 1) {
-              changeImage(diff < 0 ? 1 : -1);
-            }
-          }}
-          style={{
-            position: "relative",
-            width: "100%",
-            aspectRatio: "3 / 4",
-            backgroundColor: "#f4f4f5",
-            overflow: "hidden",
-            borderRadius: 10,
-            touchAction: "pan-y",
-          }}
-        >
+<div
+  className="productImageWrap"
+  onTouchStart={(e) => {
+    touchStartX.current = e.touches[0].clientX;
+  }}
+  onTouchEnd={(e) => {
+    const diff = e.changedTouches[0].clientX - touchStartX.current;
+
+    if (Math.abs(diff) > 40 && images.length > 1) {
+      changeImage(diff < 0 ? 1 : -1);
+    }
+  }}
+  style={{
+    position: "relative",
+    width: "100%",
+    aspectRatio: "3 / 4",
+    backgroundColor: "#f4f4f5",
+    overflow: "hidden",
+    borderRadius: 10,
+    touchAction: "pan-y",
+  }}
+>
+
           {product.tag && (
             <span
               style={{
