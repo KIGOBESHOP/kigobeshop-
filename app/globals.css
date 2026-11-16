@@ -2353,3 +2353,78 @@ height: 420px;
     padding: 14px;
   }
 }
+/* ===== CABECERA MÓVIL KIGOBESHOP ===== */
+
+@media (max-width: 700px) {
+  .header {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 8px 12px;
+    min-height: 64px;
+    width: 100%;
+  }
+
+  .header > button:first-child {
+    width: 34px !important;
+    min-width: 34px;
+    height: 38px !important;
+    padding: 0;
+    font-size: 24px !important;
+  }
+
+  .header .logo {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .header .logoIcon {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+
+  .header .logoWords {
+    align-items: flex-start;
+    gap: 3px;
+  }
+
+  .header .logoWords strong {
+    font-size: 16px;
+    letter-spacing: 0;
+  }
+
+  .header .logoWords small {
+    font-size: 6px;
+    letter-spacing: 1px;
+  }
+
+  .headerActions {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-shrink: 0;
+  }
+
+  .header .iconButton {
+    width: 32px;
+    height: 36px;
+    padding: 4px;
+  }
+
+  .header .iconButton svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .header .menuToggle {
+    display: none !important;
+  }
+}
