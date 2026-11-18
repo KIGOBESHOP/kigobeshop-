@@ -11,6 +11,7 @@ type Product = {
   id: string;
   name: string;
   price: number;
+  oldPrice?: number | null;
   category: string;
   collection: string;
     subcategory?: string;
@@ -96,6 +97,7 @@ export default function ProductosPage() {
 
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
+  const [oldPrice, setOldPrice] = useState("");
   const [category, setCategory] = useState("Ropa");
   const [collection, setCollection] = useState("Mujer");
   const [subcategory, setSubcategory] = useState("");
@@ -178,6 +180,18 @@ export default function ProductosPage() {
       return;
     }
 
+    const parsedOldPrice = oldPrice.trim()
+      ? Number(oldPrice.replace(",", "."))
+      : null;
+
+    if (
+      parsedOldPrice !== null &&
+      (!Number.isFinite(parsedOldPrice) || parsedOldPrice <= parsedPrice)
+    ) {
+      setMessage("El precio anterior debe ser mayor que el precio actual.");
+      return;
+    }
+
     if (!subcategory || !(subcategoriesByCollection[collection] || []).includes(subcategory)) {
       setMessage("Selecciona una subcategoría válida para esta colección.");
       return;
@@ -186,11 +200,9 @@ export default function ProductosPage() {
     setBusy(true);
     setMessage("");
     const uploadedPaths: string[] = [];
-    let currentStep = "preparar el producto";
 
     try {
       const uploadTracked = async (selectedFile: File) => {
-        currentStep = `subir el archivo "${selectedFile.name}" (${selectedFile.type || "tipo desconocido"})`;
         const extension =
           selectedFile.name.split(".").pop()?.toLowerCase() || "jpg";
         const path = `${Date.now()}-${crypto.randomUUID()}.${extension}`;
@@ -206,7 +218,6 @@ export default function ProductosPage() {
           .data.publicUrl;
       };
 
-      currentStep = "subir la foto principal";
       const mainImage = await uploadTracked(file);
       const savedVariants: { color: string; images: string[]; spinUrl?: string }[] = [];
 
@@ -215,7 +226,6 @@ export default function ProductosPage() {
         for (const variantFile of variant.files) {
           images.push(await uploadTracked(variantFile));
         }
-        currentStep = `preparar la animación 360 del color "${variant.color}"`;
         const enteredSpinUrl = (variant.spinUrl || "").trim();
         if (enteredSpinUrl && !/^https?:\/\//i.test(enteredSpinUrl)) {
           throw new Error("La URL de la animación 360 debe empezar por https:// o http://");
@@ -231,10 +241,10 @@ export default function ProductosPage() {
         });
       }
 
-      currentStep = "guardar los datos del producto en la tabla products";
       const { error } = await supabase.from("products").insert({
         name: name.trim(),
         price: parsedPrice,
+        oldPrice: parsedOldPrice,
         category,
         collection,
         subcategory,
@@ -250,6 +260,7 @@ export default function ProductosPage() {
       setMessage("¡Producto guardado con sus colores y fotos!");
       setName("");
       setPrice("");
+      setOldPrice("");
       setCategory("Ropa");
       setCollection("Mujer");
       setSubcategory("");
@@ -261,14 +272,7 @@ export default function ProductosPage() {
       (document.getElementById("product-form") as HTMLFormElement)?.reset();
       await loadProducts();
     } catch (error) {
-      console.error("Error detallado al guardar el producto:", error);
-
-      const errorDetails =
-        error instanceof Error
-          ? error.message
-          : typeof error === "object" && error !== null && "message" in error
-            ? String((error as { message?: unknown }).message || JSON.stringify(error))
-            : String(error);
+      console.error(error);
 
       if (uploadedPaths.length > 0) {
         const { error: cleanupError } = await supabase.storage
@@ -278,7 +282,7 @@ export default function ProductosPage() {
       }
 
       setMessage(
-        `No se ha podido guardar el producto al ${currentStep}. Supabase dice: ${errorDetails}`
+        "No se ha podido guardar el producto. Revisa los campos y los permisos de Supabase."
       );
     } finally {
       setBusy(false);
@@ -295,12 +299,30 @@ export default function ProductosPage() {
     );
     if (newSizes === null) return;
 
-    const newPrice = window.prompt("Precio en euros:", String(product.price));
+    const newPrice = window.prompt("Precio actual en euros:", String(product.price));
     if (newPrice === null || !newPrice.trim()) return;
 
     const parsedPrice = Number(newPrice.replace(",", "."));
     if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
       setMessage("Introduce un precio válido.");
+      return;
+    }
+
+    const newOldPrice = window.prompt(
+      "Precio anterior (déjalo vacío si no está rebajado):",
+      product.oldPrice != null ? String(product.oldPrice) : ""
+    );
+    if (newOldPrice === null) return;
+
+    const parsedOldPrice = newOldPrice.trim()
+      ? Number(newOldPrice.replace(",", "."))
+      : null;
+
+    if (
+      parsedOldPrice !== null &&
+      (!Number.isFinite(parsedOldPrice) || parsedOldPrice <= parsedPrice)
+    ) {
+      setMessage("El precio anterior debe ser mayor que el precio actual.");
       return;
     }
 
@@ -377,6 +399,7 @@ export default function ProductosPage() {
         .update({
           name: newName.trim(),
           price: parsedPrice,
+          oldPrice: parsedOldPrice,
           description: newDescription.trim(),
           sizes: newSizes.split(",").map((s) => s.trim()).filter(Boolean),
           category: categoryValue,
@@ -587,8 +610,22 @@ async function updateSubcategory(product: Product, subcategory: string) {
         <label>Nombre del producto</label>
         <input required value={name} onChange={(e) => setName(e.target.value)} style={fieldStyle} />
 
-        <label>Precio en euros</label>
+        <label>Precio actual en euros</label>
         <input required type="number" min="0.01" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} style={fieldStyle} />
+
+        <label>Precio anterior (opcional, para descuentos)</label>
+        <input
+          type="number"
+          min="0.01"
+          step="0.01"
+          value={oldPrice}
+          onChange={(e) => setOldPrice(e.target.value)}
+          placeholder="Ej. 29.99"
+          style={fieldStyle}
+        />
+        <p style={{ marginTop: -12, fontSize: 13, color: "#666" }}>
+          Si lo rellenas, debe ser superior al precio actual y aparecerá tachado en la tienda.
+        </p>
 
         <label>Categoría</label>
         <select value={category} onChange={(e) => {
@@ -700,7 +737,14 @@ async function updateSubcategory(product: Product, subcategory: string) {
         <article key={product.id} style={{ border: "1px solid #d8b4fe", borderRadius: 12, padding: 16, marginTop: 16 }}>
           {product.image && <img src={product.image} alt={product.name} style={{ width: 120, height: 120, objectFit: "cover", borderRadius: 8 }} />}
           <h3>{product.name}</h3>
-          <p>Precio: {Number(product.price).toFixed(2)} €</p>
+          <p>
+            Precio: {Number(product.price).toFixed(2)} €
+            {product.oldPrice != null && product.oldPrice > product.price && (
+              <span style={{ marginLeft: 8, color: "#888", textDecoration: "line-through" }}>
+                {Number(product.oldPrice).toFixed(2)} €
+              </span>
+            )}
+          </p>
           <p>Categoría: {product.category} · Colección: {product.collection}</p>
           <p>Subcategoría:</p>
 <select
