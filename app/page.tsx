@@ -484,10 +484,11 @@ const cartSubtotal = cart.reduce(
                   .novedadesProductGrid::-webkit-scrollbar {
                     display: none;
                   }
-                  .novedadesProductGrid > * {
+                  .novedadesProductGrid :global(.productCard) {
                     flex: 0 0 72% !important;
                     width: 72% !important;
                     min-width: 0 !important;
+                    box-sizing: border-box;
                     scroll-snap-align: start;
                   }
                 }
