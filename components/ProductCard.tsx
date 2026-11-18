@@ -155,26 +155,54 @@ const isOsloBrown =
       <style jsx global>{`
         @media (max-width: 600px) {
           .productCard {
-            border-radius: 18px !important;
+            border-radius: 20px !important;
             padding: 7px !important;
-            box-shadow: 0 5px 18px rgba(67, 30, 82, 0.07) !important;
+            border: 1px solid #eee6f1 !important;
+            box-shadow: 0 6px 20px rgba(54, 25, 68, 0.075) !important;
+            background: #fff !important;
           }
           .productCard .productImageWrap {
-            aspect-ratio: 4 / 5 !important;
-            border-radius: 14px !important;
+            aspect-ratio: 0.82 / 1 !important;
+            border-radius: 15px !important;
+            background: #f8f6f8 !important;
           }
           .productCard .productCardInfo {
-            padding: 10px 3px 3px !important;
-            gap: 7px !important;
+            padding: 11px 4px 4px !important;
+            gap: 8px !important;
           }
           .productCard .productCardName {
+            display: -webkit-box !important;
+            -webkit-line-clamp: 2 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
+            min-height: 30px !important;
             font-size: 12px !important;
-            line-height: 1.3 !important;
-            font-weight: 600 !important;
+            line-height: 1.25 !important;
+            font-weight: 650 !important;
+            letter-spacing: 0.05px !important;
+            color: #302437 !important;
+            text-transform: none !important;
           }
           .productCard .productCardPrice {
-            font-size: 15px !important;
+            display: block !important;
+            margin-top: 1px !important;
+            font-size: 16px !important;
+            line-height: 1.2 !important;
             font-weight: 800 !important;
+            color: #702783 !important;
+          }
+          .productCard .productCardViewButton {
+            display: flex !important;
+            min-height: 36px !important;
+            margin-top: 3px !important;
+            border: 1px solid #e7d8eb !important;
+            border-radius: 999px !important;
+            background: linear-gradient(180deg, #fff 0%, #faf6fb 100%) !important;
+            color: #702783 !important;
+            font-size: 11px !important;
+            font-weight: 750 !important;
+            letter-spacing: 0.1px !important;
+            box-shadow: 0 2px 7px rgba(112, 39, 131, 0.06) !important;
           }
           .productCard .productCardOptions,
           .productCard .productCardSizes,
@@ -183,8 +211,17 @@ const isOsloBrown =
           .productCard .productGalleryDots {
             display: none !important;
           }
-          .productCard .productCardViewButton {
-            display: flex !important;
+          .productCard > .productImageWrap > span {
+            top: 9px !important;
+            left: 9px !important;
+            padding: 5px 9px !important;
+            font-size: 9px !important;
+          }
+          .productCard > .productImageWrap > button[aria-label="Favorito"] {
+            top: 9px !important;
+            right: 9px !important;
+            width: 32px !important;
+            height: 32px !important;
           }
         }
         @media (min-width: 601px) {
