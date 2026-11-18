@@ -189,51 +189,72 @@ export default function ProductDetailPage() {
   }
 
   return (
-    <main style={{ minHeight: "100vh", background: "#fff", color: "#27212d" }}>
-      <div style={{ maxWidth: 1180, margin: "0 auto", padding: "22px 18px 64px" }}>
-        <Link href="/" style={{ display: "inline-block", marginBottom: 22, color: "#6b21a8", textDecoration: "none", fontSize: 14 }}>
-          ← Volver a la tienda
-        </Link>
+    <main className="product-detail-page">
+      <div className="detail-shell">
+        <Link href="/" className="back-link">← Volver a KigobeShop</Link>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))", gap: 36, alignItems: "start" }}>
-          <section>
-            <div style={{ position: "relative", background: "#f7f5f8", borderRadius: 16, overflow: "hidden", aspectRatio: "3 / 4" }}>
-              {product.tag && (
-                <span style={{ position: "absolute", zIndex: 2, top: 14, left: 14, background: "#fff", padding: "6px 11px", borderRadius: 5, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>
-                  {product.tag}
-                </span>
-              )}
-              <img src={shownImage} alt={product.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-              {selectedSpinUrl && <span style={{ position: "absolute", bottom: 14, left: 14, background: "#34233d", color: "#fff", borderRadius: 20, padding: "6px 10px", fontSize: 11 }}>Vista 360°</span>}
+        <div className="detail-layout">
+          <section className="gallery-column" aria-label="Imágenes del producto">
+            <div className="main-photo">
+              {product.tag && <span className="product-tag">{product.tag}</span>}
+              <img src={shownImage} alt={`${product.name}${selectedColor ? ` - ${selectedColor}` : ""}`} />
+              {selectedSpinUrl && <span className="spin-label">Vista 360°</span>}
             </div>
+
             {gallery.length > 1 && (
-              <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingTop: 12 }}>
-                {gallery.map((item) => (
-                  <button key={item.url} type="button" onClick={() => { setActiveImage(item.url); if (item.color) setSelectedColor(item.color); }} style={{ flex: "0 0 76px", width: 76, height: 96, padding: 0, borderRadius: 9, overflow: "hidden", border: activeImage === item.url ? "2px solid #7e22ce" : "1px solid #e7e1eb", background: "#fafafa" }}>
-                    <img src={item.url} alt={`Vista de ${product.name}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <div className="thumbnail-list">
+                {gallery.map((item, index) => (
+                  <button
+                    key={`${item.url}-${index}`}
+                    type="button"
+                    className={`thumbnail ${activeImage === item.url ? "thumbnail-active" : ""}`}
+                    onClick={() => {
+                      setActiveImage(item.url);
+                      if (item.color) setSelectedColor(item.color);
+                    }}
+                    aria-label={`Ver imagen ${index + 1}`}
+                  >
+                    <img src={item.url} alt={`${product.name}, imagen ${index + 1}`} />
                   </button>
                 ))}
               </div>
             )}
           </section>
 
-          <section style={{ paddingTop: 6 }}>
-            <p style={{ margin: "0 0 8px", color: "#9772aa", fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>KIGOBESHOP</p>
-            <h1 style={{ margin: "0 0 12px", fontSize: "clamp(27px, 4vw, 38px)", lineHeight: 1.15, fontWeight: 600 }}>{product.name}</h1>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 22 }}>
-              {product.oldPrice != null && product.oldPrice > product.price && <span style={{ color: "#999", textDecoration: "line-through", fontSize: 16 }}>{product.oldPrice.toFixed(2)} €</span>}
-              <strong style={{ fontSize: 25, color: product.oldPrice != null && product.oldPrice > product.price ? "#7e22ce" : "#29232d" }}>{product.price.toFixed(2)} €</strong>
-              {product.oldPrice != null && product.oldPrice > product.price && <span style={{ color: "#7e22ce", fontWeight: 700, fontSize: 12 }}>-{Math.round((1 - product.price / product.oldPrice) * 100)}%</span>}
+          <section className="product-info">
+            <p className="brand-eyebrow">KIGOBESHOP <span>·</span> {product.collection}</p>
+            <h1>{product.name}</h1>
+
+            <div className="price-line">
+              <strong>{product.price.toFixed(2)} €</strong>
+              {product.oldPrice != null && product.oldPrice > product.price && (
+                <>
+                  <span className="old-price">{product.oldPrice.toFixed(2)} €</span>
+                  <span className="discount-pill">
+                    -{Math.round((1 - product.price / product.oldPrice) * 100)}%
+                  </span>
+                </>
+              )}
             </div>
 
-            {product.description && <p style={{ color: "#6f6873", lineHeight: 1.75, margin: "0 0 24px", whiteSpace: "pre-line" }}>{product.description}</p>}
+            {product.description && <p className="product-description">{product.description}</p>}
+
+            <div className="detail-divider" />
 
             {variants.length > 0 && (
-              <div style={{ marginBottom: 22 }}>
-                <h2 style={{ fontSize: 13, margin: "0 0 10px", fontWeight: 700 }}>COLOR: <span style={{ fontWeight: 400, color: "#756b7b" }}>{selectedColor}</span></h2>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
+              <div className="option-group">
+                <div className="option-heading">
+                  <span>Color</span>
+                  <strong>{selectedColor || "Selecciona un color"}</strong>
+                </div>
+                <div className="color-options">
                   {variants.map((variant) => (
-                    <button key={variant.color} type="button" onClick={() => chooseColor(variant.color)} style={{ border: selectedColor === variant.color ? "1.5px solid #7e22ce" : "1px solid #ddd5e2", background: selectedColor === variant.color ? "#f7effc" : "#fff", color: "#332b38", borderRadius: 8, padding: "9px 13px", cursor: "pointer" }}>
+                    <button
+                      key={variant.color}
+                      type="button"
+                      onClick={() => chooseColor(variant.color)}
+                      className={`color-option ${selectedColor === variant.color ? "option-selected" : ""}`}
+                    >
                       {variant.color}
                     </button>
                   ))}
@@ -241,29 +262,148 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {sizesForColor.length > 0 && (
-              <div style={{ marginBottom: 22 }}>
-                <h2 style={{ fontSize: 13, margin: "0 0 10px", fontWeight: 700 }}>ELIGE TU TALLA</h2>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
+            <div className="option-group">
+              <div className="option-heading">
+                <span>Talla</span>
+                <strong>{selectedSize || (sizesForColor.length === 0 ? "Talla única" : "Selecciona tu talla")}</strong>
+              </div>
+              {sizesForColor.length > 0 ? (
+                <div className="size-options">
                   {sizesForColor.map((size) => (
-                    <button key={size} type="button" onClick={() => { setSelectedSize(size); setMessage(""); }} style={{ minWidth: 46, padding: "11px 12px", borderRadius: 8, border: selectedSize === size ? "1.5px solid #7e22ce" : "1px solid #ded8e2", background: selectedSize === size ? "#7e22ce" : "#fff", color: selectedSize === size ? "#fff" : "#302936", cursor: "pointer" }}>
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => { setSelectedSize(size); setMessage(""); }}
+                      className={`size-option ${selectedSize === size ? "size-selected" : ""}`}
+                    >
                       {size}
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="one-size-note">Esta prenda está disponible en talla única.</p>
+              )}
+            </div>
 
-            {sizesForColor.length === 0 && <p style={{ color: "#6b21a8", fontSize: 13, margin: "0 0 22px" }}>Talla única</p>}
+            {message && <p className="validation-message" role="alert">{message}</p>}
 
-            {message && <p role="alert" style={{ color: "#b42318", fontSize: 13 }}>{message}</p>}
-            <button type="button" onClick={addToCart} style={{ width: "100%", minHeight: 52, border: 0, borderRadius: 9, background: "#7e22ce", color: "#fff", fontSize: 13, fontWeight: 700, letterSpacing: 0.6, cursor: "pointer" }}>
+            <button type="button" onClick={addToCart} className="add-cart-button">
               AÑADIR AL CARRITO
             </button>
-            <p style={{ marginTop: 14, color: "#89818d", fontSize: 12, lineHeight: 1.6 }}>Envíos y condiciones disponibles durante el proceso de compra.</p>
+
+            <div className="purchase-notes">
+              <p><span>✓</span> Compra segura</p>
+              <p><span>✓</span> Envíos disponibles durante el proceso de compra</p>
+            </div>
           </section>
         </div>
       </div>
+
+      <style jsx>{`
+        .product-detail-page {
+          min-height: 100vh;
+          background: #fff;
+          color: #302638;
+          padding: 0 24px 80px;
+        }
+        .detail-shell { max-width: 1280px; margin: 0 auto; }
+        .back-link {
+          display: inline-flex; align-items: center; margin: 28px 0 24px;
+          color: #75677e; text-decoration: none; font-size: 13px;
+          transition: color .2s ease;
+        }
+        .back-link:hover { color: #7e22ce; }
+        .detail-layout {
+          display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(360px, .82fr);
+          gap: clamp(38px, 6vw, 88px); align-items: start;
+        }
+        .gallery-column { min-width: 0; }
+        .main-photo {
+          position: relative; width: 100%; aspect-ratio: 4 / 5;
+          max-height: 760px; overflow: hidden; border-radius: 3px;
+          background: #f8f6f8; display: flex; align-items: center; justify-content: center;
+        }
+        .main-photo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .product-tag {
+          position: absolute; z-index: 2; top: 18px; left: 18px;
+          padding: 7px 12px; border-radius: 2px; background: #fff;
+          color: #4b3b52; font-size: 10px; font-weight: 700; letter-spacing: 1.4px;
+        }
+        .spin-label {
+          position: absolute; bottom: 16px; left: 16px; padding: 7px 12px;
+          border-radius: 30px; background: rgba(48, 38, 56, .82);
+          color: #fff; font-size: 11px;
+        }
+        .thumbnail-list {
+          display: flex; gap: 12px; overflow-x: auto; padding: 14px 2px 4px;
+          scrollbar-width: thin;
+        }
+        .thumbnail {
+          flex: 0 0 88px; width: 88px; height: 108px; padding: 0;
+          border: 1px solid #e9e2ec; border-radius: 5px; overflow: hidden;
+          background: #faf9fb; cursor: pointer; transition: border-color .2s ease;
+        }
+        .thumbnail-active { border: 2px solid #8426c8; }
+        .thumbnail img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .product-info { padding: 30px 0 0; position: sticky; top: 28px; }
+        .brand-eyebrow {
+          margin: 0 0 14px; color: #9970ad; font-size: 10px; font-weight: 700;
+          letter-spacing: 2.3px; text-transform: uppercase;
+        }
+        .brand-eyebrow span { padding: 0 5px; color: #c8b5d2; }
+        h1 {
+          margin: 0 0 20px; color: #302638; font-size: clamp(29px, 3vw, 43px);
+          line-height: 1.12; letter-spacing: -.8px; font-weight: 600;
+        }
+        .price-line { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 22px; }
+        .price-line strong { font-size: 25px; font-weight: 650; color: #302638; }
+        .old-price { color: #a49aa9; font-size: 15px; text-decoration: line-through; }
+        .discount-pill {
+          padding: 5px 8px; border-radius: 3px; background: #f4eafa;
+          color: #7e22ce; font-size: 11px; font-weight: 700;
+        }
+        .product-description { margin: 0 0 25px; color: #766d7b; font-size: 14px; line-height: 1.8; white-space: pre-line; }
+        .detail-divider { height: 1px; background: #eee9f0; margin: 24px 0; }
+        .option-group { margin: 0 0 27px; }
+        .option-heading {
+          display: flex; align-items: baseline; gap: 8px; margin-bottom: 13px;
+          color: #302638; font-size: 12px; text-transform: uppercase; letter-spacing: .7px;
+        }
+        .option-heading span { font-weight: 750; }
+        .option-heading strong { color: #827787; font-weight: 400; text-transform: none; letter-spacing: 0; }
+        .color-options, .size-options { display: flex; flex-wrap: wrap; gap: 9px; }
+        .color-option, .size-option {
+          min-height: 43px; padding: 0 16px; border: 1px solid #e4dce8;
+          border-radius: 5px; background: #fff; color: #45394c;
+          font: inherit; font-size: 13px; cursor: pointer;
+          transition: all .18s ease;
+        }
+        .color-option:hover, .size-option:hover { border-color: #9b58c5; }
+        .option-selected { border: 1.5px solid #8426c8; background: #f8f0fc; color: #7020ad; }
+        .size-option { min-width: 48px; padding: 0 13px; }
+        .size-selected { border-color: #8426c8; background: #8426c8; color: #fff; }
+        .one-size-note { margin: 0; color: #817687; font-size: 13px; }
+        .validation-message { margin: -10px 0 14px; color: #b42318; font-size: 13px; }
+        .add-cart-button {
+          width: 100%; min-height: 56px; border: 0; border-radius: 5px;
+          background: #8426c8; color: #fff; font-size: 12px; font-weight: 750;
+          letter-spacing: 1px; cursor: pointer; transition: background .2s ease, transform .2s ease;
+        }
+        .add-cart-button:hover { background: #6f1eaa; transform: translateY(-1px); }
+        .purchase-notes { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
+        .purchase-notes p { margin: 0; color: #8a808f; font-size: 11px; }
+        .purchase-notes span { color: #8a55aa; margin-right: 7px; }
+        @media (max-width: 800px) {
+          .product-detail-page { padding: 0 16px 54px; }
+          .back-link { margin: 18px 0 16px; }
+          .detail-layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+          .main-photo { aspect-ratio: 4 / 4.7; max-height: none; }
+          .product-info { position: static; padding-top: 14px; }
+          h1 { font-size: 30px; }
+          .price-line strong { font-size: 23px; }
+          .thumbnail { flex-basis: 72px; width: 72px; height: 88px; }
+        }
+      `}</style>
     </main>
   );
 }
