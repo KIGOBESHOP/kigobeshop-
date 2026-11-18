@@ -9,6 +9,7 @@ import CheckoutForm from "@/components/CheckoutForm";
 import Footer from "@/components/Footer";
 import { products, type Product } from "@/lib/products";
 import { supabase } from "@/lib/supabase";
+import "./CollectionPage.css";
 
 type CartItem = {
   cartKey: string;
@@ -379,93 +380,93 @@ stock: p.stock ?? {},
           <p>Descubre tus prendas favoritas.</p>
         </div>
 
-       {!selectedSubcategory ? (
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
-      gap: 22,
-    }}
-  >
-    {(subcategoriesByCollection[collection] || []).map((item) => (
-      <button
-        key={item.name}
-        onClick={() => setSelectedSubcategory(item.name)}
-        style={{
-          border: "none",
-          padding: 0,
-          background: "white",
-          cursor: "pointer",
-          textAlign: "center",
-        }}
-      >
-        <img
-          src={item.image}
-          alt={item.name}
-          style={{
-            width: "100%",
-            height: 260,
-            objectFit: "cover",
-            borderRadius: 14,
-          }}
-        />
-        <h3 style={{ marginTop: 12, color: "#30213c" }}>
-          {item.name}
-        </h3>
-      </button>
-    ))}
-  </div>
-) : (
-  <>
-    <button
-      onClick={() => setSelectedSubcategory(null)}
-      style={{
-        marginBottom: 24,
-        padding: "10px 18px",
-        borderRadius: 20,
-        border: "1px solid #d8b4fe",
-        background: "#f3e8ff",
-        color: "#6b21a8",
-        cursor: "pointer",
-      }}
-    >
-      ← Volver a las categorías
-    </button>
+        {!selectedSubcategory ? (
+          <div className="subcategory-section">
+            <div className="subcategory-heading">
+              <span className="subcategory-eyebrow">DESCUBRE KIGOBESHOP</span>
+              <h2>Explora por categorías</h2>
+              <p>Encuentra tu estilo en cada colección</p>
+              <span className="subcategory-heading-line" aria-hidden="true" />
+            </div>
 
-    <h2>{selectedSubcategory}</h2>
-
-    {collectionProducts.length ? (
-      <div className="productGrid">
-        {collectionProducts.map((product) => (
-          <div
-            key={product.id}
-            id={`product-${product.id}`}
-            style={{
-              scrollMarginTop: 120,
-              outline:
-                selectedProductId === String(product.id)
-                  ? "2px solid #7620a5"
-                  : "none",
-              borderRadius: 16,
-              padding: selectedProductId === String(product.id) ? 8 : 0,
-            }}
-          >
-            <ProductCard
-              product={product}
-              isFavorite={favorites.includes(product.id)}
-              onAddToCart={(variant, size) =>
-                addToCart(product, variant, size)
-              }
-              onToggleFavorite={() => toggleFavorite(product.id)}
-            />
+            <div className="subcategory-grid">
+              {(subcategoriesByCollection[collection] || []).map((item) => (
+                <button
+                  key={item.name}
+                  type="button"
+                  className="subcategory-card"
+                  onClick={() => setSelectedSubcategory(item.name)}
+                  aria-label={`Descubrir ${item.name}`}
+                >
+                  <img src={item.image} alt={item.name} loading="lazy" />
+                  <span className="subcategory-card-shade" aria-hidden="true" />
+                  <span className="subcategory-card-content">
+                    <span className="subcategory-card-title">{item.name}</span>
+                    <span className="subcategory-card-link">
+                      Descubrir colección <span aria-hidden="true">↗</span>
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
-        ))}
-      </div>
-    ) : (
-      <p>Próximamente añadiremos productos a esta sección 💜</p>
-    )}
-  </>
-)}
+        ) : (
+          <div className="subcategory-products">
+            <button
+              type="button"
+              className="subcategory-back"
+              onClick={() => setSelectedSubcategory(null)}
+            >
+              <span aria-hidden="true">←</span> Volver a las categorías
+            </button>
+
+            <div className="subcategory-products-heading">
+              <span className="subcategory-eyebrow">COLECCIÓN {collection.toUpperCase()}</span>
+              <h2>{selectedSubcategory}</h2>
+              <p>
+                {collectionProducts.length
+                  ? `${collectionProducts.length} ${collectionProducts.length === 1 ? "prenda disponible" : "prendas disponibles"}`
+                  : "Estamos preparando esta selección para ti"}
+              </p>
+            </div>
+
+            {collectionProducts.length ? (
+              <div className="productGrid">
+                {collectionProducts.map((product) => (
+                  <div
+                    key={product.id}
+                    id={`product-${product.id}`}
+                    className="collection-product-item"
+                    style={{
+                      scrollMarginTop: 120,
+                      outline:
+                        selectedProductId === String(product.id)
+                          ? "2px solid #7620a5"
+                          : "none",
+                      borderRadius: 16,
+                      padding: selectedProductId === String(product.id) ? 8 : 0,
+                    }}
+                  >
+                    <ProductCard
+                      product={product}
+                      isFavorite={favorites.includes(product.id)}
+                      onAddToCart={(variant, size) =>
+                        addToCart(product, variant, size)
+                      }
+                      onToggleFavorite={() => toggleFavorite(product.id)}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="subcategory-empty">
+                <span aria-hidden="true">✧</span>
+                <p>Próximamente añadiremos productos a esta sección.</p>
+                <small>Gracias por descubrir KigobeShop 💜</small>
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       <Footer />
