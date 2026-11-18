@@ -236,7 +236,7 @@ export default function Header({
               }}
             >
               <span aria-hidden="true">＋</span>
-              Instalar KigobeShop
+              Añadir KigobeShop a mi inicio
             </button>
           </aside>
         </div>
