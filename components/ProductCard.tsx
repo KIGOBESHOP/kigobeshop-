@@ -152,6 +152,47 @@ const isOsloBrown =
   const needsSizeSelection = availableSizes.length > 0 && !selectedSize;
   return (
     <>
+      <style jsx global>{`
+        @media (max-width: 600px) {
+          .productCard {
+            border-radius: 18px !important;
+            padding: 7px !important;
+            box-shadow: 0 5px 18px rgba(67, 30, 82, 0.07) !important;
+          }
+          .productCard .productImageWrap {
+            aspect-ratio: 4 / 5 !important;
+            border-radius: 14px !important;
+          }
+          .productCard .productCardInfo {
+            padding: 10px 3px 3px !important;
+            gap: 7px !important;
+          }
+          .productCard .productCardName {
+            font-size: 12px !important;
+            line-height: 1.3 !important;
+            font-weight: 600 !important;
+          }
+          .productCard .productCardPrice {
+            font-size: 15px !important;
+            font-weight: 800 !important;
+          }
+          .productCard .productCardOptions,
+          .productCard .productCardSizes,
+          .productCard .productCardAddButton,
+          .productCard .productGalleryArrow,
+          .productCard .productGalleryDots {
+            display: none !important;
+          }
+          .productCard .productCardViewButton {
+            display: flex !important;
+          }
+        }
+        @media (min-width: 601px) {
+          .productCard .productCardViewButton {
+            display: none !important;
+          }
+        }
+      `}</style>
       <article
         className="productCard fadeInUp"
         onMouseEnter={() => setIsHovered(true)}
@@ -305,6 +346,7 @@ const isOsloBrown =
                   changeImage(-1);
                 }}
                 aria-label="Foto anterior"
+                className="productGalleryArrow"
                 style={{
                   position: "absolute",
                   left: 8,
@@ -332,6 +374,7 @@ const isOsloBrown =
                   changeImage(1);
                 }}
                 aria-label="Foto siguiente"
+                className="productGalleryArrow"
                 style={{
                   position: "absolute",
                   right: 8,
@@ -393,6 +436,7 @@ const isOsloBrown =
         </div>
 
         <div
+          className="productCardInfo"
           style={{
             padding: "14px 5px 5px",
             display: "flex",
@@ -403,6 +447,7 @@ const isOsloBrown =
         >
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 5 }}>
             <button
+              className="productCardName"
               type="button"
               onClick={() => router.push(`/producto/${product.id}`)}
               style={{
@@ -426,7 +471,7 @@ const isOsloBrown =
                   {product.oldPrice.toFixed(2)} €
                 </span>
               )}
-              <span style={{ fontSize: 19, fontWeight: 800, color: "#702783", letterSpacing: "-0.3px" }}>
+              <span className="productCardPrice" style={{ fontSize: 19, fontWeight: 800, color: "#702783", letterSpacing: "-0.3px" }}>
                 {product.price.toFixed(2)} €
               </span>
               {product.oldPrice != null && product.oldPrice > product.price && (
@@ -437,7 +482,7 @@ const isOsloBrown =
             </div>
           </div>
           {variants.length > 0 && (
-            <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+            <div className="productCardOptions" style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
               {variants.map((variant) => {
                 const hex = getColorHex(variant.color);
                 const isSelected = selectedColor === variant.color;
@@ -489,7 +534,7 @@ const isOsloBrown =
           )}
 
           {availableSizes.length > 0 && (
-            <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+            <div className="productCardSizes" style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
               {availableSizes.map((size) => {
                 const isSelected = selectedSize === size;
                 return (
@@ -518,6 +563,7 @@ const isOsloBrown =
           )}
 
           <button
+            className="productCardAddButton"
             type="button"
             onClick={() =>
               onAddToCart(
@@ -542,6 +588,28 @@ const isOsloBrown =
             }}
           >
             {needsSizeSelection ? "Elige una talla" : "Añadir al carrito"}
+          </button>
+          <button
+            type="button"
+            className="productCardViewButton"
+            onClick={() => router.push(`/producto/${product.id}`)}
+            style={{
+              display: "none",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "100%",
+              minHeight: 34,
+              marginTop: 2,
+              border: "1px solid #e3d3e8",
+              borderRadius: 999,
+              background: "#fbf7fc",
+              color: "#702783",
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            Ver prenda
           </button>
         </div>
       </article>
