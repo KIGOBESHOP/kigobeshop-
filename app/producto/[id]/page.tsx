@@ -184,29 +184,37 @@ export default function ProductDetailPage() {
 
   const sizesForColor = useMemo(() => {
     if (!product) return [];
-    const stockForColor = product.stock?.[selectedColor || "Único"];
-    const hasStock = !!stockForColor && Object.keys(stockForColor).length > 0;
     const base = currentVariant?.sizes?.length ? currentVariant.sizes : (product.sizes ?? []);
-    const available = hasStock
-      ? Object.entries(stockForColor).filter(([, qty]) => Number(qty) > 0).map(([size]) => size)
-      : base;
-    return sortSizes(available);
+    return sortSizes(base);
   }, [product, selectedColor, currentVariant]);
 
+  const stockForColor = product?.stock?.[selectedColor || "Único"];
+  const hasStockInfo = !!stockForColor && Object.keys(stockForColor).length > 0;
+  const isSizeAvailable = (size: string) => !hasStockInfo || Number(stockForColor?.[size] ?? 0) > 0;
+  const hasAnyAvailableSize = sizesForColor.some(isSizeAvailable);
   const selectedSpinUrl = currentVariant?.spinUrl;
   const shownImage = selectedSpinUrl || activeImage || product?.image || "";
 
   function chooseColor(color: string) {
     setSelectedColor(color);
     setSelectedSize("");
+    setMessage("");
     const firstForColor = gallery.find((item) => item.color === color);
     if (firstForColor) setActiveImage(firstForColor.url);
   }
 
   function addToCart() {
     if (!product) return;
+    if (hasStockInfo && !hasAnyAvailableSize) {
+      setMessage("Esta combinación está agotada. Prueba con otro color.");
+      return;
+    }
     if (sizesForColor.length > 0 && !selectedSize) {
       setMessage("Selecciona una talla antes de continuar.");
+      return;
+    }
+    if (selectedSize && !isSizeAvailable(selectedSize)) {
+      setMessage("Esa talla está agotada. Selecciona otra.");
       return;
     }
 
@@ -345,19 +353,31 @@ export default function ProductDetailPage() {
               </div>
               {sizesForColor.length > 0 ? (
                 <div className="size-options">
-                  {sizesForColor.map((size) => (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => { setSelectedSize(size); setMessage(""); }}
-                      className={`size-option ${selectedSize === size ? "size-selected" : ""}`}
-                    >
-                      {size}
-                    </button>
-                  ))}
+                  {sizesForColor.map((size) => {
+                    const available = isSizeAvailable(size);
+                    return (
+                      <button
+                        key={size}
+                        type="button"
+                        disabled={!available}
+                        aria-label={available ? `Talla ${size}` : `Talla ${size}, agotada`}
+                        onClick={() => { if (available) { setSelectedSize(size); setMessage(""); } }}
+                        className={`size-option ${selectedSize === size ? "size-selected" : ""} ${!available ? "size-unavailable" : ""}`}
+                      >
+                        {size}
+                      </button>
+                    );
+                  })}
                 </div>
               ) : (
-                <p className="one-size-note">Esta prenda está disponible en talla única.</p>
+                <p className="one-size-note">
+                  {hasStockInfo && !hasAnyAvailableSize
+                    ? "Esta combinación está agotada."
+                    : "Esta prenda está disponible en talla única."}
+                </p>
+              )}
+              {hasStockInfo && hasAnyAvailableSize && (
+                <p className="stock-note">✓ Tallas disponibles para este color</p>
               )}
               <button type="button" className="text-link" onClick={() => setSizeGuideOpen(true)}>¿Necesitas ayuda con tu talla?</button>
             </div>
@@ -430,8 +450,11 @@ export default function ProductDetailPage() {
       )}
 
       <div className="mobile-buy-bar">
-        <div><strong>{product.price.toFixed(2)} €</strong><span>{selectedColor || "Color"}</span></div>
-        <button type="button" onClick={addToCart}>AÑADIR</button>
+        <div>
+          <strong>{product.price.toFixed(2)} €</strong>
+          <span>{[selectedColor, selectedSize].filter(Boolean).join(" · ") || "Elige tus opciones"}</span>
+        </div>
+        <button type="button" onClick={addToCart} disabled={hasStockInfo && !hasAnyAvailableSize}>AÑADIR</button>
       </div>
 
       <style jsx>{`
@@ -545,6 +568,11 @@ export default function ProductDetailPage() {
         .option-selected { border: 1.5px solid #8426c8; background: #f8f0fc; color: #7020ad; }
         .size-option { min-width: 48px; padding: 0 13px; }
         .size-selected { border-color: #8426c8; background: #8426c8; color: #fff; }
+        .size-option:disabled, .size-unavailable {
+          color: #b9b1bd; background: #f5f3f6; border-color: #eeeaf0;
+          text-decoration: line-through; cursor: not-allowed; opacity: .8;
+        }
+        .stock-note { margin: 10px 0 0; color: #547b5d; font-size: 12px; }
         .one-size-note { margin: 0; color: #817687; font-size: 13px; }
         .validation-message { margin: -10px 0 14px; color: #b42318; font-size: 13px; }
         .add-cart-button {
