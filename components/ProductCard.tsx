@@ -160,8 +160,12 @@ const isOsloBrown =
           display: "flex",
           flexDirection: "column",
           background: "#ffffff",
-          borderRadius: 12,
+          borderRadius: 24,
           overflow: "hidden",
+          border: "1px solid rgba(107, 33, 168, 0.08)",
+          boxShadow: "0 10px 28px rgba(64, 30, 83, 0.10)",
+          padding: 10,
+          transition: "transform 220ms ease, box-shadow 220ms ease",
         }}
       >
 
@@ -181,9 +185,9 @@ const isOsloBrown =
     position: "relative",
     width: "100%",
     aspectRatio: "3 / 4",
-    backgroundColor: "#f4f4f5",
+    backgroundColor: "#f4f1f4",
     overflow: "hidden",
-    borderRadius: 10,
+    borderRadius: 19,
     touchAction: "pan-y",
   }}
 >
@@ -192,16 +196,16 @@ const isOsloBrown =
             <span
               style={{
                 position: "absolute",
-                top: 10,
-                left: 10,
+                top: 12,
+                left: 12,
                 zIndex: 10,
-                background: "rgba(255, 255, 255, 0.92)",
-                color: "#18181b",
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: "1.2px",
-                padding: "4px 9px",
-                borderRadius: 4,
+                background: product.tag === "OFERTA" ? "linear-gradient(135deg, #d946a6, #a21caf)" : "linear-gradient(135deg, #a855c7, #7e22ce)",
+                color: "#ffffff",
+                fontSize: 11,
+                fontWeight: 800,
+                letterSpacing: "0.5px",
+                padding: "7px 12px",
+                borderRadius: 999,
                 textTransform: "uppercase",
               }}
             >
@@ -215,14 +219,15 @@ const isOsloBrown =
             aria-label="Favorito"
             style={{
               position: "absolute",
-              top: 10,
-              right: 10,
+              top: 12,
+              right: 12,
               zIndex: 10,
-              width: 34,
-              height: 34,
+              width: 42,
+              height: 42,
               borderRadius: "50%",
               border: "none",
-              background: "rgba(255, 255, 255, 0.88)",
+              background: "rgba(255, 255, 255, 0.94)",
+              boxShadow: "0 3px 12px rgba(0,0,0,0.10)",
               color: isFavorite ? "#9333ea" : "#3f3f46",
               display: "flex",
               alignItems: "center",
@@ -386,42 +391,32 @@ const isOsloBrown =
 
         <div
           style={{
-            padding: "12px 4px 4px 4px",
+            padding: "14px 6px 6px",
             display: "flex",
             flexDirection: "column",
-            gap: 8,
+            gap: 12,
             flex: 1,
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 5 }}>
             <button
               type="button"
               onClick={() => router.push(`/producto/${product.id}`)}
-              style={{
-                fontSize: 14,
-                fontWeight: 500,
-                color: "#18181b",
-                margin: 0,
-                padding: 0,
-                border: 0,
-                background: "transparent",
-                textAlign: "left",
-                cursor: "pointer",
-              }}
+              style={{ fontSize: 17, lineHeight: 1.25, fontWeight: 650, color: "#29212e", margin: 0, padding: 0, border: 0, background: "transparent", textAlign: "left", cursor: "pointer" }}
             >
               {product.name}
             </button>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0 }}>
+            <div style={{ display: "flex", flexDirection: "row", alignItems: "baseline", flexWrap: "wrap", gap: 8, flexShrink: 0 }}>
               {product.oldPrice != null && product.oldPrice > product.price && (
-                <span style={{ fontSize: 12, color: "#a1a1aa", textDecoration: "line-through" }}>
+                <span style={{ fontSize: 12, color: "#8f8794", textDecoration: "line-through" }}>
                   {product.oldPrice.toFixed(2)} €
                 </span>
               )}
-              <span style={{ fontSize: 15, fontWeight: 700, color: product.oldPrice != null && product.oldPrice > product.price ? "#7e22ce" : "#18181b" }}>
+              <span style={{ fontSize: 20, fontWeight: 800, color: "#6b217f" }}>
                 {product.price.toFixed(2)} €
               </span>
               {product.oldPrice != null && product.oldPrice > product.price && (
-                <span style={{ fontSize: 10, fontWeight: 700, color: "#7e22ce" }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: "#6b217f", background: "#f4dafa", padding: "4px 9px", borderRadius: 999 }}>
                   -{Math.round((1 - product.price / product.oldPrice) * 100)}%
                 </span>
               )}
@@ -441,13 +436,13 @@ const isOsloBrown =
                       title={variant.color}
                       aria-label={`Color ${variant.color}`}
                       style={{
-                        width: 18,
-                        height: 18,
+                        width: 25,
+                        height: 25,
                         borderRadius: "50%",
                         backgroundColor: hex,
                         border: hex === "#ffffff" ? "1px solid #d4d4d8" : "1px solid rgba(0,0,0,0.15)",
-                        outline: isSelected ? "1.5px solid #6b21a8" : "none",
-                        outlineOffset: 2,
+                        outline: isSelected ? "2px solid #6b21a8" : "none",
+                        outlineOffset: 3,
                         cursor: "pointer",
                         padding: 0,
                       }}
@@ -489,13 +484,13 @@ const isOsloBrown =
                     type="button"
                     onClick={() => setSelectedSize(size)}
                     style={{
-                      minWidth: 30,
-                      height: 28,
-                      padding: "0 7px",
-                      fontSize: 11,
+                      minWidth: 38,
+                      height: 36,
+                      padding: "0 10px",
+                      fontSize: 13,
                       fontWeight: isSelected ? 700 : 500,
-                      borderRadius: 6,
-                      border: isSelected ? "1.5px solid #6b21a8" : "1px solid #e4e4e7",
+                      borderRadius: 10,
+                      border: isSelected ? "1.5px solid #6b21a8" : "1px solid #d9cddd",
                       background: isSelected ? "#6b21a8" : "#ffffff",
                       color: isSelected ? "#ffffff" : "#3f3f46",
                       cursor: "pointer",
@@ -519,15 +514,16 @@ const isOsloBrown =
             style={{
               marginTop: "auto",
               width: "100%",
-              padding: "10px 14px",
-              borderRadius: 8,
-              border: needsSizeSelection ? "1px solid #d4d4d8" : "1px solid #6b21a8",
-              background: needsSizeSelection ? "#fafafa" : "#6b21a8",
+              padding: "13px 14px",
+              borderRadius: 999,
+              border: needsSizeSelection ? "1px solid #d4d4d8" : "1px solid #812d9b",
+              background: needsSizeSelection ? "#fafafa" : "linear-gradient(135deg, #a13caf, #76218d)",
+              boxShadow: needsSizeSelection ? "none" : "0 5px 13px rgba(126, 34, 160, 0.20)",
               color: needsSizeSelection ? "#52525b" : "#ffffff",
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: "0.5px",
-              textTransform: "uppercase",
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: "0.1px",
+              textTransform: "none",
               cursor: "pointer",
             }}
           >
