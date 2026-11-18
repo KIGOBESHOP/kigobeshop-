@@ -396,12 +396,17 @@ const isOsloBrown =
               {product.name}
             </h3>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0 }}>
-              <span style={{ fontSize: 15, fontWeight: 700, color: "#18181b" }}>
-                {product.price.toFixed(2)} €
-              </span>
-              {product.oldPrice && (
+              {product.oldPrice != null && product.oldPrice > product.price && (
                 <span style={{ fontSize: 12, color: "#a1a1aa", textDecoration: "line-through" }}>
                   {product.oldPrice.toFixed(2)} €
+                </span>
+              )}
+              <span style={{ fontSize: 15, fontWeight: 700, color: product.oldPrice != null && product.oldPrice > product.price ? "#7e22ce" : "#18181b" }}>
+                {product.price.toFixed(2)} €
+              </span>
+              {product.oldPrice != null && product.oldPrice > product.price && (
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#7e22ce" }}>
+                  -{Math.round((1 - product.price / product.oldPrice) * 100)}%
                 </span>
               )}
             </div>
