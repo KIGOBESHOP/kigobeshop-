@@ -1,7 +1,7 @@
 "use client";
 
 import "./InstallPrompt.css";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -13,9 +13,9 @@ type DeviceKind = "ios" | "android" | "desktop" | "other";
 function detectDevice(): DeviceKind {
   const ua = window.navigator.userAgent || "";
   const platform = window.navigator.platform || "";
-
   const isIPadOS =
     platform === "MacIntel" && window.navigator.maxTouchPoints > 1;
+
   if (/iPhone|iPad|iPod/i.test(ua) || isIPadOS) return "ios";
   if (/Android/i.test(ua)) return "android";
   if (/Windows|Macintosh|Mac OS X|Linux|X11/i.test(ua)) return "desktop";
@@ -32,10 +32,11 @@ function isRunningStandalone() {
 }
 
 export default function InstallPrompt() {
-  const [installEvent, setInstallEvent] = useState<InstallPromptEvent | null>(null);
-  const [visible, setVisible] = useState(false);
-  const [showInstructions, setShowInstructions] = useState(false);
+  const installEventRef = useRef<InstallPromptEvent | null>(null);
   const [device, setDevice] = useState<DeviceKind>("other");
+  const [visible, setVisible] = useState(false);
+  const [showFallback, setShowFallback] = useState(false);
+  const [canInstall, setCanInstall] = useState(false);
 
   useEffect(() => {
     const detectedDevice = detectDevice();
@@ -43,29 +44,23 @@ export default function InstallPrompt() {
 
     if (isRunningStandalone()) return;
 
-    const dismissed = window.localStorage.getItem("kigobeshop-install-dismissed");
-    if (!dismissed) {
-      setVisible(true);
-      if (detectedDevice !== "android") setShowInstructions(true);
-    }
-
     const handleBeforeInstall = (event: Event) => {
+      // El navegador solo permite mostrar el diálogo nativo después de este evento.
       event.preventDefault();
-      setInstallEvent(event as InstallPromptEvent);
-      setShowInstructions(false);
+      installEventRef.current = event as InstallPromptEvent;
+      setCanInstall(true);
     };
 
     const handleOpenInstall = () => {
       setVisible(true);
-      // En Android/ordenador priorizamos siempre el diálogo nativo si Chrome
-      // ha entregado beforeinstallprompt. Si no, mostramos ayuda específica.
-      setShowInstructions(detectedDevice !== "ios" && !installEvent);
+      setShowFallback(false);
     };
 
     const handleInstalled = () => {
-      setInstallEvent(null);
+      installEventRef.current = null;
+      setCanInstall(false);
       setVisible(false);
-      setShowInstructions(false);
+      setShowFallback(false);
       window.localStorage.setItem("kigobeshop-install-dismissed", "1");
     };
 
@@ -84,48 +79,64 @@ export default function InstallPrompt() {
       window.removeEventListener("appinstalled", handleInstalled);
       window.removeEventListener("kigobeshop:open-install", handleOpenInstall);
     };
-  }, [installEvent]);
+  }, []);
 
-  const dismiss = () => {
+  const close = () => {
     setVisible(false);
-    setShowInstructions(false);
-    window.localStorage.setItem("kigobeshop-install-dismissed", "1");
+    setShowFallback(false);
   };
 
   const install = async () => {
-    if (!installEvent) {
-      setShowInstructions(true);
+    const promptEvent = installEventRef.current;
+
+    if (promptEvent) {
+      try {
+        await promptEvent.prompt();
+        const choice = await promptEvent.userChoice;
+        installEventRef.current = null;
+        setCanInstall(false);
+
+        if (choice.outcome === "accepted") {
+          close();
+        } else {
+          // No mostramos instrucciones automáticamente si el usuario cancela.
+          close();
+        }
+      } catch (error) {
+        console.error("No se pudo abrir la instalación:", error);
+        setShowFallback(true);
+      }
       return;
     }
 
-    try {
-      await installEvent.prompt();
-      const choice = await installEvent.userChoice;
-
-      if (choice.outcome === "accepted") {
-        setVisible(false);
-        setShowInstructions(false);
-      } else {
-        setShowInstructions(true);
-      }
-    } catch (error) {
-      console.error("No se pudo abrir la instalación:", error);
-      setShowInstructions(true);
-    } finally {
-      setInstallEvent(null);
-    }
+    // iOS y navegadores que no ofrecen beforeinstallprompt no permiten
+    // iniciar la instalación desde código; explicamos únicamente esa limitación.
+    setShowFallback(true);
   };
 
   if (!visible) return null;
 
-  const hasNativeInstall = Boolean(installEvent) && device !== "ios";
+  const fallbackContent =
+    device === "ios"
+      ? {
+          title: "Para instalar en iPhone",
+          message:
+            "Apple requiere un paso manual: abre esta página en Safari, pulsa Compartir y elige «Añadir a pantalla de inicio».",
+        }
+      : device === "android"
+        ? {
+            title: "Instalación no disponible directamente",
+            message:
+              "Este navegador no ha ofrecido la instalación automática. Prueba desde Chrome; si no aparece el aviso, abre el menú ⋮ y selecciona «Instalar aplicación» o «Añadir a pantalla de inicio».",
+          }
+        : {
+            title: "Instalación no disponible directamente",
+            message:
+              "Este navegador no ha ofrecido la instalación automática. Prueba con Chrome o Edge y busca «Instalar KigobeShop» en el menú del navegador.",
+          };
 
   return (
-    <div
-      className="kigobe-install-backdrop"
-      role="presentation"
-      onClick={() => setVisible(false)}
-    >
+    <div className="kigobe-install-backdrop" role="presentation" onClick={close}>
       <aside
         className="kigobe-install"
         role="dialog"
@@ -136,72 +147,35 @@ export default function InstallPrompt() {
         <button
           type="button"
           className="kigobe-install-close"
-          onClick={dismiss}
+          onClick={close}
           aria-label="Cerrar"
         >
           ×
         </button>
 
-        <div className="kigobe-install-mark" aria-hidden="true">K</div>
+        <div className="kigobe-install-mark" aria-hidden="true">
+          K
+        </div>
         <h2 id="kigobe-install-title">¡Lleva KigobeShop contigo!</h2>
         <p>
           Añade nuestra tienda a la pantalla de inicio y vuelve cuando quieras
           a descubrir novedades.
         </p>
 
-        {hasNativeInstall ? (
-          <button
-            type="button"
-            className="kigobe-install-button"
-            onClick={install}
-          >
-            Instalar KigobeShop
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="kigobe-install-button"
-            onClick={() => setShowInstructions((current) => !current)}
-          >
-            {showInstructions ? "Ocultar instrucciones" : "Cómo instalarla"}
-          </button>
-        )}
+        <button
+          type="button"
+          className="kigobe-install-button"
+          onClick={install}
+        >
+          {canInstall && device !== "ios"
+            ? "Instalar KigobeShop"
+            : "Instalar KigobeShop"}
+        </button>
 
-        {showInstructions && (
-          <div className="kigobe-install-help">
-            {device === "ios" ? (
-              <>
-                <strong>En iPhone o iPad:</strong>
-                <ol>
-                  <li>Abre KigobeShop en Safari.</li>
-                  <li>Pulsa el botón Compartir.</li>
-                  <li>Elige «Añadir a pantalla de inicio».</li>
-                  <li>Pulsa «Añadir».</li>
-                </ol>
-              </>
-            ) : device === "android" ? (
-              <>
-                <strong>En Android:</strong>
-                <ol>
-                  <li>Abre KigobeShop en Chrome.</li>
-                  <li>Pulsa los tres puntitos del navegador.</li>
-                  <li>Elige «Instalar aplicación» o «Añadir a pantalla de inicio».</li>
-                  <li>Confirma la instalación.</li>
-                </ol>
-              </>
-            ) : (
-              <>
-                <strong>En ordenador:</strong>
-                <ol>
-                  <li>Abre KigobeShop en Chrome o Edge.</li>
-                  <li>Busca el icono de instalación en la barra de direcciones o abre el menú del navegador.</li>
-                  <li>Selecciona «Instalar KigobeShop» si aparece.</li>
-                </ol>
-                <small>
-                  La instalación directa depende de que el navegador ofrezca esa opción.
-                </small>
-              </>
-            )}
+        {showFallback && (
+          <div className="kigobe-install-help" role="status">
+            <strong>{fallbackContent.title}</strong>
+            <p>{fallbackContent.message}</p>
           </div>
         )}
       </aside>
