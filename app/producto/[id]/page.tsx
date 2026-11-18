@@ -635,7 +635,21 @@ export default function ProductDetailPage() {
           .product-info { position: static; padding-top: 12px; max-width: none; }
           h1 { font-size: 31px; }
           .price-line strong { font-size: 23px; }
-          .thumbnail { flex-basis: 72px; width: 72px; height: 88px; }
+          /* En móvil, las cuatro fotos quedan en una sola fila y se ven juntas */
+          .thumbnail-list {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+            overflow-x: visible;
+            padding: 12px 0 4px;
+          }
+          .thumbnail {
+            width: 100%;
+            min-width: 0;
+            height: auto;
+            aspect-ratio: 4 / 5;
+            flex: initial;
+          }
           .related-section { margin: 58px 0 24px; }
           .related-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
           .mobile-buy-bar {
