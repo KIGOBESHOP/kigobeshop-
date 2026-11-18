@@ -466,8 +466,34 @@ const cartSubtotal = cart.reduce(
 
           return (
             <>
+              <style jsx>{`
+                /* En móvil, Novedades se convierte en un carrusel deslizable */
+                @media (max-width: 600px) {
+                  .novedadesProductGrid {
+                    display: flex !important;
+                    flex-wrap: nowrap !important;
+                    gap: 12px !important;
+                    overflow-x: auto !important;
+                    overflow-y: hidden !important;
+                    scroll-snap-type: x mandatory;
+                    scroll-behavior: smooth;
+                    -webkit-overflow-scrolling: touch;
+                    scrollbar-width: none;
+                    padding: 0 18px 12px !important;
+                  }
+                  .novedadesProductGrid::-webkit-scrollbar {
+                    display: none;
+                  }
+                  .novedadesProductGrid > * {
+                    flex: 0 0 72% !important;
+                    width: 72% !important;
+                    min-width: 0 !important;
+                    scroll-snap-align: start;
+                  }
+                }
+              `}</style>
               <div
-                className="productGrid"
+                className="productGrid novedadesProductGrid"
                 style={{
                   maxWidth: 1180,
                   margin: "0 auto",
