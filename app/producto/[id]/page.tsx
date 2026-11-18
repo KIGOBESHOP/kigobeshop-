@@ -47,6 +47,11 @@ export default function ProductDetailPage() {
   const [selectedSize, setSelectedSize] = useState("");
   const [activeImage, setActiveImage] = useState("");
   const [message, setMessage] = useState("");
+  const [zoomOpen, setZoomOpen] = useState(false);
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
+  const [shippingOpen, setShippingOpen] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,6 +102,66 @@ export default function ProductDetailPage() {
     loadProduct();
     return () => { cancelled = true; };
   }, [numericId]);
+
+  useEffect(() => {
+    if (!product) return;
+    try {
+      const saved = JSON.parse(localStorage.getItem("kigobeshop-favorites") || "[]");
+      setIsFavorite(Array.isArray(saved) && saved.includes(product.id));
+    } catch {
+      setIsFavorite(false);
+    }
+  }, [product]);
+
+  useEffect(() => {
+    if (!product) return;
+    let cancelled = false;
+    async function loadRelated() {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("collection", product!.collection)
+        .neq("id", product!.id - 1000000)
+        .limit(8);
+      if (error) {
+        console.error("No se pudieron cargar productos relacionados:", error);
+        return;
+      }
+      const mapped: Product[] = (data ?? []).slice(0, 4).map((item: any) => ({
+        id: 1000000 + Number(item.id),
+        name: item.name,
+        category: item.category,
+        collection: item.collection,
+        subcategory: item.subcategory ?? undefined,
+        price: Number(item.price),
+        ...(item.old_price != null ? { oldPrice: Number(item.old_price) } : {}),
+        image: item.image,
+        description: item.description ?? "",
+        ...(item.tag ? { tag: item.tag } : {}),
+        sizes: Array.isArray(item.sizes) ? item.sizes : [],
+        variants: Array.isArray(item.variants) ? item.variants : [],
+        stock: item.stock && typeof item.stock === "object" ? item.stock : {},
+      }));
+      if (!cancelled) setRelatedProducts(mapped);
+    }
+    loadRelated();
+    return () => { cancelled = true; };
+  }, [product]);
+
+  function toggleFavorite() {
+    if (!product) return;
+    try {
+      const saved = JSON.parse(localStorage.getItem("kigobeshop-favorites") || "[]");
+      const favorites: number[] = Array.isArray(saved) ? saved : [];
+      const updated = favorites.includes(product.id)
+        ? favorites.filter((id) => id !== product.id)
+        : [...favorites, product.id];
+      localStorage.setItem("kigobeshop-favorites", JSON.stringify(updated));
+      setIsFavorite(updated.includes(product.id));
+    } catch (error) {
+      console.error("No se pudieron actualizar los favoritos:", error);
+    }
+  }
 
   const variants = (product?.variants ?? []) as Variant[];
   const currentVariant = variants.find((variant) => variant.color === selectedColor);
@@ -201,7 +266,13 @@ export default function ProductDetailPage() {
           <section className="gallery-column" aria-label="Imágenes del producto">
             <div className="main-photo">
               {product.tag && <span className="product-tag">{product.tag}</span>}
-              <img src={shownImage} alt={`${product.name}${selectedColor ? ` - ${selectedColor}` : ""}`} />
+              <button type="button" className="favorite-button" onClick={toggleFavorite} aria-label={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}>
+                {isFavorite ? "♥" : "♡"}
+              </button>
+              <button type="button" className="zoom-trigger" onClick={() => setZoomOpen(true)} aria-label="Ampliar fotografía">
+                <img src={shownImage} alt={`${product.name}${selectedColor ? ` - ${selectedColor}` : ""}`} />
+                <span className="zoom-hint">⌕ Ampliar</span>
+              </button>
               {selectedSpinUrl && <span className="spin-label">Vista 360°</span>}
             </div>
 
@@ -288,6 +359,7 @@ export default function ProductDetailPage() {
               ) : (
                 <p className="one-size-note">Esta prenda está disponible en talla única.</p>
               )}
+              <button type="button" className="text-link" onClick={() => setSizeGuideOpen(true)}>¿Necesitas ayuda con tu talla?</button>
             </div>
 
             {message && <p className="validation-message" role="alert">{message}</p>}
@@ -298,10 +370,68 @@ export default function ProductDetailPage() {
 
             <div className="purchase-notes">
               <p><span>✓</span> Compra segura</p>
-              <p><span>✓</span> Envíos disponibles durante el proceso de compra</p>
+              <p><span>✓</span> Envíos disponibles</p>
+              <button type="button" className="text-link" onClick={() => setShippingOpen(true)}>Información de envíos y devoluciones</button>
             </div>
           </section>
         </div>
+
+        {relatedProducts.length > 0 && (
+          <section className="related-section">
+            <div className="related-heading">
+              <p>COMPLETA TU LOOK</p>
+              <h2>También te puede gustar</h2>
+            </div>
+            <div className="related-grid">
+              {relatedProducts.map((item) => (
+                <Link href={`/producto/${item.id}`} key={item.id} className="related-card">
+                  <div className="related-image"><img src={item.image} alt={item.name} /></div>
+                  <span>{item.name}</span>
+                  <strong>{item.price.toFixed(2)} €</strong>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+
+      {zoomOpen && (
+        <div className="modal-overlay zoom-overlay" role="dialog" aria-modal="true" onClick={() => setZoomOpen(false)}>
+          <button type="button" className="modal-close" onClick={() => setZoomOpen(false)} aria-label="Cerrar">×</button>
+          <img src={shownImage} alt={product.name} onClick={(event) => event.stopPropagation()} />
+        </div>
+      )}
+
+      {sizeGuideOpen && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => setSizeGuideOpen(false)}>
+          <div className="info-modal" onClick={(event) => event.stopPropagation()}>
+            <button type="button" className="info-close" onClick={() => setSizeGuideOpen(false)}>×</button>
+            <p className="modal-eyebrow">KIGOBESHOP</p>
+            <h2>Guía de tallas</h2>
+            <p>Las medidas y el ajuste pueden variar según el diseño de cada prenda. Revisa la descripción del producto para conocer sus indicaciones específicas.</p>
+            <p>Si tienes dudas sobre el ajuste o las medidas, consúltanos antes de realizar tu pedido y te ayudaremos a elegir.</p>
+            <button type="button" className="modal-action" onClick={() => setSizeGuideOpen(false)}>Entendido</button>
+          </div>
+        </div>
+      )}
+
+      {shippingOpen && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => setShippingOpen(false)}>
+          <div className="info-modal" onClick={(event) => event.stopPropagation()}>
+            <button type="button" className="info-close" onClick={() => setShippingOpen(false)}>×</button>
+            <p className="modal-eyebrow">KIGOBESHOP</p>
+            <h2>Envíos y devoluciones</h2>
+            <p>Durante el proceso de compra podrás consultar las opciones de envío disponibles para tu pedido.</p>
+            <p>Dispones de 14 días para solicitar una devolución, según las condiciones aplicables publicadas en nuestra tienda.</p>
+            <p className="modal-policy-link">Consulta las condiciones completas en los apartados legales de la tienda.</p>
+            <button type="button" className="modal-action" onClick={() => setShippingOpen(false)}>Cerrar</button>
+          </div>
+        </div>
+      )}
+
+      <div className="mobile-buy-bar">
+        <div><strong>{product.price.toFixed(2)} €</strong><span>{selectedColor || "Color"}</span></div>
+        <button type="button" onClick={addToCart}>AÑADIR</button>
       </div>
 
       <style jsx>{`
@@ -336,7 +466,21 @@ export default function ProductDetailPage() {
           background: #f4f1f5; display: flex; align-items: center; justify-content: center;
           box-shadow: 0 16px 42px rgba(54, 35, 65, .055);
         }
-        .main-photo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .zoom-trigger {
+          width: 100%; height: 100%; padding: 0; border: 0; background: transparent;
+          cursor: zoom-in; display: block; position: relative;
+        }
+        .zoom-trigger img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .zoom-hint {
+          position: absolute; right: 16px; bottom: 16px; padding: 7px 11px;
+          border-radius: 30px; background: rgba(255,255,255,.9); color: #55465e;
+          font-size: 10px; letter-spacing: .4px;
+        }
+        .favorite-button {
+          position: absolute; z-index: 4; top: 16px; right: 16px; width: 40px; height: 40px;
+          border: 1px solid #eee6f0; border-radius: 50%; background: rgba(255,255,255,.94);
+          color: #7e22ce; font-size: 23px; cursor: pointer;
+        }
         .product-tag {
           position: absolute; z-index: 2; top: 18px; left: 18px;
           padding: 7px 12px; border-radius: 2px; background: #fff;
@@ -418,6 +562,41 @@ export default function ProductDetailPage() {
         .purchase-notes { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
         .purchase-notes p { margin: 0; color: #8a808f; font-size: 11px; }
         .purchase-notes span { color: #8a55aa; margin-right: 7px; }
+        .text-link {
+          display: inline-block; padding: 0; border: 0; background: transparent;
+          color: #7e22ce; text-decoration: underline; text-underline-offset: 3px;
+          font: inherit; font-size: 11px; cursor: pointer; text-align: left;
+        }
+        .related-section { margin: 92px 0 20px; }
+        .related-heading { text-align: center; margin-bottom: 28px; }
+        .related-heading p { margin: 0 0 8px; color: #986bb0; font-size: 9px; font-weight: 800; letter-spacing: 2px; }
+        .related-heading h2 { margin: 0; color: #302638; font-size: 26px; font-weight: 600; }
+        .related-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+        .related-card { color: #302638; text-decoration: none; display: flex; flex-direction: column; gap: 7px; font-size: 12px; }
+        .related-image { aspect-ratio: 3 / 4; overflow: hidden; border-radius: 6px; background: #f6f3f7; }
+        .related-image img { width: 100%; height: 100%; object-fit: cover; transition: transform .3s ease; }
+        .related-card:hover .related-image img { transform: scale(1.04); }
+        .related-card strong { font-size: 13px; }
+        .modal-overlay {
+          position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center;
+          justify-content: center; padding: 20px; background: rgba(25, 16, 31, .66);
+        }
+        .zoom-overlay img { max-width: 92vw; max-height: 90vh; object-fit: contain; border-radius: 6px; background: #fff; }
+        .modal-close {
+          position: absolute; top: 20px; right: 24px; width: 42px; height: 42px;
+          border: 0; border-radius: 50%; background: #fff; color: #442d50; font-size: 27px; cursor: pointer;
+        }
+        .info-modal {
+          position: relative; width: min(100%, 470px); padding: 36px; border-radius: 10px;
+          background: #fff; color: #4c4053; box-shadow: 0 20px 70px rgba(0,0,0,.2);
+        }
+        .info-close { position: absolute; top: 12px; right: 15px; border: 0; background: none; font-size: 24px; color: #766b7c; cursor: pointer; }
+        .modal-eyebrow { color: #9362a8; font-size: 9px; font-weight: 800; letter-spacing: 2px; }
+        .info-modal h2 { margin: 8px 0 16px; color: #302638; font-size: 25px; }
+        .info-modal p { color: #756b7b; font-size: 13px; line-height: 1.75; }
+        .modal-policy-link { display: inline-block; margin: 8px 0 18px; color: #7e22ce; font-size: 12px; }
+        .modal-action { display: block; width: 100%; min-height: 46px; border: 0; border-radius: 5px; background: #8426c8; color: #fff; font-weight: 700; cursor: pointer; }
+        .mobile-buy-bar { display: none; }
         @media (max-width: 800px) {
           .product-detail-page { padding: 0 16px 54px; }
           .topbar { min-height: 62px; grid-template-columns: 1fr auto; margin-bottom: 18px; }
@@ -429,6 +608,23 @@ export default function ProductDetailPage() {
           h1 { font-size: 31px; }
           .price-line strong { font-size: 23px; }
           .thumbnail { flex-basis: 72px; width: 72px; height: 88px; }
+          .related-section { margin: 58px 0 24px; }
+          .related-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+          .mobile-buy-bar {
+            display: flex; position: fixed; z-index: 5000; left: 0; right: 0; bottom: 0;
+            align-items: center; justify-content: space-between; gap: 14px;
+            padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+            background: rgba(255,255,255,.97); border-top: 1px solid #eee7f1;
+            box-shadow: 0 -8px 25px rgba(40,25,48,.08);
+          }
+          .mobile-buy-bar div { display: flex; flex-direction: column; gap: 3px; }
+          .mobile-buy-bar strong { color: #302638; font-size: 15px; }
+          .mobile-buy-bar span { color: #817687; font-size: 10px; }
+          .mobile-buy-bar button {
+            min-width: 132px; min-height: 44px; border: 0; border-radius: 5px;
+            background: #8426c8; color: #fff; font-size: 11px; font-weight: 800;
+            letter-spacing: .7px;
+          }
         }
       `}</style>
     </main>
