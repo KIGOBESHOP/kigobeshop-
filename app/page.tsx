@@ -79,6 +79,7 @@ export default function Home() {
   const [badgeKey, setBadgeKey] = useState(0);
   const [toast, setToast] = useState("");
   const [emailSubscribed, setEmailSubscribed] = useState(false);
+  const [showAllNovedades, setShowAllNovedades] = useState(false);
 
   // 🚨 CORREGIDO: Sincronización radical inmediata del carro al cargar la Home
  // 🚨 TRUCO DEFINITIVO: Detectar si venimos de pagar y aniquilar el carrito
@@ -397,31 +398,132 @@ const cartSubtotal = cart.reduce(
       <Categories />
 
 
-      <section className="section" id="novedades">
-        <div className="sectionHeader">
-          <h2>Novedades</h2>
-          <p>Descubre nuestras últimas incorporaciones</p>
+      <section
+        className="section"
+        id="novedades"
+        style={{
+          paddingTop: "clamp(42px, 6vw, 76px)",
+          paddingBottom: "clamp(46px, 6vw, 78px)",
+          background: "linear-gradient(180deg, #fcfaff 0%, #ffffff 100%)",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 1180,
+            margin: "0 auto 30px",
+            padding: "0 18px",
+            textAlign: "center",
+          }}
+        >
+          <p
+            style={{
+              margin: "0 0 9px",
+              color: "#8b5ab5",
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: "2.5px",
+              textTransform: "uppercase",
+            }}
+          >
+            RECIÉN LLEGADO A KIGOBESHOP
+          </p>
+          <h2
+            style={{
+              margin: 0,
+              color: "#35213f",
+              fontSize: "clamp(30px, 4vw, 43px)",
+              lineHeight: 1.12,
+              fontWeight: 600,
+              letterSpacing: "-1px",
+            }}
+          >
+            Novedades
+          </h2>
+          <p
+            style={{
+              margin: "12px 0 0",
+              color: "#77707d",
+              fontSize: 15,
+              lineHeight: 1.6,
+            }}
+          >
+            Descubre las prendas que acaban de llegar y encuentra tu próximo look favorito.
+          </p>
+          <div
+            style={{
+              width: 54,
+              height: 3,
+              borderRadius: 99,
+              background: "#a66bd0",
+              margin: "18px auto 0",
+            }}
+          />
         </div>
 
-        <div className="productGrid">
-          {dbProducts.filter((product) => product.tag === "NUEVO").length > 0 ? (
-            dbProducts
-              .filter((product) => product.tag === "NUEVO")
-              .map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  isFavorite={favorites.includes(product.id)}
-                  onAddToCart={(variant, size) => addToCart(product, variant, size)}
-                  onToggleFavorite={() => toggleFavorite(product.id)}
-                />
-              ))
-          ) : (
-            <div className="noResults">
-              Próximamente encontrarás aquí nuestras novedades.
-            </div>
-          )}
-        </div>
+        {(() => {
+          const novedades = dbProducts.filter((product) => product.tag === "NUEVO");
+          const visibles = showAllNovedades ? novedades : novedades.slice(0, 4);
+
+          return (
+            <>
+              <div
+                className="productGrid"
+                style={{
+                  maxWidth: 1180,
+                  margin: "0 auto",
+                  padding: "0 18px",
+                  rowGap: 30,
+                  columnGap: 22,
+                }}
+              >
+                {novedades.length > 0 ? (
+                  visibles.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      isFavorite={favorites.includes(product.id)}
+                      onAddToCart={(variant, size) => addToCart(product, variant, size)}
+                      onToggleFavorite={() => toggleFavorite(product.id)}
+                    />
+                  ))
+                ) : (
+                  <div className="noResults">
+                    Próximamente encontrarás aquí nuestras novedades.
+                  </div>
+                )}
+              </div>
+
+              {novedades.length > 4 && (
+                <div style={{ textAlign: "center", marginTop: 34, padding: "0 18px" }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowAllNovedades((current) => !current)}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 12,
+                      minHeight: 48,
+                      padding: "0 26px",
+                      border: "1px solid #7e22ce",
+                      borderRadius: 999,
+                      background: showAllNovedades ? "#ffffff" : "#7e22ce",
+                      color: showAllNovedades ? "#6b21a8" : "#ffffff",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      letterSpacing: "0.3px",
+                      cursor: "pointer",
+                      transition: "all 180ms ease",
+                    }}
+                  >
+                    {showAllNovedades ? "Ver menos" : "Ver todas las novedades"}
+                    <span aria-hidden="true">{showAllNovedades ? "↑" : "→"}</span>
+                  </button>
+                </div>
+              )}
+            </>
+          );
+        })()}
       </section>
      
                 {/* SECCIÓN DE OFERTAS */}
