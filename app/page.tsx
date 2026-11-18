@@ -472,21 +472,21 @@ const cartSubtotal = cart.reduce(
                   .novedadesProductGrid {
                     display: flex !important;
                     flex-wrap: nowrap !important;
-                    gap: 12px !important;
+                    gap: 10px !important;
                     overflow-x: auto !important;
                     overflow-y: hidden !important;
                     scroll-snap-type: x mandatory;
                     scroll-behavior: smooth;
                     -webkit-overflow-scrolling: touch;
                     scrollbar-width: none;
-                    padding: 0 18px 12px !important;
+                    padding: 0 12px 12px !important;
                   }
                   .novedadesProductGrid::-webkit-scrollbar {
                     display: none;
                   }
                   .novedadesProductGrid :global(.productCard) {
-                    flex: 0 0 calc((100% - 12px) / 2) !important;
-                    width: calc((100% - 12px) / 2) !important;
+                    flex: 0 0 calc((100% - 10px) / 2) !important;
+                    width: calc((100% - 10px) / 2) !important;
                     min-width: 0 !important;
                     box-sizing: border-box;
                     scroll-snap-align: start;
