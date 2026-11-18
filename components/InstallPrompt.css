@@ -1,0 +1,92 @@
+/* Aviso y ayuda para instalar KigobeShop */
+.kigobe-install-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(25, 12, 31, 0.38);
+}
+
+.kigobe-install {
+  position: relative;
+  width: min(100%, 440px);
+  padding: 25px 22px 22px;
+  border: 1px solid #eadcf0;
+  border-radius: 22px;
+  background: #fff;
+  color: #321b3d;
+  box-shadow: 0 14px 45px rgba(30, 12, 38, 0.2);
+  text-align: center;
+}
+
+.kigobe-install-close {
+  position: absolute;
+  top: 9px;
+  right: 13px;
+  border: 0;
+  background: transparent;
+  color: #6c5875;
+  font-size: 27px;
+  cursor: pointer;
+}
+
+.kigobe-install-mark {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  place-items: center;
+  border-radius: 14px;
+  background: #7620a5;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.kigobe-install h2 {
+  margin: 0 24px 8px;
+  color: #421653;
+  font-size: 20px;
+}
+
+.kigobe-install p {
+  margin: 0 0 17px;
+  color: #756b7a;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.kigobe-install-button {
+  width: 100%;
+  padding: 13px 18px;
+  border: 0;
+  border-radius: 12px;
+  background: #7620a5;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.kigobe-install-help {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #faf5fc;
+  color: #493451;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.kigobe-install-help ol {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.kigobe-install-help li + li {
+  margin-top: 5px;
+}
