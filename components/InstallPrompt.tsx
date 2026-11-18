@@ -36,32 +36,59 @@ export default function InstallPrompt() {
   const [device, setDevice] = useState<DeviceKind>("other");
   const [visible, setVisible] = useState(false);
   const [showFallback, setShowFallback] = useState(false);
-  const [canInstall, setCanInstall] = useState(false);
+  const [alreadyInstalled, setAlreadyInstalled] = useState(false);
 
   useEffect(() => {
-    const detectedDevice = detectDevice();
-    setDevice(detectedDevice);
-
-    if (isRunningStandalone()) return;
+    setDevice(detectDevice());
 
     const handleBeforeInstall = (event: Event) => {
-      // El navegador solo permite mostrar el diálogo nativo después de este evento.
       event.preventDefault();
       installEventRef.current = event as InstallPromptEvent;
-      setCanInstall(true);
     };
 
     const handleOpenInstall = () => {
-      setVisible(true);
+      // No salimos antes si la web ya está instalada: el botón del menú
+      // debe responder siempre, incluso en modo aplicación.
+      if (isRunningStandalone()) {
+        setAlreadyInstalled(true);
+        setShowFallback(false);
+        setVisible(true);
+        return;
+      }
+
+      setAlreadyInstalled(false);
       setShowFallback(false);
+
+      const promptEvent = installEventRef.current;
+
+      // El evento prompt debe ejecutarse directamente dentro del clic
+      // del usuario; por eso lo lanzamos desde este manejador.
+      if (promptEvent && detectDevice() !== "ios") {
+        promptEvent.prompt().then(async () => {
+          const choice = await promptEvent.userChoice;
+          installEventRef.current = null;
+
+          if (choice.outcome === "accepted") {
+            setVisible(false);
+          }
+        }).catch((error) => {
+          console.error("No se pudo abrir la instalación:", error);
+          setVisible(true);
+          setShowFallback(true);
+        });
+        return;
+      }
+
+      // iPhone y navegadores sin instalación nativa muestran ayuda.
+      setVisible(true);
+      setShowFallback(true);
     };
 
     const handleInstalled = () => {
       installEventRef.current = null;
-      setCanInstall(false);
       setVisible(false);
       setShowFallback(false);
-      window.localStorage.setItem("kigobeshop-install-dismissed", "1");
+      setAlreadyInstalled(false);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstall);
@@ -84,34 +111,7 @@ export default function InstallPrompt() {
   const close = () => {
     setVisible(false);
     setShowFallback(false);
-  };
-
-  const install = async () => {
-    const promptEvent = installEventRef.current;
-
-    if (promptEvent) {
-      try {
-        await promptEvent.prompt();
-        const choice = await promptEvent.userChoice;
-        installEventRef.current = null;
-        setCanInstall(false);
-
-        if (choice.outcome === "accepted") {
-          close();
-        } else {
-          // No mostramos instrucciones automáticamente si el usuario cancela.
-          close();
-        }
-      } catch (error) {
-        console.error("No se pudo abrir la instalación:", error);
-        setShowFallback(true);
-      }
-      return;
-    }
-
-    // iOS y navegadores que no ofrecen beforeinstallprompt no permiten
-    // iniciar la instalación desde código; explicamos únicamente esa limitación.
-    setShowFallback(true);
+    setAlreadyInstalled(false);
   };
 
   if (!visible) return null;
@@ -119,20 +119,20 @@ export default function InstallPrompt() {
   const fallbackContent =
     device === "ios"
       ? {
-          title: "Para instalar en iPhone",
+          title: "Añade KigobeShop a tu iPhone",
           message:
-            "Apple requiere un paso manual: abre esta página en Safari, pulsa Compartir y elige «Añadir a pantalla de inicio».",
+            "En Safari, pulsa Compartir y selecciona «Añadir a pantalla de inicio». Después pulsa «Añadir». Así tendrás el acceso directo de KigobeShop en tu pantalla.",
         }
       : device === "android"
         ? {
-            title: "Instalación no disponible directamente",
+            title: "Instala KigobeShop desde Chrome",
             message:
-              "Este navegador no ha ofrecido la instalación automática. Prueba desde Chrome; si no aparece el aviso, abre el menú ⋮ y selecciona «Instalar aplicación» o «Añadir a pantalla de inicio».",
+              "Abre el menú de Chrome (⋮) y selecciona «Instalar aplicación». Chrome ya permite instalar KigobeShop en este dispositivo.",
           }
         : {
-            title: "Instalación no disponible directamente",
+            title: "Instala KigobeShop en tu ordenador",
             message:
-              "Este navegador no ha ofrecido la instalación automática. Prueba con Chrome o Edge y busca «Instalar KigobeShop» en el menú del navegador.",
+              "En Chrome o Edge, abre el menú del navegador y selecciona «Instalar KigobeShop» si aparece disponible.",
           };
 
   return (
@@ -153,31 +153,30 @@ export default function InstallPrompt() {
           ×
         </button>
 
-        <div className="kigobe-install-mark" aria-hidden="true">
-          K
-        </div>
-        <h2 id="kigobe-install-title">¡Lleva KigobeShop contigo!</h2>
+        <div className="kigobe-install-mark" aria-hidden="true">K</div>
+        <h2 id="kigobe-install-title">
+          {alreadyInstalled ? "¡KigobeShop ya está instalada!" : "¡Lleva KigobeShop contigo!"}
+        </h2>
         <p>
-          Añade nuestra tienda a la pantalla de inicio y vuelve cuando quieras
-          a descubrir novedades.
+          {alreadyInstalled
+            ? "Ya tienes KigobeShop instalada en este dispositivo. Ábrela desde tu pantalla de inicio."
+            : "Añade nuestra tienda a la pantalla de inicio y vuelve cuando quieras a descubrir novedades."}
         </p>
 
-        <button
-          type="button"
-          className="kigobe-install-button"
-          onClick={install}
-        >
-          {canInstall && device !== "ios"
-            ? "Instalar KigobeShop"
-            : "Instalar KigobeShop"}
-        </button>
-
-        {showFallback && (
+        {showFallback && !alreadyInstalled && (
           <div className="kigobe-install-help" role="status">
             <strong>{fallbackContent.title}</strong>
             <p>{fallbackContent.message}</p>
           </div>
         )}
+
+        <button
+          type="button"
+          className="kigobe-install-button"
+          onClick={close}
+        >
+          {alreadyInstalled ? "¡Perfecto!" : "Entendido"}
+        </button>
       </aside>
     </div>
   );
