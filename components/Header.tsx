@@ -211,6 +211,33 @@ export default function Header({
                 {item.label}
               </a>
             ))}
+
+            <button
+              type="button"
+              onClick={() => {
+                closeMenu();
+                window.dispatchEvent(new Event("kigobeshop:open-install"));
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 9,
+                width: "100%",
+                marginTop: 8,
+                padding: "13px 16px",
+                border: "1px solid #d9b9e8",
+                borderRadius: 12,
+                background: "#f8f0fc",
+                color: "#7620a5",
+                fontSize: 15,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              <span aria-hidden="true">＋</span>
+              Instalar KigobeShop
+            </button>
           </aside>
         </div>
       )}
