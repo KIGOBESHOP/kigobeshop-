@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Poppins } from 'next/font/google';
+import InstallPrompt from '@/components/InstallPrompt';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -12,10 +13,20 @@ export const metadata: Metadata = {
   title: 'KIGOBESHOP | Tienda Online de Moda Urbana y Bolsos',
   description:
     'Descubre las últimas tendencias en moda urbana, ropa juvenil y bolsos exclusivos en KIGOBESHOP. Tu estilo, tus reglas. Envío rápido con GLS.',
+  manifest: '/manifest.webmanifest',
   icons: {
-    icon: '/favicon.ico',
+    icon: [
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/favicon.ico' },
+    ],
     shortcut: '/favicon.ico',
     apple: '/apple-touch-icon.png',
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'KigobeShop',
+    statusBarStyle: 'default',
   },
   openGraph: {
     title: 'KIGOBESHOP | Tienda Online de Moda Urbana y Bolsos',
@@ -35,10 +46,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className={poppins.variable}>
-      <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-      </head>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        {children}
+        <InstallPrompt />
+      </body>
     </html>
   );
 }
