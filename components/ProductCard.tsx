@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import type { Product } from "@/lib/products";
 
 type SelectedVariant = {
@@ -53,6 +54,7 @@ export default function ProductCard({
   onAddToCart,
   onToggleFavorite,
 }: Props) {
+  const router = useRouter();
   const variants = product.variants ?? [];
   const productSizes = product.sizes ?? [];
   const [selectedSize, setSelectedSize] = useState("");
@@ -263,7 +265,7 @@ const isOsloBrown =
 
           <button
             type="button"
-            onClick={() => setImageOpen(true)}
+            onClick={() => router.push(`/producto/${product.id}`)}
             aria-label={`Ampliar foto de ${product.name}`}
             style={{
               display: "block",
@@ -392,9 +394,23 @@ const isOsloBrown =
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 500, color: "#18181b", margin: 0 }}>
+            <button
+              type="button"
+              onClick={() => router.push(`/producto/${product.id}`)}
+              style={{
+                fontSize: 14,
+                fontWeight: 500,
+                color: "#18181b",
+                margin: 0,
+                padding: 0,
+                border: 0,
+                background: "transparent",
+                textAlign: "left",
+                cursor: "pointer",
+              }}
+            >
               {product.name}
-            </h3>
+            </button>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0 }}>
               {product.oldPrice != null && product.oldPrice > product.price && (
                 <span style={{ fontSize: 12, color: "#a1a1aa", textDecoration: "line-through" }}>
