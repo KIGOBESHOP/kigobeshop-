@@ -485,8 +485,8 @@ const cartSubtotal = cart.reduce(
                     display: none;
                   }
                   .novedadesProductGrid :global(.productCard) {
-                    flex: 0 0 72% !important;
-                    width: 72% !important;
+                    flex: 0 0 calc((100% - 12px) / 2) !important;
+                    width: calc((100% - 12px) / 2) !important;
                     min-width: 0 !important;
                     box-sizing: border-box;
                     scroll-snap-align: start;
