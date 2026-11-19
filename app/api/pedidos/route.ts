@@ -1,109 +1,81 @@
-
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+function clients() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  if (!url || !anon || !service || !adminEmail) throw new Error("Falta configurar el acceso al administrador.");
+  return {
+    adminEmail,
+    auth: createClient(url, anon, { auth: { persistSession: false, autoRefreshToken: false } }),
+    db: createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } }),
+  };
+}
+
+async function authorize(request: Request) {
+  const { adminEmail, auth, db } = clients();
+  const header = request.headers.get("authorization") || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+  if (!token) return { response: NextResponse.json({ error: "Debes iniciar sesión." }, { status: 401 }) };
+  const { data, error } = await auth.auth.getUser(token);
+  if (error || !data.user || data.user.email?.trim().toLowerCase() !== adminEmail) {
+    return { response: NextResponse.json({ error: "No tienes permiso para gestionar los pedidos." }, { status: 403 }) };
+  }
+  return { db };
+}
+
 export async function GET(request: Request) {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-
-    if (!supabaseUrl || !anonKey || !serviceKey || !adminEmail) {
-      return NextResponse.json(
-        { error: "Falta configurar el acceso al administrador." },
-        { status: 503 }
-      );
+    const access = await authorize(request);
+    if ("response" in access) return access.response;
+    const { data: orders, error } = await access.db.from("orders").select("*").order("created_at", { ascending: false });
+    if (error) {
+      console.error("Error consultando pedidos:", error);
+      return NextResponse.json({ error: "No se han podido cargar los pedidos." }, { status: 500 });
     }
-
-    const authorization = request.headers.get("authorization");
-    const token = authorization?.startsWith("Bearer ")
-      ? authorization.slice(7)
-      : "";
-
-    if (!token) {
-      return NextResponse.json(
-        { error: "Debes iniciar sesión." },
-        { status: 401 }
-      );
-    }
-
-    const authClient = createClient(supabaseUrl, anonKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    });
-
-    const { data: authData, error: authError } =
-      await authClient.auth.getUser(token);
-
-    if (
-      authError ||
-      !authData.user ||
-      authData.user.email?.trim().toLowerCase() !== adminEmail
-    ) {
-      return NextResponse.json(
-        { error: "No tienes permiso para consultar los pedidos." },
-        { status: 403 }
-      );
-    }
-
-    const adminClient = createClient(supabaseUrl, serviceKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    });
-
-    const { data: orders, error: ordersError } = await adminClient
-      .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (ordersError) {
-      console.error("Error consultando pedidos:", ordersError);
-      return NextResponse.json(
-        { error: "No se han podido cargar los pedidos." },
-        { status: 500 }
-      );
-    }
-
-    const orderIds = (orders ?? []).map((order) => order.id);
-
+    const ids = (orders ?? []).map((order) => order.id);
     let items: any[] = [];
-
-    if (orderIds.length > 0) {
-      const { data, error: itemsError } = await adminClient
-        .from("order_items")
-        .select("*")
-        .in("order_id", orderIds);
-
-      if (itemsError) {
-        console.error("Error consultando productos de pedidos:", itemsError);
-        return NextResponse.json(
-          { error: "No se han podido cargar los productos de los pedidos." },
-          { status: 500 }
-        );
+    if (ids.length) {
+      const result = await access.db.from("order_items").select("*").in("order_id", ids);
+      if (result.error) {
+        console.error("Error consultando productos de pedidos:", result.error);
+        return NextResponse.json({ error: "No se han podido cargar los productos de los pedidos." }, { status: 500 });
       }
-
-      items = data ?? [];
+      items = result.data ?? [];
     }
-
-    const result = (orders ?? []).map((order) => ({
-      ...order,
-      items: items.filter((item) => item.order_id === order.id),
-    }));
-
-    return NextResponse.json({ orders: result });
+    return NextResponse.json({ orders: (orders ?? []).map((order) => ({ ...order, items: items.filter((item) => item.order_id === order.id) })) });
   } catch (error) {
     console.error("Error en la ruta de pedidos:", error);
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Ha ocurrido un error al consultar los pedidos." }, { status: 500 });
+  }
+}
 
-    return NextResponse.json(
-      { error: "Ha ocurrido un error al consultar los pedidos." },
-      { status: 500 }
-    );
+export async function PATCH(request: Request) {
+  try {
+    const access = await authorize(request);
+    if ("response" in access) return access.response;
+    const body = await request.json();
+    const orderId = body?.orderId;
+    const status = body?.pickup_status;
+    if ((typeof orderId !== "string" && typeof orderId !== "number") || !["pending", "delivered"].includes(status)) {
+      return NextResponse.json({ error: "Datos de actualización no válidos." }, { status: 400 });
+    }
+    const values = status === "delivered"
+      ? { pickup_status: "delivered", delivered_at: new Date().toISOString() }
+      : { pickup_status: "pending", delivered_at: null };
+    const { data, error } = await access.db.from("orders").update(values).eq("id", orderId).select("*").single();
+    if (error) {
+      console.error("Error actualizando entrega:", error);
+      return NextResponse.json({ error: "No se ha podido actualizar la entrega. Comprueba que las columnas pickup_status y delivered_at existan en Supabase." }, { status: 500 });
+    }
+    return NextResponse.json({ order: data });
+  } catch (error) {
+    console.error("Error actualizando pedido:", error);
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Ha ocurrido un error al actualizar el pedido." }, { status: 500 });
   }
 }
