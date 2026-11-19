@@ -58,7 +58,7 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const access = await authorize(request);
-    if ("response" in access) return access.response;
+    if (access instanceof NextResponse) return access;
     const body = await request.json();
     const orderId = body?.orderId;
     const status = body?.pickup_status;
