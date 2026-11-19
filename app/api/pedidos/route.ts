@@ -21,10 +21,10 @@ async function authorize(request: Request) {
   const { adminEmail, auth, db } = clients();
   const header = request.headers.get("authorization") || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : "";
-  if (!token) return { response: NextResponse.json({ error: "Debes iniciar sesión." }, { status: 401 }) };
+  if (!token) return NextResponse.json({ error: "Debes iniciar sesión." }, { status: 401 });
   const { data, error } = await auth.auth.getUser(token);
   if (error || !data.user || data.user.email?.trim().toLowerCase() !== adminEmail) {
-    return { response: NextResponse.json({ error: "No tienes permiso para gestionar los pedidos." }, { status: 403 }) };
+    return NextResponse.json({ error: "No tienes permiso para gestionar los pedidos." }, { status: 403 });
   }
   return { db };
 }
@@ -32,7 +32,7 @@ async function authorize(request: Request) {
 export async function GET(request: Request) {
   try {
     const access = await authorize(request);
-    if ("response" in access) return access.response;
+    if (access instanceof Response) return access;
     const { data: orders, error } = await access.db.from("orders").select("*").order("created_at", { ascending: false });
     if (error) {
       console.error("Error consultando pedidos:", error);
@@ -58,7 +58,7 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const access = await authorize(request);
-    if (access instanceof NextResponse) return access;
+    if (access instanceof Response) return access;
     const body = await request.json();
     const orderId = body?.orderId;
     const status = body?.pickup_status;
