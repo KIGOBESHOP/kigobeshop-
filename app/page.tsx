@@ -553,7 +553,100 @@ const cartSubtotal = cart.reduce(
         })()}
       </section>
      
-                {/* SECCIÓN DE OFERTAS */}
+                {/* SECCIÓN TRENDING */}
+      <section
+        className="section"
+        id="trending"
+        style={{
+          paddingTop: "clamp(42px, 6vw, 76px)",
+          paddingBottom: "clamp(46px, 6vw, 78px)",
+          background: "linear-gradient(180deg, #ffffff 0%, #fcfaff 100%)",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 1180,
+            margin: "0 auto 30px",
+            padding: "0 18px",
+            textAlign: "center",
+          }}
+        >
+          <p
+            style={{
+              margin: "0 0 9px",
+              color: "#8b5ab5",
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: "2.5px",
+              textTransform: "uppercase",
+            }}
+          >
+            LO MÁS DESTACADO
+          </p>
+          <h2
+            style={{
+              margin: 0,
+              color: "#35213f",
+              fontSize: "clamp(30px, 4vw, 43px)",
+              lineHeight: 1.12,
+              fontWeight: 600,
+              letterSpacing: "-1px",
+            }}
+          >
+            Trending
+          </h2>
+          <p
+            style={{
+              margin: "12px 0 0",
+              color: "#77707d",
+              fontSize: 15,
+              lineHeight: 1.6,
+            }}
+          >
+            Las prendas que están marcando tendencia en KigobeShop.
+          </p>
+          <div
+            style={{
+              width: 54,
+              height: 3,
+              borderRadius: 99,
+              background: "#a66bd0",
+              margin: "18px auto 0",
+            }}
+          />
+        </div>
+
+        <div
+          className="productGrid"
+          style={{
+            maxWidth: 1180,
+            margin: "0 auto",
+            padding: "0 18px",
+            rowGap: 30,
+            columnGap: 22,
+          }}
+        >
+          {dbProducts.filter((product) => product.tag === "TRENDING").length > 0 ? (
+            dbProducts
+              .filter((product) => product.tag === "TRENDING")
+              .map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  isFavorite={favorites.includes(product.id)}
+                  onAddToCart={(variant, size) => addToCart(product, variant, size)}
+                  onToggleFavorite={() => toggleFavorite(product.id)}
+                />
+              ))
+          ) : (
+            <div className="noResults">
+              Próximamente descubrirás aquí nuestras prendas en tendencia.
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* SECCIÓN DE OFERTAS */}
       <section className="section" id="ofertas">
         <div className="sectionHeader">
           <h2>Ofertas</h2>
