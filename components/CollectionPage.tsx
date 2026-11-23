@@ -10,6 +10,7 @@ import Footer from "@/components/Footer";
 import { products, type Product } from "@/lib/products";
 import { supabase } from "@/lib/supabase";
 import "./CollectionPage.css";
+import { syncAnonymousCart } from "@/lib/cartTracking";
 
 type CartItem = {
   cartKey: string;
@@ -208,6 +209,7 @@ stock: p.stock ?? {},
     if (!storageLoaded) return;
     localStorage.setItem("kigobeshop-cart", JSON.stringify(cart));
     localStorage.setItem("kigobeshop-favorites", JSON.stringify(favorites));
+    void syncAnonymousCart(cart);
   }, [cart, favorites, storageLoaded]);
 
   const showToast = useCallback((message: string) => {
