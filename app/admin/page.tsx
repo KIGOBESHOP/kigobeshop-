@@ -19,9 +19,13 @@ const subcategoriesByCollection: Record<string, string[]> = {
     
   ],
   Hombre: [
+    "Vaqueros",
+    "Camisas",
     "Camisetas",
     "Sudaderas",
     "Pantalones",
+    "Conjuntos",
+    "Chaquetas",
   ],
   "Tallas grandes": [
     "Vaqueros",
@@ -890,7 +894,10 @@ const filteredProducts = products.filter((product) => {
         <label>Colección</label>
         <select
           value={collection}
-          onChange={(e) => setCollection(e.target.value)}
+          onChange={(e) => {
+            setCollection(e.target.value);
+            setSubcategory("");
+          }}
           style={fieldStyle}
         >
           {category === "Ropa" ? (
@@ -1170,6 +1177,3 @@ const filteredProducts = products.filter((product) => {
     </main>
   );
 }
-
-
-
