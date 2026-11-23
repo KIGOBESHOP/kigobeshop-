@@ -11,6 +11,7 @@ import { products, categories, type Product } from "@/lib/products";
 import { supabase } from "@/lib/supabase";
 import CheckoutForm from "@/components/CheckoutForm";
 import CookieBanner from "@/components/CookieBanner";
+import { syncAnonymousCart } from "@/lib/cartTracking";
 
 type CartItem = {
   cartKey: string;
@@ -120,12 +121,10 @@ export default function Home() {
 
   useEffect(() => {
     if (!storageLoaded) return;
-
-    localStorage.setItem(
-      "kigobeshop-favorites",
-      JSON.stringify(favorites)
-    );
-  }, [favorites, storageLoaded]);
+    localStorage.setItem("kigobeshop-cart", JSON.stringify(cart));
+    localStorage.setItem("kigobeshop-favorites", JSON.stringify(favorites));
+    void syncAnonymousCart(cart);
+  }, [cart, favorites, storageLoaded]);
 
   useEffect(() => {
     let cancelled = false;
